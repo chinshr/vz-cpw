@@ -1,0 +1,7 @@
+.bundle
+log/*.log
+tmp/
+.rvmrc
+coverage/
+logfile
+.DS_Store
