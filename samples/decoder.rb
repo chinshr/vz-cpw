@@ -1,12 +1,14 @@
 require 'pocketsphinx-ruby'
 
 decoder = Pocketsphinx::Decoder.new(Pocketsphinx::Configuration.default)
-decoder.decode 'samples/assets/i-like-pickles.wav'
+# decoder.decode 'samples/assets/i-like-pickles.wav'
+# decoder.decode 'samples/assets/goforward.raw'
+decoder.decode 'samples/assets/i-like-pickles.raw'
 
-puts "Hypothesis"
+puts "Hypothesis ->"
 puts decoder.hypothesis # => "go forward ten meters"
 
-puts "Words"
+puts "Words ->"
 puts decoder.hypothesis.words
 # => [
 #  #<struct Pocketsphinx::Decoder::Word word="<s>", start_frame=608, end_frame=610>,
