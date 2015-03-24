@@ -1,0 +1,27 @@
+GEM
+  remote: http://rubygems.org/
+  specs:
+    aws-sdk (2.0.31)
+      aws-sdk-resources (= 2.0.31)
+    aws-sdk-core (2.0.31)
+      builder (~> 3.0)
+      jmespath (~> 1.0)
+      multi_json (~> 1.0)
+      multi_xml (~> 0.5)
+    aws-sdk-resources (2.0.31)
+      aws-sdk-core (= 2.0.31)
+    builder (3.2.2)
+    ffi (1.9.8)
+    jmespath (1.0.2)
+      multi_json (~> 1.0)
+    multi_json (1.11.0)
+    multi_xml (0.5.5)
+    pocketsphinx-ruby (0.2.0)
+      ffi (>= 1.9)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  aws-sdk
+  pocketsphinx-ruby
