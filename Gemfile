@@ -1,7 +1,8 @@
 source 'http://rubygems.org'
 
 group :development, :test do
-  gem 'pry-nav'
+  gem 'pry'
+  gem 'pry-byebug'
 end
 
 gem 'aws-sdk'
