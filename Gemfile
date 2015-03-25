@@ -6,3 +6,4 @@ end
 
 gem 'aws-sdk'
 gem 'pocketsphinx-ruby'
+gem 'spyke'
