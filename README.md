@@ -1,4 +1,24 @@
-# Content Process Workflow
+# Content Processing Workflow (CPW)
+
+Processes audio/video content, transacribes, indexes.
+
+## Installation
+
+Add this line to your application's Gemfile:
+
+    gem 'cpw'
+
+And then execute:
+
+    $ bundle
+
+Or install it yourself as:
+
+    $ gem install cpw
+
+## Usage
+
+TODO: Write usage instructions here
 
 ## Developer Resources
 

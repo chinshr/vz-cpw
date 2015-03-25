@@ -1,3 +1,11 @@
+PATH
+  remote: .
+  specs:
+    CPW (0.0.1)
+      aws-sdk
+      pocketsphinx-ruby
+      spyke
+
 GEM
   remote: http://rubygems.org/
   specs:
@@ -47,6 +55,7 @@ GEM
     pry-byebug (3.1.0)
       byebug (~> 4.0)
       pry (~> 0.10)
+    rake (10.1.0)
     slop (3.6.0)
     spyke (3.1.0)
       activemodel (>= 3.0.0, < 5.0)
@@ -58,13 +67,15 @@ GEM
     tzinfo (1.2.2)
       thread_safe (~> 0.1)
     uri_template (0.7.0)
+    yard (0.8.7.6)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
-  aws-sdk
-  pocketsphinx-ruby
+  CPW!
+  bundler (~> 1.6)
   pry
   pry-byebug
-  spyke
+  rake
+  yard
