@@ -26,5 +26,8 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "aws-sdk"
   spec.add_dependency "pocketsphinx-ruby"
+  spec.add_dependency "multi_json"
   spec.add_dependency "spyke"
+  spec.add_dependency "faraday"
+  spec.add_dependency "dotenv"
 end
