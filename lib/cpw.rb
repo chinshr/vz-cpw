@@ -1,28 +1,49 @@
 require "faraday"
 require "spyke"
 require "multi_json"
-
-require "cpw/version"
-require "cpw/store"
-require "cpw/json_parser"
-require "cpw/ingest"
-
 require "pstore"
-
 require "dotenv"
 Dotenv.load
 
+require "cpw/version"
+require "cpw/store"
+require "cpw/client/json_parser"
+require "cpw/client/adapter"
+require "cpw/client/auth"
+require "cpw/client/base"
+require "cpw/client/resources/ingest"
+
 # Run: bundle exec irb -r "cpw"
 module CPW
-  store = Store.new
+  class << self
+    attr_accessor :root_path
+    attr_accessor :lib_path
+    attr_accessor :store
+    attr_accessor :base_url
+    attr_accessor :client_key
+    attr_accessor :device_uid
+    attr_accessor :access_token
+    attr_accessor :access_secret
+  end
 
+  self.root_path     = File.expand_path "../..", __FILE__
+  self.lib_path      = File.expand_path "..", __FILE__
+  self.base_url      = ENV['BASE_URL']
+  self.client_key    = ENV['CLIENT_KEY']
+  self.device_uid    = ENV['DEVICE_UID']
+  self.store         = CPW::Store.new
+  self.access_token  = store[:access_token]
+  self.access_secret = store[:access_secret]
+
+  puts ENV['BASE_URL']
   puts ENV['CLIENT_KEY']
   puts store[:access_token]
   puts store[:access_secret]
 
-  Spyke::Base.connection = Faraday.new(url: "http://localhost:3000/api/") do |c|
+  Spyke::Base.connection = Faraday.new(url: ENV['BASE_URL']) do |c|
    c.request :json
    c.use CPW::JsonParser
-   c.adapter Faraday.default_adapter
+   c.adapter Faraday.default_adapter  # CPW::Client::Adapter
+   c.authorization :token, :token => CPW::store[:access_token]
   end
 end

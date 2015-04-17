@@ -3,12 +3,12 @@ module CPW
     def parse(body)
       json = MultiJson.load(body, symbolize_keys: true)
       {
-        data: json[:data],
+        data: json[json.keys.reject {|k| [:code, :errors].include?(k)}.first || :data],
         metadata: json[:meta],
         errors: json[:errors]
       }
     rescue MultiJson::ParseError, TypeError => e
-      { errors: { base: [error: e.message] } }
+      {errors: {base: [error: e.message]}}
     end
   end
 end
