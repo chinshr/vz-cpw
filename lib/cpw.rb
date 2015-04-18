@@ -9,7 +9,7 @@ require "cpw/version"
 require "cpw/store"
 require "cpw/client/json_parser"
 require "cpw/client/adapter"
-require "cpw/client/auth"
+require "cpw/client/authorize"
 require "cpw/client/base"
 require "cpw/client/resources/ingest"
 
@@ -24,6 +24,8 @@ module CPW
     attr_accessor :device_uid
     attr_accessor :access_token
     attr_accessor :access_secret
+    attr_accessor :user_email
+    attr_accessor :user_password
   end
 
   self.root_path     = File.expand_path "../..", __FILE__
@@ -31,6 +33,8 @@ module CPW
   self.base_url      = ENV['BASE_URL']
   self.client_key    = ENV['CLIENT_KEY']
   self.device_uid    = ENV['DEVICE_UID']
+  self.user_email    = ENV['USER_EMAIL']
+  self.user_password = ENV['USER_PASSWORD']
   self.store         = CPW::Store.new
   self.access_token  = store[:access_token]
   self.access_secret = store[:access_secret]
@@ -44,6 +48,6 @@ module CPW
    c.request :json
    c.use CPW::JsonParser
    c.adapter Faraday.default_adapter  # CPW::Client::Adapter
-   c.authorization :token, :token => CPW::store[:access_token]
+   c.authorization "Token", :token => CPW::store[:access_token]
   end
 end
