@@ -11,14 +11,16 @@ require "cpw/client/json_parser"
 require "cpw/client/adapter"
 require "cpw/client/authorize"
 require "cpw/client/base"
-require "cpw/client/resources/ingest"
-#module CPW::Client::Resource::Ingest; end
-require "cpw/client/resources/ingest/chunk"
-
-puts Dir[File.dirname(__FILE__) + "/cpw/client/resources/**/*.rb"]
+module CPW::Client::Resources
+  #module Ingest; end
+end
+Dir[File.dirname(__FILE__) + "/cpw/client/resources/*.rb"].each {|file| require file}
+Dir[File.dirname(__FILE__) + "/cpw/client/resources/**/*.rb"].each {|file| require file}
 
 # Run: bundle exec irb -r "cpw"
 module CPW
+  include Client::Resources
+
   class << self
     attr_accessor :root_path
     attr_accessor :lib_path

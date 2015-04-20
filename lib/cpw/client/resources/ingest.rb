@@ -1,6 +1,6 @@
 module CPW
   module Client
-    module Resource
+    module Resources
       class Ingest < CPW::Client::Base
         uri "ingests/(:id)"
 
