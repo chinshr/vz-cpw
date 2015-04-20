@@ -12,6 +12,10 @@ require "cpw/client/adapter"
 require "cpw/client/authorize"
 require "cpw/client/base"
 require "cpw/client/resources/ingest"
+#module CPW::Client::Resource::Ingest; end
+require "cpw/client/resources/ingest/chunk"
+
+puts Dir[File.dirname(__FILE__) + "/cpw/client/resources/**/*.rb"]
 
 # Run: bundle exec irb -r "cpw"
 module CPW
