@@ -11,9 +11,8 @@ require "cpw/client/json_parser"
 require "cpw/client/adapter"
 require "cpw/client/authorize"
 require "cpw/client/base"
-module CPW::Client::Resources
-  #module Ingest; end
-end
+
+# Load resources
 Dir[File.dirname(__FILE__) + "/cpw/client/resources/*.rb"].each {|file| require file}
 Dir[File.dirname(__FILE__) + "/cpw/client/resources/**/*.rb"].each {|file| require file}
 
