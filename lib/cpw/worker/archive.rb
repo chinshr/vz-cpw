@@ -1,4 +1,4 @@
 module CPW
-  class Worker::Archive < Worker
+  class Worker::Archive < Worker::Base
   end
 end

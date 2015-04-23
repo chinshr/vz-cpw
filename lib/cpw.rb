@@ -10,20 +10,20 @@ Dotenv.load
 require "cpw/version"
 require "cpw/store"
 require "cpw/server"
-require "cpw/worker"
-require "cpw/worker/helper"
-# Load worker
-Dir[File.dirname(__FILE__) + "/cpw/worker/*.rb"].each {|file| require file}
-Dir[File.dirname(__FILE__) + "/cpw/worker/**/*.rb"].each {|file| require file}
 
 require "cpw/client/json_parser"
 require "cpw/client/adapter"
 require "cpw/client/authorize"
 require "cpw/client/base"
-
-# Load resources
+# Load client resources
 Dir[File.dirname(__FILE__) + "/cpw/client/resources/*.rb"].each {|file| require file}
 Dir[File.dirname(__FILE__) + "/cpw/client/resources/**/*.rb"].each {|file| require file}
+
+require "cpw/worker/base"
+require "cpw/worker/helper"
+# Load workers
+Dir[File.dirname(__FILE__) + "/cpw/worker/*.rb"].each {|file| require file}
+Dir[File.dirname(__FILE__) + "/cpw/worker/**/*.rb"].each {|file| require file}
 
 # Run: bundle exec irb -r "cpw"
 module CPW
