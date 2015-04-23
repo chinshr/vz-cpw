@@ -25,12 +25,13 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "pry-byebug"
   spec.add_development_dependency "yard"
 
-  spec.add_dependency "aws-sdk"
   spec.add_dependency "pocketsphinx-ruby"
   spec.add_dependency "multi_json"
   spec.add_dependency "spyke"
   spec.add_dependency "faraday"
   spec.add_dependency "dotenv"
+  spec.add_dependency "aws-sdk-v1"
+  spec.add_dependency "mono_logger"
 
   spec.add_runtime_dependency('gli','2.13.0')
 end

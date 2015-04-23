@@ -2,6 +2,8 @@ require "faraday"
 require "spyke"
 require "multi_json"
 require "pstore"
+require "aws-sdk-v1"
+require "mono_logger"
 require "dotenv"
 Dotenv.load
 
@@ -9,8 +11,10 @@ require "cpw/version"
 require "cpw/store"
 require "cpw/server"
 require "cpw/worker"
-require "cpw/worker/harvest"
-require "cpw/worker/transcode"
+require "cpw/worker/helper"
+# Load worker
+Dir[File.dirname(__FILE__) + "/cpw/worker/*.rb"].each {|file| require file}
+Dir[File.dirname(__FILE__) + "/cpw/worker/**/*.rb"].each {|file| require file}
 
 require "cpw/client/json_parser"
 require "cpw/client/adapter"
@@ -36,6 +40,7 @@ module CPW
     attr_accessor :access_secret
     attr_accessor :user_email
     attr_accessor :user_password
+    attr_accessor :logger
   end
 
   self.root_path     = File.expand_path "../..", __FILE__
@@ -48,11 +53,13 @@ module CPW
   self.store         = CPW::Store.new
   self.access_token  = store[:access_token]
   self.access_secret = store[:access_secret]
+  self.logger        = MonoLogger.new(STDOUT)
+  #self.logger.level  = MonoLogger::WARN
 
-  puts ENV['BASE_URL']
-  puts ENV['CLIENT_KEY']
-  puts store[:access_token]
-  puts store[:access_secret]
+  logger.info "Base URL:      " + ENV['BASE_URL']
+  logger.info "Client key:    " + ENV['CLIENT_KEY']
+  logger.info "Access token:  " + store[:access_token]
+  logger.info "Access secret: " + store[:access_secret]
 
   Spyke::Base.connection = Faraday.new(url: ENV['BASE_URL']) do |c|
    c.request :json
@@ -60,4 +67,9 @@ module CPW
    c.adapter Faraday.default_adapter  # CPW::Client::Adapter
    c.authorization "Token", :token => CPW::store[:access_token]
   end
+
+  AWS.config(
+    :access_key_id     => ENV['S3_KEY'],
+    :secret_access_key => ENV['S3_SECRET']
+  )
 end

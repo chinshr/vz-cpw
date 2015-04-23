@@ -1,13 +1,16 @@
 module CPW
   class Server
     attr_accessor :threads
+    attr_reader :logger
 
     def initialize
-      @threads = []
+      @threads   = []
       @terminate = false
+      @logger    = CPW::logger
     end
 
     def spawn
+      logger.info "Starting server..."
       Signal.trap("TERM") do
         terminate "TERM"
       end
@@ -16,14 +19,18 @@ module CPW
         terminate "SIGINT"
       end
 
-      threads << Thread.new { CPW::Worker::Harvest.new.run }
-      threads << Thread.new { CPW::Worker::Transcode.new.run }
+      CPW::Worker.subclasses.each do |worker_class|
+        threads << Thread.new { worker_class.new.run }
+      end
       threads.each {|t| t.join }
     end
 
     def terminate(signal = nil)
-      puts signal if signal
+      logger.info "\nStopping server...(#{signal})"
       threads.each {|t| t.terminate }
+      while threads.any? {|t| t.alive? }
+      end
+      logger.info "\nStopped."
     end
   end
 end

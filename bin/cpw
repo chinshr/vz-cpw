@@ -33,7 +33,6 @@ command :server do |server|
   server.arg_name 'Describe arguments to start here'
   server.command :start do |start|
     start.action do |global_options,options,args|
-      puts "starting server..."
       CPW::Server.new.spawn
     end
   end
