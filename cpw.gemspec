@@ -14,7 +14,8 @@ Gem::Specification.new do |spec|
   spec.license       = ""
 
   spec.files         = `git ls-files -z`.split("\x0")
-  spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
+  spec.bindir        = 'bin'
+  spec.executables   = ["cpw"]
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
   spec.require_paths = ["lib"]
 
@@ -30,4 +31,6 @@ Gem::Specification.new do |spec|
   spec.add_dependency "spyke"
   spec.add_dependency "faraday"
   spec.add_dependency "dotenv"
+
+  spec.add_runtime_dependency('gli','2.13.0')
 end

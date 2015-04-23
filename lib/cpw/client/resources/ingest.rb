@@ -4,6 +4,18 @@ module CPW
       class Ingest < CPW::Client::Base
         uri "ingests/(:id)"
 
+        STAGE_START       = 0
+        STAGE_HARVEST     = 100
+        STAGE_TRANSCODE   = 200
+        STAGE_TRANSCRIBE  = 300
+        STAGE_INDEX       = 400
+        STAGE_ARCHIVE     = 500
+        STAGES = {
+          start: STAGE_START, harvest: STAGE_HARVEST,
+          transcode: STAGE_TRANSCODE, transcribe: STAGE_TRANSCRIBE,
+          index: STAGE_INDEX, archive: STAGE_ARCHIVE
+        }
+
         STATE_CREATED     = 0
         STATE_STARTING    = 1
         STATE_STARTED     = 2

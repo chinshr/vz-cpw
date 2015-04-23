@@ -7,6 +7,11 @@ Dotenv.load
 
 require "cpw/version"
 require "cpw/store"
+require "cpw/server"
+require "cpw/worker"
+require "cpw/worker/harvest"
+require "cpw/worker/transcode"
+
 require "cpw/client/json_parser"
 require "cpw/client/adapter"
 require "cpw/client/authorize"
