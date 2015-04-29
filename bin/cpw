@@ -4,7 +4,7 @@ require 'gli'
 
 include GLI::App
 
-program_desc 'Content Processing Workflow (CPW) is an automted process to digest content.'
+program_desc 'Content Processing Workflow (CPW) is an automated process to ingest audio.'
 
 version CPW::VERSION
 
@@ -12,41 +12,67 @@ subcommand_option_handling :normal
 arguments :strict
 
 desc 'Describe some switch here'
-switch [:s,:switch]
+switch [:s, :switch]
 
 desc 'Describe some flag here'
 default_value 'the default'
 arg_name 'The name of the argument'
-flag [:f,:flagname]
+flag [:f, :flagname]
 
-desc 'Describe server here'
-arg_name 'Describe arguments to server here'
-command :server do |server|
-  server.desc 'Describe a switch to server'
-  server.switch :s
+desc 'Start console'
+command [:c, :console] do |console|
+  console.action do |global_options, options, args|
+    require 'irb'
 
-  server.desc 'Describe a flag to server'
-  server.default_value 'default'
-  server.flag :f
-
-  server.desc 'Describe start here'
-  server.arg_name 'Describe arguments to start here'
-  server.command :start do |start|
-    start.action do |global_options,options,args|
-      CPW::Server.new.spawn
-    end
-  end
-
-  server.desc 'Describe stop here'
-  server.arg_name 'Describe arguments to stop here'
-  server.command :stop do |stop|
-    stop.action do |global_options,options,args|
-      puts "stop server command ran"
+    ARGV.clear
+    begin
+      IRB.start
+    rescue ArgumentError => e
+      puts "Goodbye."
     end
   end
 end
 
-pre do |global,command,options,args|
+desc 'Start CPW server'
+command [:s, :server] do |server|
+  server.action do |global_options, options, args|
+    require 'shoryuken/cli'
+
+    argv = options.reject {|k, v| !k.is_a?(String)}
+    argv = argv.inject({}) {|r, h| r[h[0].length > 1 ? "--#{h[0]}" : "-#{h[0]}"] = h.last; r}
+    argv = argv.reject {|k, v| !v}
+    argv = argv.to_a.flatten
+
+    CPW::logger.info "Arguments: #{argv.inspect}"
+    ::Shoryuken::CLI.instance.run(argv)
+  end
+
+  #-C, --config PATH
+  server.desc 'Path to YAML config file'
+  server.default_value 'config/shoryuken.yml'
+  server.arg_name 'PATH'
+  server.flag [:C, :config]
+
+  #-P, --pidfile PATH
+  server.desc 'Path to pidfile'
+  server.arg_name 'PATH'
+  server.flag [:P, :pidfile]
+
+  #-L, --logfile PATH
+  server.desc 'Path to writable logfile'
+  server.arg_name 'PATH'
+  server.flag [:L, :logfile]
+
+  #-d, --daemon
+  server.desc 'Deamonize process'
+  server.switch [:d, :daemon]
+
+  #-v, --verbose
+  server.desc 'Print more verbose output'
+  server.switch [:v, :verbose]
+end
+
+pre do |global, command, options, args|
   # Pre logic here
   # Return true to proceed; false to abort and not call the
   # chosen command
