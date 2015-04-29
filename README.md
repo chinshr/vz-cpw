@@ -18,7 +18,37 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+### Start Server
+
+    cpw server
+
+or
+
+    cpw s
+
+Type `cpw help` for more help.
+
+Or, manually starting up the server:
+
+    bundle exec shoryuken -r cpw.rb -C config/shoryuken.yml
+
+### Start Console
+
+    cpw console
+
+or
+
+    cpw c
+
+Or, manually startup an IRB session:
+
+    bundle exec irb -r "cpw"
+
+## Send a message
+
+    sqs = AWS::SQS.new
+    queue = sqs.queues.named("ARCHIVE_DEVELOPMENT_QUEUE")
+    queue.send_message({ingest_id: 46}.to_json)
 
 ## Developer Resources
 

@@ -7,9 +7,10 @@ require "mono_logger"
 require "dotenv"
 Dotenv.load
 
+require "shoryuken"
+
 require "cpw/version"
 require "cpw/store"
-require "cpw/server"
 
 require "cpw/client/json_parser"
 require "cpw/client/adapter"
@@ -21,11 +22,11 @@ Dir[File.dirname(__FILE__) + "/cpw/client/resources/**/*.rb"].each {|file| requi
 
 require "cpw/worker/base"
 require "cpw/worker/helper"
+require "cpw/middleware/lock_ingest"
 # Load workers
-Dir[File.dirname(__FILE__) + "/cpw/worker/*.rb"].each {|file| require file}
 Dir[File.dirname(__FILE__) + "/cpw/worker/**/*.rb"].each {|file| require file}
+CPW::Worker::Base.register_cpw_workers
 
-# Run: bundle exec irb -r "cpw"
 module CPW
   include Client::Resources
 
@@ -72,4 +73,14 @@ module CPW
     :access_key_id     => ENV['S3_KEY'],
     :secret_access_key => ENV['S3_SECRET']
   )
+
+  Shoryuken.configure_server do |config|
+    config.server_middleware do |chain|
+      chain.add CPW::Middleware::LockIngest
+      # chain.remove MyMiddleware
+      # chain.add MyMiddleware, foo: 1, bar: 2
+      # chain.insert_before MyMiddleware, MyMiddlewareNew
+      # chain.insert_after MyMiddleware, MyMiddlewareNew
+    end
+  end
 end

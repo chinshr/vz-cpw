@@ -32,6 +32,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "dotenv"
   spec.add_dependency "aws-sdk-v1"
   spec.add_dependency "mono_logger"
+  spec.add_dependency "shoryuken"
 
   spec.add_runtime_dependency('gli','2.13.0')
 end

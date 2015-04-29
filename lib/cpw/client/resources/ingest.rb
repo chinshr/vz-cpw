@@ -3,6 +3,7 @@ module CPW
     module Resources
       class Ingest < CPW::Client::Base
         uri "ingests/(:id)"
+        include_root_in_json :ingest
 
         STAGE_START       = 0
         STAGE_HARVEST     = 100

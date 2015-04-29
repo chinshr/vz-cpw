@@ -1,80 +1,71 @@
 module CPW
   module Worker
     class Base
+      include ::Shoryuken::Worker
       include CPW::Client::Resources
 
-      attr_reader :sqs, :queue, :logger, :message, :ingest
+      attr_reader :logger
+      attr_accessor :ingest, :body, :sqs_message
+
+      class << self
+        def stage_name
+          name.split("::").last.underscore
+        end
+
+        def queue_name
+          name = ENV['QUEUE_NAME'].dup
+          name.gsub!(/%{stage}/i, stage_name)
+          name.gsub!(/%{environment}/i, ENV.fetch('ENVIRONMENT', 'development'))
+          name.upcase
+        end
+
+        def register_cpw_workers
+          # Shoryuken.register_worker("HARVEST_DEVELOPMENT_QUEUE", CPW::Worker::Harvest)
+          # Shoryuken.register_worker("TRANSCODE_DEVELOPMENT_QUEUE", CPW::Worker::Transcode)
+          # Shoryuken.register_worker("TRANSRIBE_DEVELOPMENT_QUEUE", CPW::Worker::Transcribe)
+          # Shoryuken.register_worker("ARCHIVE_DEVELOPMENT_QUEUE", CPW::Worker::Archive)
+          Dir[File.dirname(__FILE__) + "/*.rb"].each do |file|
+            unless ["base", "helper"].include?(File.basename(file, ".rb"))
+              Shoryuken.register_worker(class_for(file).queue_name, class_for(file))
+            end
+          end
+        end
+
+        private
+
+        def class_for(file_name)
+          name = File.basename(file_name, ".rb")
+          ("CPW::Worker::" + name[0].upcase + name[1...name.length]).constantize
+        end
+      end
 
       def initialize
         @terminate = false
         @logger    = CPW::logger
-        @sqs       = AWS::SQS.new
-        @queue     = sqs.queues.named(queue_name)
-        @ingest_id = nil
-
-        # $DEBUG = true
-        Thread.abort_on_exception = true
       end
 
-      class << self
-        attr_accessor :downstream_worker_class_name
-
-        def perform_async(*args)
-          logger.info "Calling worker #{self.name}"
-          self.new.queue.send_message({ingest_id: ingest_id}.to_json)
-        end
+      def before_perform(sqs_message, body)
+        logger.info "#{self.class.name}#before_perform: #{body.inspect}\n"
+        self.sqs_message, self.body = sqs_message, body
       end
 
-      def run
-        at_exit do
-          stop "at_exit"
-        end
-
-        logger.info "Listening on queue #{queue_name}"
-        queue.poll(wait_time_seconds: 10) do |message|
-          self.message = JSON.parse(received_message.body)
-          lock do
-            before_perform(message)
-            perform(message)
-            after_perform(message)
-          end
-          break if terminate?
-          invoke_next
-        end
-      ensure
-        unlock
+      def after_perform(sqs_message, body)
+        sqs_message.delete if sqs_message.respond_to?(:delete) unless should_retry?
+        logger.info "#{self.class.name}#after_perform: #{body.inspect}\n"
       end
 
-      def perform(*args)
-        raise "Implement in subclass"
+      def should_retry?
+        false
       end
-
-      def before_perform(message)
-        logger.info "Processing #{self.class.name}#message #{message.inspect}\n"
-      end
-
-      def after_perform(message)
-        logger.info "Finished processing #{self.class.name}#message #{message.inspect}\n"
-      end
-
-      def stop(signal = nil)
-        @terminate = true
-        logger.info "Stopping poll loop for #{queue_name}. (#{signal})"
-      end
-
-      def ingest_id
-        @ingest.id if @ingest
-      end
-
-      protected
 
       def lock
-        logger.info "locking #{queue_name}"
+        logger.info "+++ locking #{queue_name}"
         load_ingest
+
         if block_given?
           begin
             if can_lock?
-              ingest.update_attributes(stage: stage_name, busy: true) if ingest
+              @ingest.update_attributes(stage: stage_name, busy: true) if @ingest
               yield
             end
           ensure
@@ -85,6 +76,8 @@ module CPW
         end
       end
 
+      protected
+
       def can_lock?
         ingest && !ingest.terminate
       end
@@ -94,27 +87,17 @@ module CPW
         ingest.update_attributes(busy: false) if ingest
       end
 
-      def invoke_next
-        if self.class.downstream_worker_class_name && ingest_id
-          worker_class = self.class.downstream_worker_class_name.classify
-          logger.info "Calling downstream worker #{worker_class.name}"
-          worker_class.new.queue.send_message({ingest_id: ingest_id}.to_json)
-        end
-      end
-
       def stage_name
-        self.class.name.split("::").last.underscore
+        self.class.stage_name
       end
 
       def queue_name
-        name = ENV['QUEUE_NAME'].dup
-        name.gsub!(/%{stage}/i, stage_name)
-        name.gsub!(/%{environment}/i, ENV.fetch('ENVIRONMENT', 'development'))
-        name.upcase
+        self.class.queue_name
       end
 
       def load_ingest
-        @ingest = Ingest.find(message['ingest_id']) if message && message['ingest_id']
+        logger.info "+++ Worker::Base#load_ingest #{body.inspect}"
+        @ingest = Ingest.find(body['ingest_id']) if body && body['ingest_id'] && !@ingest
       end
 
       def terminate?
