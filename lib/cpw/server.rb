@@ -19,7 +19,7 @@ module CPW
         terminate "SIGINT"
       end
 
-      CPW::Worker.subclasses.each do |worker_class|
+      CPW::Worker::Base.subclasses.each do |worker_class|
         threads << Thread.new { worker_class.new.run }
       end
       threads.each {|t| t.join }

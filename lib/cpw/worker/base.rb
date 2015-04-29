@@ -18,6 +18,11 @@ module CPW
 
       class << self
         attr_accessor :downstream_worker_class_name
+
+        def perform_async(*args)
+          logger.info "Calling worker #{self.name}"
+          self.new.queue.send_message({ingest_id: ingest_id}.to_json)
+        end
       end
 
       def run
@@ -29,9 +34,9 @@ module CPW
         queue.poll(wait_time_seconds: 10) do |message|
           self.message = JSON.parse(received_message.body)
           lock do
-            before_process
-            process
-            after_process
+            before_perform(message)
+            perform(message)
+            after_perform(message)
           end
           break if terminate?
           invoke_next
@@ -40,15 +45,15 @@ module CPW
         unlock
       end
 
-      def process
+      def perform(*args)
         raise "Implement in subclass"
       end
 
-      def before_process
+      def before_perform(message)
         logger.info "Processing #{self.class.name}#message #{message.inspect}\n"
       end
 
-      def after_process
+      def after_perform(message)
         logger.info "Finished processing #{self.class.name}#message #{message.inspect}\n"
       end
 

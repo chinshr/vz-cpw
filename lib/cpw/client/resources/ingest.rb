@@ -34,9 +34,39 @@ module CPW
           finished: STATE_FINISHED,  restarting: STATE_RESTARTING
         }
 
-        has_many :chunks
+        belongs_to :document
+        accepts_nested_attributes_for :document
+        has_many :ingest_chunks, class_name: "CPW::Client::Resources::Ingest::Chunk"
+        accepts_nested_attributes_for :chunks
+        has_many :tracks
 
         scope :started, -> { where(any_of_status: Ingest::STATE_STARTED) }
+
+        def s3_origin_bucket_name
+          File.join(ENV['S3_OUTBOUND_BUCKET'], self.uid)
+        end
+
+        def s3_origin_uri
+          File.join(self.s3_origin_bucket_name, self.s3_key)
+        end
+
+        def s3_origin_url
+          File.join(ENV['S3_URL'], self.s3_origin_uri)
+        end
+
+        def s3_origin_mp3_key
+          "#{self.s3_key}.#{CPW::Worker::Transcode::MP3_BITRATE}.mp3"
+        end
+
+        def s3_origin_mp3_url
+          File.join(ENV['S3_URL'], s3_origin_bucket_name, s3_origin_mp3_key)
+        end
+
+        def set_progress!(percent)
+          new_progress = percent
+          new_progress = new_progress > 100 ? 100 : new_progress
+          update_attribute(:progress, new_progress)
+        end
       end
     end
   end

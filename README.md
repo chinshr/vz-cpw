@@ -26,3 +26,8 @@ TODO: Write usage instructions here
 * Pocketsphinx Ruby gem -- https://github.com/watsonbox/pocketsphinx-ruby?utm_source=rubyweekly&utm_medium=email
 * Handles API nicely in AR model like fashion -- https://github.com/balvig/spyke
 * How to write a gem -- http://howistart.org/posts/ruby/1
+* Concurrent workers -- http://www.toptal.com/ruby/ruby-concurrency-and-parallelism-a-practical-primer
+* Shoryuken, like Sidekiq for SQS -- https://github.com/phstc/shoryuken
+* Ruby concurrency -- http://www.toptal.com/ruby/ruby-concurrency-and-parallelism-a-practical-primer
+* SQS to the rescue -- http://www.pablocantero.com/blog/2014/11/29/sqs-to-the-rescue/
+* Spyke nested attributes -- https://github.com/balvig/spyke/issues/28

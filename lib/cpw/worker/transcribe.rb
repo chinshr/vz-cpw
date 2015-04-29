@@ -1,4 +1,6 @@
 module CPW
-  class Worker::Transcribe < Worker::Base
+  module Worker
+    class Transcribe < Worker::Base
+    end
   end
 end
