@@ -9,13 +9,14 @@ module CPW
         STAGE_HARVEST     = 100
         STAGE_TRANSCODE   = 200
         STAGE_TRANSCRIBE  = 300
-        STAGE_INDEX       = 400
-        STAGE_ARCHIVE     = 500
+        STAGE_FINISH      = 500
+        STAGE_ARCHIVE     = 600
         STAGES = {
           start: STAGE_START, harvest: STAGE_HARVEST,
           transcode: STAGE_TRANSCODE, transcribe: STAGE_TRANSCRIBE,
-          index: STAGE_INDEX, archive: STAGE_ARCHIVE
+          finish: STAGE_FINISH, archive: STAGE_ARCHIVE
         }
+        WORKFLOW = [:start, :harvest, :transcode, :transcribe, :finish]
 
         STATE_CREATED     = 0
         STATE_STARTING    = 1
@@ -42,6 +43,28 @@ module CPW
         has_many :tracks
 
         scope :started, -> { where(any_of_status: Ingest::STATE_STARTED) }
+
+        class << self
+          @@semaphore = Mutex.new
+
+          def update(id, attributes)
+            @@semaphore.synchronize do
+              Ingest.find(id).update_attributes(attributes)
+            end
+          end
+        end
+
+        # State inquiry
+        # E.g. @ingest.state_created? || @ingest.state_starting?
+        STATES.each do |inquiry, value|
+          define_method("state_#{inquiry}?") do
+            STATES[inquiry] == self.status
+          end
+        end
+
+        def state
+          STATES.keys[status].try(:to_sym)
+        end
 
         def s3_origin_bucket_name
           File.join(ENV['S3_OUTBOUND_BUCKET'], self.uid)

@@ -44,7 +44,7 @@ Or, manually startup an IRB session:
 
     bundle exec irb -r "cpw"
 
-## Send a message
+### Send a message
 
     sqs = AWS::SQS.new
     queue = sqs.queues.named("ARCHIVE_DEVELOPMENT_QUEUE")

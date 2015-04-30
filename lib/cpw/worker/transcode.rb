@@ -2,6 +2,7 @@ module CPW
   module Worker
     class Transcode < Worker::Base
       extend Worker::Helper
+      self.finished_progress = 25
 
       MP3_BITRATE = 128
 
@@ -16,8 +17,6 @@ module CPW
         upload
 
         CPW::Worker::Transcribe.perform_async(body)
-      ensure
-        @ingest.update_attributes(progress: 25)
       end
 
       def download

@@ -2,6 +2,7 @@ module CPW
   module Worker
     class Harvest < Worker::Base
       extend Worker::Helper
+      self.finished_progress = 5
 
       shoryuken_options queue: -> { queue_name },
         auto_delete: false, body_parser: :json
@@ -19,8 +20,6 @@ module CPW
 
         # Move to next stage
         CPW::Worker::Transcode.perform_async(body)
-      ensure
-        @ingest.update_attributes(progress: 5)
       end
     end
   end
