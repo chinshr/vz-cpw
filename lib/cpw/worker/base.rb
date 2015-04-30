@@ -5,7 +5,7 @@ module CPW
       include CPW::Client::Resources
 
       attr_reader :logger
-      attr_accessor :ingest, :body, :sqs_message
+      attr_accessor :ingest, :body, :sqs_message, :test
 
       class << self
         attr_accessor :finished_progress
@@ -22,8 +22,8 @@ module CPW
         end
 
         def next_stage_name
-          index = CPW::Client::Resources::Ingest::WORKFLOW.index(stage_name.to_sym)
-          CPW::Client::Resources::Ingest::WORKFLOW[index + 1].try(:to_s) if index
+          index = CPW::Client::Resources::Ingest::workflow.index(stage_name.to_sym)
+          CPW::Client::Resources::Ingest::workflow[index + 1].try(:to_s) if index
         end
 
         def next_stage_class
@@ -45,10 +45,12 @@ module CPW
         SQSTestMessage = Struct.new(:name) do; def delete; end; end
 
         # Note: For running workers manually.
-        # E.g. CPW::Worker::Archive.test_run({"ingest_id" => 46})
-        def test_run(body)
-          sqs_message     = SQSTestMessage.new("dev")
-          worker_instance = self.new
+        # E.g. CPW::Worker::Archive.perform_test({"ingest_id" => 46})
+        def perform_test(body)
+          sqs_message          = SQSTestMessage.new("dev")
+          worker_instance      = self.new
+          worker_instance.test = true
+
           worker_instance.before_perform(sqs_message, body)
           worker_instance.lock do
             worker_instance.perform(sqs_message, body)
@@ -71,22 +73,25 @@ module CPW
         @logger    = CPW::logger
       end
 
+      def test?
+        !!@test
+      end
+
       def before_perform(sqs_message, body)
         logger.info "+++ #{self.class.name}#before_perform: #{body.inspect}\n"
         self.sqs_message, self.body = sqs_message, body
       end
 
       def after_perform(sqs_message, body)
+        logger.info "+++ #{self.class.name}#after_perform: #{body.inspect}\n"
         sqs_message.delete if sqs_message.respond_to?(:delete) unless should_retry?
 
         # Launch next stage, if part of a workflow
         if workflow? && has_next_stage?
           message = body.merge({"workflow" => workflow?})
           logger.info "+++ #{next_stage_class.name}#perform_async: #{message.inspect}\n"
-          next_stage_class.perform_async(message)
+          next_stage_class.perform_async(message) unless test?
         end
-
-        logger.info "+++ #{self.class.name}#after_perform: #{body.inspect}\n"
       end
 
       def workflow?
@@ -103,7 +108,7 @@ module CPW
         if block_given?
           begin
             if can_lock?
-              Ingest.update(@ingest.id, {stage: stage_name, busy: true})
+              Ingest.secure_update(@ingest.id, {stage: stage_name, busy: true})
               yield
             end
           ensure
@@ -117,9 +122,14 @@ module CPW
       protected
 
       def can_lock?
-        @ingest && (!@ingest.busy || !@ingest.terminate) &&
-          ((@ingest.stage && @ingest.state_started?) || !@ingest.stage) &&
-          Ingest::STAGES[stage_name.to_sym].to_i > Ingest::STAGES[@ingest.stage.to_sym].to_i
+        @ingest && (!@ingest.busy || !@ingest.terminate) && can_stage?
+      end
+
+      def can_stage?
+        current_stage_position  = Ingest::STAGES[stage_name.to_sym].to_i
+        previous_stage_position = @ingest.stage ? Ingest::STAGES[@ingest.stage.to_sym].to_i : 0
+        ((@ingest.stage && @ingest.state_started?) || !@ingest.stage) &&
+          current_stage_position > previous_stage_position
       end
 
       def finished_progress
@@ -129,7 +139,7 @@ module CPW
       def unlock
         attributes = {busy: false}
         attributes.merge!(progress: finished_progress) if finished_progress > 0
-        Ingest.update(@ingest.id, attributes) if @ingest
+        Ingest.secure_update(@ingest.id, attributes) if @ingest
         logger.info "+++ #{self.class.name}#unlock #{queue_name}"
       end
 

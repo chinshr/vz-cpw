@@ -47,8 +47,8 @@ Or, manually startup an IRB session:
 ### Send a message
 
     sqs = AWS::SQS.new
-    queue = sqs.queues.named("ARCHIVE_DEVELOPMENT_QUEUE")
-    queue.send_message({ingest_id: 46}.to_json)
+    queue = sqs.queues.named("START_DEVELOPMENT_QUEUE")
+    queue.send_message({ingest_id: 46, workflow: true}.to_json)
 
 ## Developer Resources
 

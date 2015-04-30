@@ -5,10 +5,10 @@ module CPW
         uri "ingests/(:id)"
         include_root_in_json :ingest
 
-        STAGE_START       = 0
-        STAGE_HARVEST     = 100
-        STAGE_TRANSCODE   = 200
-        STAGE_TRANSCRIBE  = 300
+        STAGE_START       = 100
+        STAGE_HARVEST     = 200
+        STAGE_TRANSCODE   = 300
+        STAGE_TRANSCRIBE  = 400
         STAGE_FINISH      = 500
         STAGE_ARCHIVE     = 600
         STAGES = {
@@ -16,7 +16,6 @@ module CPW
           transcode: STAGE_TRANSCODE, transcribe: STAGE_TRANSCRIBE,
           finish: STAGE_FINISH, archive: STAGE_ARCHIVE
         }
-        WORKFLOW = [:start, :harvest, :transcode, :transcribe, :finish]
 
         STATE_CREATED     = 0
         STATE_STARTING    = 1
@@ -45,13 +44,23 @@ module CPW
         scope :started, -> { where(any_of_status: Ingest::STATE_STARTED) }
 
         class << self
+          @@workflow  = [:start, :harvest, :transcode, :transcribe, :finish]
           @@semaphore = Mutex.new
 
-          def update(id, attributes)
+          def workflow; @@workflow; end
+
+          def secure_update(id, attributes)
             @@semaphore.synchronize do
               Ingest.find(id).update_attributes(attributes)
             end
           end
+
+          def secure_find(id)
+            @@semaphore.synchronize do
+              Ingest.find(body['ingest_id'])
+            end
+          end
+
         end
 
         # State inquiry

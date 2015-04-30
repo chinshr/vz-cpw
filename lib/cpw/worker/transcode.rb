@@ -7,16 +7,18 @@ module CPW
       MP3_BITRATE = 128
 
       shoryuken_options queue: -> { queue_name },
-        auto_delete: false, body_parser: :json
+        auto_delete: true, body_parser: :json
 
       def perform(sqs_message, body)
+        logger.info("+++ #{self.class.name}#perform, body #{body.inspect}")
+
+=begin
         download
         normalize
         noise_reduce
         create_mp3
         upload
-
-        CPW::Worker::Transcribe.perform_async(body)
+=end
       end
 
       def download
