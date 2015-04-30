@@ -49,18 +49,17 @@ module CPW
 
           def workflow; @@workflow; end
 
-          def secure_update(id, attributes)
-            @@semaphore.synchronize do
-              Ingest.find(id).update_attributes(attributes)
-            end
-          end
-
           def secure_find(id)
             @@semaphore.synchronize do
-              Ingest.find(body['ingest_id'])
+              Ingest.find(id)
             end
           end
 
+          def secure_update(id, attributes)
+            @@semaphore.synchronize do
+              Ingest.new(Ingest.find(id).update_attributes(attributes))
+            end
+          end
         end
 
         # State inquiry

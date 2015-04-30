@@ -77,6 +77,10 @@ module CPW
         !!@test
       end
 
+      def workflow?
+        !!(body && body['workflow'])
+      end
+
       def before_perform(sqs_message, body)
         logger.info "+++ #{self.class.name}#before_perform: #{body.inspect}\n"
         self.sqs_message, self.body = sqs_message, body
@@ -84,22 +88,19 @@ module CPW
 
       def after_perform(sqs_message, body)
         logger.info "+++ #{self.class.name}#after_perform: #{body.inspect}\n"
-        sqs_message.delete if sqs_message.respond_to?(:delete) unless should_retry?
+
+        sqs_message.delete unless should_retry?
+
+        logger.info("+++ #{self.class.name}#workflow? -> #{workflow?}")
+        logger.info("+++ #{self.class.name}#has_next_stage? -> #{has_next_stage?}")
+        logger.info("+++ #{self.class.name}#should_retry? -> #{should_retry?}")
 
         # Launch next stage, if part of a workflow
-        if workflow? && has_next_stage?
-          message = body.merge({"workflow" => workflow?})
-          logger.info "+++ #{next_stage_class.name}#perform_async: #{message.inspect}\n"
-          next_stage_class.perform_async(message) unless test?
+        if workflow? && has_next_stage? && !should_retry? && !terminate?
+          new_body = body.merge({"workflow" => workflow?})
+          logger.info "+++ #{next_stage_class.name}#perform_async: #{new_body.inspect}\n"
+          next_stage_class.perform_async(new_body) unless test?
         end
-      end
-
-      def workflow?
-        !!(body && body['workflow'])
-      end
-
-      def should_retry?
-        false
       end
 
       def lock
@@ -108,11 +109,19 @@ module CPW
         if block_given?
           begin
             if can_lock?
-              Ingest.secure_update(@ingest.id, {stage: stage_name, busy: true})
-              yield
+              update_ingest({stage: stage_name, busy: true})
+              if can_stage?
+                @can_perform = true
+                yield
+              end
+            else
+              @should_retry = true
             end
+          rescue => ex
+            @should_retry = true
+            raise ex
           ensure
-            unlock
+            unlock if busy?
           end
         else
           raise "Requires a block"
@@ -121,15 +130,41 @@ module CPW
 
       protected
 
+      def can_perform?
+        !!@can_perform
+      end
+
+      def should_retry?
+        !!@should_retry
+      end
+
+      def busy?
+        @ingest && !!@ingest.busy
+      end
+
+      def terminate?
+        @ingest && !!@ingest.terminate
+      end
+
       def can_lock?
-        @ingest && (!@ingest.busy || !@ingest.terminate) && can_stage?
+        !busy? && !terminate?
       end
 
       def can_stage?
-        current_stage_position  = Ingest::STAGES[stage_name.to_sym].to_i
-        previous_stage_position = @ingest.stage ? Ingest::STAGES[@ingest.stage.to_sym].to_i : 0
-        ((@ingest.stage && @ingest.state_started?) || !@ingest.stage) &&
-          current_stage_position > previous_stage_position
+        if workflow?
+          current_stage_position  = Ingest::STAGES[stage_name.to_sym].to_i
+          previous_stage_position = previous_stage_name ? Ingest::STAGES[previous_stage_name.to_sym].to_i : 0
+
+          logger.info("+++ #{self.class.name}@stage -> #{@ingest.stage}")
+          logger.info("+++ #{self.class.name}@ingest.state_started? -> #{@ingest.state_started?}")
+          logger.info("+++ #{self.class.name}@current_stage_position -> #{current_stage_position}")
+          logger.info("+++ #{self.class.name}@previous_stage_position -> #{previous_stage_position}")
+
+          ((@ingest.stage && @ingest.state_started?) || @ingest.stage == "start") &&
+            current_stage_position > previous_stage_position
+        else
+          true
+        end
       end
 
       def finished_progress
@@ -138,9 +173,11 @@ module CPW
 
       def unlock
         attributes = {busy: false}
-        attributes.merge!(progress: finished_progress) if finished_progress > 0
-        Ingest.secure_update(@ingest.id, attributes) if @ingest
-        logger.info "+++ #{self.class.name}#unlock #{queue_name}"
+        if finished_progress > 0 && can_perform?
+          attributes.merge!(progress: finished_progress)
+        end
+        update_ingest(attributes)
+        logger.info "+++ #{self.class.name}#unlock #{attributes.inspect}"
       end
 
       def stage_name
@@ -165,7 +202,17 @@ module CPW
 
       def load_ingest
         logger.info "+++ #{self.class.name}#load_ingest #{body.inspect}"
-        @ingest = Ingest.find(body['ingest_id']) if body && body['ingest_id'] && !@ingest
+        @ingest = Ingest.secure_find(body['ingest_id']) if body && body['ingest_id']
+      end
+
+      def update_ingest(attributes = {})
+        logger.info "+++ #{self.class.name}#update_ingest #{attributes.inspect}"
+        @previous_stage_name = @ingest.stage
+        @ingest = Ingest.secure_update(@ingest.id, attributes)
+      end
+
+      def previous_stage_name
+        @previous_stage_name
       end
 
       def terminate?

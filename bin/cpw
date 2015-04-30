@@ -37,6 +37,7 @@ desc 'Start CPW server'
 command [:s, :server] do |server|
   server.action do |global_options, options, args|
     require 'shoryuken/cli'
+    require_relative '../config/initializers/shoryuken'
 
     argv = options.reject {|k, v| !k.is_a?(String)}
     argv = argv.inject({}) {|r, h| r[h[0].length > 1 ? "--#{h[0]}" : "-#{h[0]}"] = h.last; r}
