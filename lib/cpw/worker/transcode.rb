@@ -11,6 +11,7 @@ module CPW
 
       def perform(sqs_message, body)
         logger.info("+++ #{self.class.name}#perform, body #{body.inspect}")
+
         download
         normalize
         noise_reduce
@@ -64,13 +65,13 @@ module CPW
 
       def cleanup
         # Delete the single channel file
-        # delete_file_if_exists single_channel_wav_audio_file_fullpath
+        delete_file_if_exists single_channel_wav_audio_file_fullpath
 
         # Delete the dual channel file
-        # delete_file_if_exists dual_channel_wav_audio_file_fullpath
+        delete_file_if_exists dual_channel_wav_audio_file_fullpath
 
         # Remove mp3 file locally
-        # delete_file_if_exists mp3_audio_file_fullpath
+        delete_file_if_exists mp3_audio_file_fullpath
       end
 
       protected
