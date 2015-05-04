@@ -15,6 +15,9 @@ module CPW::Worker::Helper
   end
 
   def s3_download_object(source_bucket_name, source_key, destination_filename)
+    # create directory if not exists
+    FileUtils::mkdir_p "/#{File.join(destination_filename.split("/").slice(1...-1))}"
+    # download to folder
     s3 = AWS::S3.new
     File.open(destination_filename, 'wb') do |file|
       s3.buckets[source_bucket_name].objects[source_key].read do |chunk|
@@ -70,13 +73,14 @@ module CPW::Worker::Helper
   # ffmpeg
   # -------------------------------------------------------------
 
-  def ffmpeg_convert_to_mp3(source_file, mp3_file)
+  def ffmpeg_convert_to_mp3(source_file, mp3_file, options = {})
+    options = options.merge(mp3_bitrate: 128)
     # https://trac.ffmpeg.org/wiki/Encode/MP3
     # ffmpeg -i input.wav -codec:a libmp3lame -qscale:a 2 output.mp3
     # ffmpeg -i input.wav -codec:a libmp3lame -b:a 128k output.mp3
     # => ffmpeg -i input.avi -vn -ar 44100 -ac 2 -ab 192 -f mp3 output.mp3
     # cmd = "ffmpeg -y -i #{source_file} -f mp2 -b #{@mp3_bitrate}k #{mp3_file}   >/dev/null 2>&1"
-    cmd = "ffmpeg -y -i #{source_file} -vn -ab #{@mp3_bitrate}k -f mp3 #{mp3_file}   >/dev/null 2>&1"
+    cmd = "ffmpeg -y -i #{source_file} -vn -ab #{options[:mp3_bitrate]}k -f mp3 #{mp3_file}   >/dev/null 2>&1"
 
     CPW::logger.info "-> $ #{cmd}"
     if system(cmd)

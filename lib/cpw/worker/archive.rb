@@ -1,7 +1,7 @@
 module CPW
   module Worker
     class Archive < Worker::Base
-      extend Worker::Helper
+      include Worker::Helper
 
       shoryuken_options queue: -> { queue_name },
         auto_delete: true, body_parser: :json

@@ -1,7 +1,7 @@
 module CPW
   module Worker
     class Transcode < Worker::Base
-      extend Worker::Helper
+      include Worker::Helper
       self.finished_progress = 25
 
       MP3_BITRATE = 128
@@ -19,8 +19,8 @@ module CPW
       end
 
       def download
-        logger.info "--> downloading to #{original_audio_file_fullpath}"
-        s3_download_object ENV['S3_OUTBOUND_BUCKET'], @ingest.track.s3_key, original_audio_file_fullpath
+        logger.info "--> downloading from #{File.join(ENV['S3_OUTBOUND_BUCKET'], @ingest.track.s3_uri)} to #{original_audio_file_fullpath}"
+        s3_download_object ENV['S3_OUTBOUND_BUCKET'], @ingest.track.s3_uri, original_audio_file_fullpath
       end
 
       def normalize
@@ -43,7 +43,8 @@ module CPW
 
       def create_mp3
         # Convert to mp3
-        ffmpeg_convert_to_mp3 noise_reduced_wav_audio_file_fullpath, mp3_audio_file_fullpath
+        ffmpeg_convert_to_mp3 noise_reduced_wav_audio_file_fullpath,
+          mp3_audio_file_fullpath, {mp3_bitrate: MP3_BITRATE}
       end
 
       def upload
@@ -51,7 +52,6 @@ module CPW
         s3_upload_object(mp3_audio_file_fullpath, @ingest.s3_origin_bucket_name, @ingest.s3_origin_mp3_key)
 
         # Update s3 references
-        # Ingest::Track.update_attributes(ingest_id: @ingest.id, s3_mp3_url: @ingest.s3_origin_mp3_url)
         @ingest.track.update_attributes(s3_mp3_url: @ingest.s3_origin_mp3_url)
 
         # Remove mp3 file locally

@@ -1,3 +1,4 @@
+require "fileutils"
 require "faraday"
 require "spyke"
 require "multi_json"

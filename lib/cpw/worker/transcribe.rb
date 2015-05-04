@@ -1,7 +1,7 @@
 module CPW
   module Worker
     class Transcribe < Worker::Base
-      extend Worker::Helper
+      include Worker::Helper
 
       self.finished_progress = 99
 
