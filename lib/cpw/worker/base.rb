@@ -30,6 +30,15 @@ module CPW
           class_for(next_stage_name) if next_stage_name
         end
 
+        def previous_stage_name
+          index = CPW::Client::Resources::Ingest::workflow.index(stage_name.to_sym)
+          CPW::Client::Resources::Ingest::workflow[index - 1].try(:to_s) if index
+        end
+
+        def previous_stage_class
+          class_for(previous_stage_name) if previous_stage_name
+        end
+
         def register_cpw_workers
           # Shoryuken.register_worker("HARVEST_DEVELOPMENT_QUEUE", CPW::Worker::Harvest)
           # Shoryuken.register_worker("TRANSCODE_DEVELOPMENT_QUEUE", CPW::Worker::Transcode)

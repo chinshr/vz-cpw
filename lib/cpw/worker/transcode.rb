@@ -22,8 +22,14 @@ module CPW
       end
 
       def download
-        logger.info "--> downloading from #{File.join(ENV['S3_OUTBOUND_BUCKET'], @ingest.track.s3_uri)} to #{original_audio_file_fullpath}"
-        s3_download_object ENV['S3_OUTBOUND_BUCKET'], @ingest.track.s3_uri, original_audio_file_fullpath
+        previous_stage_original_audio_file_fullpath = original_audio_file_fullpath(@ingest.uid, self.class.previous_stage_name)
+
+        if File.exist?(previous_stage_original_audio_file_fullpath)
+          copy_file(previous_stage_original_audio_file_fullpath, original_audio_file_fullpath)
+        else
+          logger.info "--> downloading from #{File.join(ENV['S3_OUTBOUND_BUCKET'], @ingest.track.s3_uri)} to #{original_audio_file_fullpath}"
+          s3_download_object ENV['S3_OUTBOUND_BUCKET'], @ingest.track.s3_uri, original_audio_file_fullpath
+        end
       end
 
       def normalize
@@ -80,8 +86,8 @@ module CPW
         @ingest.track.s3_key if @ingest
       end
 
-      def original_audio_file_fullpath
-        File.join("/tmp", @ingest.uid, @ingest.stage, original_audio_file) if original_audio_file
+      def original_audio_file_fullpath(uid = nil, stage = nil)
+        File.join("/tmp", (uid || @ingest.uid), (stage || @ingest.stage), original_audio_file) if original_audio_file
       end
 
       def single_channel_wav_audio_file
@@ -128,8 +134,8 @@ module CPW
         @ingest.s3_origin_waveform_json_key if @ingest
       end
 
-      def waveform_json_file_fullpath
-        File.join("/tmp", @ingest.uid, @ingest.stage, waveform_json_file) if waveform_json_file
+      def waveform_json_file_fullpath(uid = nil, stage = nil)
+        File.join("/tmp", uid || @ingest.uid, stage || @ingest.stage, waveform_json_file) if waveform_json_file
       end
     end
   end

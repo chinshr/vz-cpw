@@ -222,6 +222,14 @@ module CPW::Worker::Helper
     File.delete(file) if file && File.exist?(file)
   end
 
+  def copy_file(source_file, destination_file)
+    CPW::logger.info "--> copy file #{source_file} to #{destination_file}"
+    if source_file && File.exist?(source_file)
+      FileUtils::mkdir_p "/#{File.join(destination_file.split("/").slice(1...-1))}"
+      FileUtils.cp(source_file, destination_file)
+    end
+  end
+
   # -------------------------------------------------------------
   # waveform
   # -------------------------------------------------------------
