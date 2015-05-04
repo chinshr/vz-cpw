@@ -210,4 +210,17 @@ module CPW::Worker::Helper
     File.delete(file) if file && File.exist?(file)
   end
 
+  # -------------------------------------------------------------
+  # waveform
+  # -------------------------------------------------------------
+
+  def wav2json(input_wav_file, output_json_file)
+    cmd = "wav2json #{input_wav_file} --channels left right -o #{output_json_file}"
+    CPW::logger.info "-> $ #{cmd}"
+    if system(cmd)
+      true
+    else
+      raise "Failed to waveform audio: #{input_wav_file}\n#{cmd}"
+    end
+  end
 end

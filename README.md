@@ -50,6 +50,13 @@ Or, manually startup an IRB session:
     queue = sqs.queues.named("START_DEVELOPMENT_QUEUE")
     queue.send_message({ingest_id: 46, workflow: true}.to_json)
 
+## Tools Installation
+
+### wav2json
+
+Mac: https://github.com/beschulz/wav2json#on-max-os
+
+
 ## Developer Resources
 
 * AWS SQS messaging example -- http://mauricio.github.io/2014/09/01/make-the-most-of-sqs.html
@@ -61,3 +68,6 @@ Or, manually startup an IRB session:
 * Ruby concurrency -- http://www.toptal.com/ruby/ruby-concurrency-and-parallelism-a-practical-primer
 * SQS to the rescue -- http://www.pablocantero.com/blog/2014/11/29/sqs-to-the-rescue/
 * Spyke nested attributes -- https://github.com/balvig/spyke/issues/28
+* Converting audio to waveforms
+  - https://github.com/bbcrd/audiowaveform
+  - https://github.com/beschulz/wav2json

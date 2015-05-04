@@ -15,6 +15,7 @@ module CPW
         normalize
         noise_reduce
         create_mp3
+        create_waveform
         upload
       end
 
@@ -47,12 +48,20 @@ module CPW
           mp3_audio_file_fullpath, {mp3_bitrate: MP3_BITRATE}
       end
 
+      def create_waveform
+        wav2json noise_reduced_wav_audio_file_fullpath, waveform_json_file_fullpath
+      end
+
       def upload
         # Upload mp3
         s3_upload_object(mp3_audio_file_fullpath, @ingest.s3_origin_bucket_name, @ingest.s3_origin_mp3_key)
 
+        # Upload waveform json
+        s3_upload_object(waveform_json_file_fullpath, @ingest.s3_origin_bucket_name, @ingest.s3_origin_waveform_json_key)
+
         # Update s3 references
-        @ingest.track.update_attributes(s3_mp3_url: @ingest.s3_origin_mp3_url)
+        @ingest.track.update_attributes(s3_mp3_url: @ingest.s3_origin_mp3_url,
+          s3_waveform_json_url: @ingest.s3_origin_waveform_json_url)
 
         # Remove mp3 file locally
         delete_file_if_exists mp3_audio_file_fullpath
@@ -98,6 +107,14 @@ module CPW
 
       def mp3_audio_file_fullpath
         File.join("/tmp", @ingest.uid, @ingest.stage, mp3_audio_file) if mp3_audio_file
+      end
+
+      def waveform_json_file
+        @ingest.s3_origin_waveform_json_key if @ingest
+      end
+
+      def waveform_json_file_fullpath
+        File.join("/tmp", @ingest.uid, @ingest.stage, waveform_json_file) if waveform_json_file
       end
     end
   end

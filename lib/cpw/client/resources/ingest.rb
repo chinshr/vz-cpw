@@ -93,6 +93,14 @@ module CPW
           File.join(ENV['S3_URL'], s3_origin_bucket_name, s3_origin_mp3_key)
         end
 
+        def s3_origin_waveform_json_key
+          "#{self.s3_key}.waveform.json"
+        end
+
+        def s3_origin_waveform_json_url
+          File.join(ENV['S3_URL'], s3_origin_bucket_name, s3_origin_waveform_json_key)
+        end
+
         def set_progress!(percent)
           new_progress = percent
           new_progress = new_progress > 100 ? 100 : new_progress
