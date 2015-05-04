@@ -1,13 +1,12 @@
 module CPW
   module Client
     module Resources
-      class Track < CPW::Client::Base
+      class Document::Track < CPW::Client::Base
         uri "documents/(:document_id)/tracks/(:id)"
         include_root_in_json :track
 
-        def s3_key
-          s3_url ? s3_url.split("/").last : nil
-        end
+        has_one :document
+        has_one :ingest
       end
     end
   end

@@ -36,10 +36,9 @@ module CPW
         }
 
         belongs_to :document
-        accepts_nested_attributes_for :document
-        has_many :ingest_chunks, class_name: "CPW::Client::Resources::Ingest::Chunk"
-        accepts_nested_attributes_for :chunks
-        has_many :tracks
+        has_many :chunks, uri: "ingests/:ingest_id/chunks/(:id)", class_name: "CPW::Client::Resources::Ingest::Chunk"
+        has_one :track, uri: "ingests/:ingest_id/tracks/(:id)?is_master=1", class_name: "CPW::Client::Resources::Ingest::Track"
+        has_many :tracks, uri: "ingests/:ingest_id/tracks/(:id)", class_name: "CPW::Client::Resources::Ingest::Track"
 
         scope :started, -> { where(any_of_status: Ingest::STATE_STARTED) }
 

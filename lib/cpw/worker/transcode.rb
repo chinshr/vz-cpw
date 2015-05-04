@@ -11,19 +11,16 @@ module CPW
 
       def perform(sqs_message, body)
         logger.info("+++ #{self.class.name}#perform, body #{body.inspect}")
-
-=begin
         download
         normalize
         noise_reduce
         create_mp3
         upload
-=end
       end
 
       def download
         logger.info "--> downloading to #{original_audio_file_fullpath}"
-        s3_download_object APP_CONFIG['S3_OUTBOUND_BUCKET'], @ingest.track.s3_key, original_audio_file_fullpath
+        s3_download_object ENV['S3_OUTBOUND_BUCKET'], @ingest.track.s3_key, original_audio_file_fullpath
       end
 
       def normalize
@@ -54,6 +51,7 @@ module CPW
         s3_upload_object(mp3_audio_file_fullpath, @ingest.s3_origin_bucket_name, @ingest.s3_origin_mp3_key)
 
         # Update s3 references
+        # Ingest::Track.update_attributes(ingest_id: @ingest.id, s3_mp3_url: @ingest.s3_origin_mp3_url)
         @ingest.track.update_attributes(s3_mp3_url: @ingest.s3_origin_mp3_url)
 
         # Remove mp3 file locally
