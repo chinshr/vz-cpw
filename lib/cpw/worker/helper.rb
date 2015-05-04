@@ -101,6 +101,17 @@ module CPW::Worker::Helper
     end
   end
 
+  def ffmpeg_convert_to_wav_and_keep_dual_audio_channel(input_file, output_file)
+    cmd = "ffmpeg -i #{input_file} -y -f wav -ac 2 #{output_file}   >/dev/null 2>&1"
+
+    CPW::logger.info "-> $ #{cmd}"
+    if system(cmd)
+      true
+    else
+      raise "Failed convert audio to wav and strip audio channel: #{input_file}\n#{cmd}"
+    end
+  end
+
   def ffmpeg_downsample_and_convert_to_pcm(input_file, output_file)
     cmd = "ffmpeg -i #{input_file} -ar 16000 -y -f s16le -acodec pcm_s16le #{output_file}"
 
@@ -207,6 +218,7 @@ module CPW::Worker::Helper
   # -------------------------------------------------------------
 
   def delete_file_if_exists(file)
+    CPW::logger.info "--> delete file #{file} if exists"
     File.delete(file) if file && File.exist?(file)
   end
 

@@ -17,6 +17,7 @@ module CPW
         create_mp3
         create_waveform
         upload
+        cleanup
       end
 
       def download
@@ -25,17 +26,14 @@ module CPW
       end
 
       def normalize
-        # Create single WAV file
-        logger.info "--> before ffmpeg_convert_to_wav_and_strip_audio_channel"
-        ffmpeg_convert_to_wav_and_strip_audio_channel original_audio_file_fullpath, single_channel_audio_file_fullpath
+        # Create single channel WAV file
+        ffmpeg_convert_to_wav_and_strip_audio_channel original_audio_file_fullpath, single_channel_wav_audio_file_fullpath
 
-        logger.info "--> before sox_normalize_audio"
+        # Create dual channel WAV file
+        ffmpeg_convert_to_wav_and_keep_dual_audio_channel original_audio_file_fullpath, dual_channel_wav_audio_file_fullpath
+
         # Noise cancel and normalize it
-        sox_normalize_audio single_channel_audio_file_fullpath, normalized_audio_file_fullpath
-
-        # Delete the single channel file
-        logger.info "--> delete single_channel_audio_file_fullpath"
-        delete_file_if_exists single_channel_audio_file_fullpath
+        sox_normalize_audio single_channel_wav_audio_file_fullpath, normalized_audio_file_fullpath
       end
 
       def noise_reduce
@@ -49,7 +47,7 @@ module CPW
       end
 
       def create_waveform
-        wav2json noise_reduced_wav_audio_file_fullpath, waveform_json_file_fullpath
+        wav2json dual_channel_wav_audio_file_fullpath, waveform_json_file_fullpath
       end
 
       def upload
@@ -62,9 +60,17 @@ module CPW
         # Update s3 references
         @ingest.track.update_attributes(s3_mp3_url: @ingest.s3_origin_mp3_url,
           s3_waveform_json_url: @ingest.s3_origin_waveform_json_url)
+      end
+
+      def cleanup
+        # Delete the single channel file
+        # delete_file_if_exists single_channel_wav_audio_file_fullpath
+
+        # Delete the dual channel file
+        # delete_file_if_exists dual_channel_wav_audio_file_fullpath
 
         # Remove mp3 file locally
-        delete_file_if_exists mp3_audio_file_fullpath
+        # delete_file_if_exists mp3_audio_file_fullpath
       end
 
       protected
@@ -77,12 +83,20 @@ module CPW
         File.join("/tmp", @ingest.uid, @ingest.stage, original_audio_file) if original_audio_file
       end
 
-      def single_channel_audio_file
-        "#{@ingest.track.s3_key}.single-channel" if @ingest
+      def single_channel_wav_audio_file
+        "#{@ingest.track.s3_key}.1ch.wav" if @ingest
       end
 
-      def single_channel_audio_file_fullpath
-        File.join("/tmp", @ingest.uid, @ingest.stage, single_channel_audio_file) if single_channel_audio_file
+      def single_channel_wav_audio_file_fullpath
+        File.join("/tmp", @ingest.uid, @ingest.stage, single_channel_wav_audio_file) if single_channel_wav_audio_file
+      end
+
+      def dual_channel_wav_audio_file
+        "#{@ingest.track.s3_key}.2ch.wav" if @ingest
+      end
+
+      def dual_channel_wav_audio_file_fullpath
+        File.join("/tmp", @ingest.uid, @ingest.stage, dual_channel_wav_audio_file) if dual_channel_wav_audio_file
       end
 
       def normalized_audio_file
