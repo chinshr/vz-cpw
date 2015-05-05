@@ -1,6 +1,74 @@
 module CPW::Worker::Helper
 
   # -------------------------------------------------------------
+  # file name helpers
+  # -------------------------------------------------------------
+
+  def original_audio_file
+    @ingest.track.s3_key if @ingest
+  end
+
+  def original_audio_file_fullpath(uid = nil, stage = nil)
+    File.join("/tmp", (uid || @ingest.uid), (stage || @ingest.stage), original_audio_file) if original_audio_file
+  end
+
+  def single_channel_wav_audio_file
+    "#{@ingest.track.s3_key}.1ch.wav" if @ingest
+  end
+
+  def single_channel_wav_audio_file_fullpath
+    File.join("/tmp", @ingest.uid, @ingest.stage, single_channel_wav_audio_file) if single_channel_wav_audio_file
+  end
+
+  def dual_channel_wav_audio_file
+    "#{@ingest.track.s3_key}.2ch.wav" if @ingest
+  end
+
+  def dual_channel_wav_audio_file_fullpath
+    File.join("/tmp", @ingest.uid, @ingest.stage, dual_channel_wav_audio_file) if dual_channel_wav_audio_file
+  end
+
+  def normalized_audio_file
+    "#{@ingest.track.s3_key}.normalized.wav" if @ingest
+  end
+
+  def normalized_audio_file_fullpath
+    File.join("/tmp", @ingest.uid, @ingest.stage, normalized_audio_file) if normalized_audio_file
+  end
+
+  def noise_reduced_wav_audio_file
+    "#{@ingest.track.s3_key}.noise-reduced.wav" if @ingest
+  end
+
+  def noise_reduced_wav_audio_file_fullpath
+    File.join("/tmp", @ingest.uid, @ingest.stage, noise_reduced_wav_audio_file) if noise_reduced_wav_audio_file
+  end
+
+  def mp3_audio_file
+    @ingest.s3_origin_mp3_key
+  end
+
+  def mp3_audio_file_fullpath
+    File.join("/tmp", @ingest.uid, @ingest.stage, mp3_audio_file) if mp3_audio_file
+  end
+
+  def waveform_json_file
+    @ingest.s3_origin_waveform_json_key if @ingest
+  end
+
+  def waveform_json_file_fullpath
+    File.join("/tmp", @ingest.uid, @ingest.stage, waveform_json_file) if waveform_json_file
+  end
+
+  def pcm_audio_file
+    "#{@ingest.track.s3_key}.pcm" if @ingest
+  end
+
+  def pcm_audio_file_fullpath
+    File.join("/tmp", @ingest.uid, @ingest.stage, pcm_audio_file) if pcm_audio_file
+  end
+
+  # -------------------------------------------------------------
   # S3
   # -------------------------------------------------------------
 
@@ -227,6 +295,17 @@ module CPW::Worker::Helper
     if source_file && File.exist?(source_file)
       FileUtils::mkdir_p "/#{File.join(destination_file.split("/").slice(1...-1))}"
       FileUtils.cp(source_file, destination_file)
+    end
+  end
+
+  def copy_or_download_original_audio_file
+    previous_stage_original_audio_file_fullpath = original_audio_file_fullpath(@ingest.uid, self.class.previous_stage_name)
+
+    if File.exist?(previous_stage_original_audio_file_fullpath)
+      copy_file(previous_stage_original_audio_file_fullpath, original_audio_file_fullpath)
+    else
+      logger.info "--> downloading from #{File.join(ENV['S3_OUTBOUND_BUCKET'], @ingest.track.s3_uri)} to #{original_audio_file_fullpath}"
+      s3_download_object ENV['S3_OUTBOUND_BUCKET'], @ingest.track.s3_uri, original_audio_file_fullpath
     end
   end
 

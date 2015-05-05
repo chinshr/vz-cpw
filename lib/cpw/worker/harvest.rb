@@ -5,7 +5,7 @@ module CPW
       self.finished_progress = 5
 
       shoryuken_options queue: -> { queue_name },
-        auto_delete: true, body_parser: :json
+        auto_delete: false, body_parser: :json
 
       def perform(sqs_message, body)
         logger.info("+++ #{self.class.name}#perform, body #{body.inspect}")
