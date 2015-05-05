@@ -60,7 +60,7 @@ Mac: https://github.com/beschulz/wav2json#on-max-os
 ## Developer Resources
 
 * AWS SQS messaging example -- http://mauricio.github.io/2014/09/01/make-the-most-of-sqs.html
-* Pocketsphinx Ruby gem -- https://github.com/watsonbox/pocketsphinx-ruby?utm_source=rubyweekly&utm_medium=email
+* Pocketsphinx Ruby gem -- https://github.com/watsonbox/pocketsphinx-ruby
 * Handles API nicely in AR model like fashion -- https://github.com/balvig/spyke
 * How to write a gem -- http://howistart.org/posts/ruby/1
 * Concurrent workers -- http://www.toptal.com/ruby/ruby-concurrency-and-parallelism-a-practical-primer
@@ -71,3 +71,8 @@ Mac: https://github.com/beschulz/wav2json#on-max-os
 * Converting audio to waveforms
   - https://github.com/bbcrd/audiowaveform
   - https://github.com/beschulz/wav2json
+* Dual-microphone speech extraction -- http://www.dsp.agh.edu.pl/_media/pl:05337185.pdf
+* Jin Zhou, Google Engineer, working on dual-microphone extraction -- https://www.linkedin.com/in/ferryzhou
+* Isabella aka semi-intelligent voice commands using pocketsphinx-ruby -- https://github.com/chrisvfritz/isabella
+* Confidence measures for speech recognition -- http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.93.6890&rep=rep1&type=pdf
+* Pocketsphinx utterance confidence -- http://sourceforge.net/p/cmusphinx/discussion/help/thread/48335932/

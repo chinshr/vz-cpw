@@ -4,12 +4,16 @@ module CPW::Worker::Helper
   # file name helpers
   # -------------------------------------------------------------
 
+  def basefolder(uid = nil, stage = nil)
+    File.join("/tmp", (uid || @ingest.uid), (stage || @ingest.stage))
+  end
+
   def original_audio_file
     @ingest.track.s3_key if @ingest
   end
 
   def original_audio_file_fullpath(uid = nil, stage = nil)
-    File.join("/tmp", (uid || @ingest.uid), (stage || @ingest.stage), original_audio_file) if original_audio_file
+    File.join(basefolder(uid, stage), original_audio_file) if original_audio_file
   end
 
   def single_channel_wav_audio_file
@@ -17,7 +21,7 @@ module CPW::Worker::Helper
   end
 
   def single_channel_wav_audio_file_fullpath
-    File.join("/tmp", @ingest.uid, @ingest.stage, single_channel_wav_audio_file) if single_channel_wav_audio_file
+    File.join(basefolder, single_channel_wav_audio_file) if single_channel_wav_audio_file
   end
 
   def dual_channel_wav_audio_file
@@ -25,7 +29,7 @@ module CPW::Worker::Helper
   end
 
   def dual_channel_wav_audio_file_fullpath
-    File.join("/tmp", @ingest.uid, @ingest.stage, dual_channel_wav_audio_file) if dual_channel_wav_audio_file
+    File.join(basefolder, dual_channel_wav_audio_file) if dual_channel_wav_audio_file
   end
 
   def normalized_audio_file
@@ -33,7 +37,7 @@ module CPW::Worker::Helper
   end
 
   def normalized_audio_file_fullpath
-    File.join("/tmp", @ingest.uid, @ingest.stage, normalized_audio_file) if normalized_audio_file
+    File.join(basefolder, normalized_audio_file) if normalized_audio_file
   end
 
   def noise_reduced_wav_audio_file
@@ -41,7 +45,7 @@ module CPW::Worker::Helper
   end
 
   def noise_reduced_wav_audio_file_fullpath
-    File.join("/tmp", @ingest.uid, @ingest.stage, noise_reduced_wav_audio_file) if noise_reduced_wav_audio_file
+    File.join(basefolder, noise_reduced_wav_audio_file) if noise_reduced_wav_audio_file
   end
 
   def mp3_audio_file
@@ -49,7 +53,7 @@ module CPW::Worker::Helper
   end
 
   def mp3_audio_file_fullpath
-    File.join("/tmp", @ingest.uid, @ingest.stage, mp3_audio_file) if mp3_audio_file
+    File.join(basefolder, mp3_audio_file) if mp3_audio_file
   end
 
   def waveform_json_file
@@ -57,7 +61,7 @@ module CPW::Worker::Helper
   end
 
   def waveform_json_file_fullpath
-    File.join("/tmp", @ingest.uid, @ingest.stage, waveform_json_file) if waveform_json_file
+    File.join(basefolder, waveform_json_file) if waveform_json_file
   end
 
   def pcm_audio_file
@@ -65,7 +69,7 @@ module CPW::Worker::Helper
   end
 
   def pcm_audio_file_fullpath
-    File.join("/tmp", @ingest.uid, @ingest.stage, pcm_audio_file) if pcm_audio_file
+    File.join(basefolder, pcm_audio_file) if pcm_audio_file
   end
 
   # -------------------------------------------------------------

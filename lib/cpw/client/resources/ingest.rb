@@ -8,12 +8,12 @@ module CPW
         STAGE_START       = 100
         STAGE_HARVEST     = 200
         STAGE_TRANSCODE   = 300
-        STAGE_CHUNK       = 400
+        STAGE_SPLIT       = 400
         STAGE_FINISH      = 500
         STAGE_ARCHIVE     = 600
         STAGES = {
           start: STAGE_START, harvest: STAGE_HARVEST,
-          transcode: STAGE_TRANSCODE, chunk: STAGE_CHUNK,
+          transcode: STAGE_TRANSCODE, split: STAGE_SPLIT,
           finish: STAGE_FINISH, archive: STAGE_ARCHIVE
         }
 
@@ -43,7 +43,7 @@ module CPW
         scope :started, -> { where(any_of_status: Ingest::STATE_STARTED) }
 
         class << self
-          @@workflow  = [:start, :harvest, :transcode, :chunk, :finish]
+          @@workflow  = [:start, :harvest, :transcode, :split, :finish]
           @@semaphore = Mutex.new
 
           def workflow; @@workflow; end
