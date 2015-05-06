@@ -56,6 +56,7 @@ module CPW
         else
           cmd = "ffmpeg -y -i #{splitter.original_file} -acodec flac -vcodec copy -ss #{offset_ts} -t #{duration_ts} -f flac #{self.chunk}   >/dev/null 2>&1"
         end
+        puts "@@@@@@@@ #{cmd}"
         if system(cmd)
           self.status = STATUS_BUILT
           self
@@ -154,14 +155,14 @@ module CPW
       def to_mp3(options = {})
         options = options.merge({mp3_bitrate: 128})
         chunk_outputfile = chunk.gsub(/#{File.extname(chunk)}$/, ".#{options[:mp3_bitrate]}k.mp3")
-
-        if system("ffmpeg -y -i #{chunk} -ar 16000 -vn -ab #{options[:mp3_bitrate]}k -f mp3 #{chunk_outputfile}   >/dev/null 2>&1")
+        cmd = "ffmpeg -y -i #{chunk} -ar 16000 -vn -ab #{options[:mp3_bitrate]}k -f mp3 #{chunk_outputfile}   >/dev/null 2>&1"
+        if system(cmd)
           self.mp3_chunk = chunk_outputfile
           self.flac_rate = 16000
           self.status    = STATUS_ENCODED
         else
           self.status = STATUS_ENCODING_ERROR
-          raise "failed to convert chunk: #{chunk} with WAV #{chunk}"
+          raise "failed to convert chunk: #{chunk} to #{chunk_outputfile}: #{cmd}"
         end
         self
       end

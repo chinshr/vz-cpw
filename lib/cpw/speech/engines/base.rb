@@ -46,7 +46,7 @@ module CPW
           reset! options
 
           chunks.each do |chunk|
-            # build(chunk)
+            #build(chunk)
             convert_chunk(chunk, audio_chunk_options(options))
             yield chunk if block_given?
           end

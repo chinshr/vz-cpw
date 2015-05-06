@@ -76,3 +76,4 @@ Mac: https://github.com/beschulz/wav2json#on-max-os
 * Isabella aka semi-intelligent voice commands using pocketsphinx-ruby -- https://github.com/chrisvfritz/isabella
 * Confidence measures for speech recognition -- http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.93.6890&rep=rep1&type=pdf
 * Pocketsphinx utterance confidence -- http://sourceforge.net/p/cmusphinx/discussion/help/thread/48335932/
+* Pocketsphinx ps_seg_prob for probablity score of the utterance looking promising -- http://www.speech.cs.cmu.edu/sphinx/doc/doxygen/pocketsphinx/pocketsphinx_8h.html#dfd45d93c3fc9de6b7be89d5417f6abb

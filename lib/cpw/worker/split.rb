@@ -21,12 +21,14 @@ module CPW
       protected
 
       def split
-        file = "/Users/juergen/work/vzo/vz-cpw/examples/assets/audio/i-like-pickles.raw"
+        # file = "/Users/juergen/work/vzo/vz-cpw/examples/assets/audio/i-like-pickles.raw"
         # file = pcm_audio_file_fullpath
+        # file = original_audio_file_fullpath
         configuration = ::Pocketsphinx::Configuration.default
         configuration['vad_threshold'] = 4
 
         engine = Speech::Engines::PocketsphinxEngine.new(file, configuration)
+        puts "****** basefolder: #{basefolder}"
         engine.perform(locale: "en-US", basefolder: File.join()).each do |chunk|
           puts "****** mp3_chunk: #{chunk.mp3_chunk}"
           if false && chunk.mp3_chunk

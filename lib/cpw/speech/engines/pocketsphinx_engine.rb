@@ -16,6 +16,7 @@ module CPW
 
           recognizer = CPW::Pocketsphinx::AudioFileSpeechRecognizer.new(configuration)
           recognizer.recognize(audio_splitter.original_file) do |decoder|
+            puts "****** decode start_time: #{decode_start_time(decoder)}, end_time: #{decode_end_time(decoder)}"
             chunks << AudioChunk.new(audio_splitter, decode_start_time(decoder),
               decode_duration(decoder), {id: chunk_id, response: build_response(decoder)})
             chunk_id += 1
@@ -68,11 +69,13 @@ module CPW
         end
 
         def decode_start_time(decoder)
-          decoder.words.first.start_frame * 10 / 1000.to_f
+          puts "****** decoder.start_frame: #{decoder.words.first.start_frame}"
+          (decoder.words.first.start_frame * 10) / 1000.to_f
         end
 
         def decode_end_time(decoder)
-          decoder.words.last.end_frame * 10 / 1000.to_f
+          puts "****** decoder.end_frame: #{decoder.words.last.end_frame}"
+          (decoder.words.last.end_frame * 10) / 1000.to_f
         end
 
         def decode_duration(decoder)
