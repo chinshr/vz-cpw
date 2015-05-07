@@ -17,67 +17,80 @@ module CPW::Worker::Helper
   end
 
   def single_channel_wav_audio_file
-    "#{@ingest.track.s3_key}.1ch.wav" if @ingest
+    "#{@ingest.track.s3_key}.ac1.wav" if @ingest
   end
 
-  def single_channel_wav_audio_file_fullpath
-    File.join(basefolder, single_channel_wav_audio_file) if single_channel_wav_audio_file
+  def single_channel_wav_audio_file_fullpath(uid = nil, stage = nil)
+    File.join(basefolder(uid, stage), single_channel_wav_audio_file) if single_channel_wav_audio_file
   end
 
   def dual_channel_wav_audio_file
-    "#{@ingest.track.s3_key}.2ch.wav" if @ingest
+    "#{@ingest.track.s3_key}.ac2.wav" if @ingest
   end
 
-  def dual_channel_wav_audio_file_fullpath
-    File.join(basefolder, dual_channel_wav_audio_file) if dual_channel_wav_audio_file
+  def dual_channel_wav_audio_file_fullpath(uid = nil, stage = nil)
+    File.join(basefolder(uid, stage), dual_channel_wav_audio_file) if dual_channel_wav_audio_file
   end
 
   def normalized_audio_file
-    "#{@ingest.track.s3_key}.normalized.wav" if @ingest
+    "#{@ingest.track.s3_key}.ac1.normalized.wav" if @ingest
   end
 
-  def normalized_audio_file_fullpath
-    File.join(basefolder, normalized_audio_file) if normalized_audio_file
+  def normalized_audio_file_fullpath(uid = nil, stage = nil)
+    File.join(basefolder(uid, stage), normalized_audio_file) if normalized_audio_file
   end
 
   def noise_reduced_wav_audio_file
-    "#{@ingest.track.s3_key}.noise-reduced.wav" if @ingest
+    "#{@ingest.track.s3_key}.ac1.normalized.noise-reduced.wav" if @ingest
   end
 
-  def noise_reduced_wav_audio_file_fullpath
-    File.join(basefolder, noise_reduced_wav_audio_file) if noise_reduced_wav_audio_file
+  def noise_reduced_wav_audio_file_fullpath(uid = nil, stage = nil)
+    File.join(basefolder(uid, stage), noise_reduced_wav_audio_file) if noise_reduced_wav_audio_file
   end
 
   def mp3_audio_file
     @ingest.s3_origin_mp3_key
   end
 
-  def mp3_audio_file_fullpath
-    File.join(basefolder, mp3_audio_file) if mp3_audio_file
+  def mp3_audio_file_fullpath(uid = nil, stage = nil)
+    File.join(basefolder(uid, stage), mp3_audio_file) if mp3_audio_file
   end
 
   def waveform_json_file
     @ingest.s3_origin_waveform_json_key if @ingest
   end
 
-  def waveform_json_file_fullpath
-    File.join(basefolder, waveform_json_file) if waveform_json_file
+  def waveform_json_file_fullpath(uid = nil, stage = nil)
+    File.join(basefolder(uid, stage), waveform_json_file) if waveform_json_file
   end
 
   def pcm_audio_file
-    "#{@ingest.track.s3_key}.pcm" if @ingest
+    endianness = system_endianness
+    "#{@ingest.track.s3_key}.ac1.ar16k.#{endianness}.pcm" if @ingest
   end
 
-  def pcm_audio_file_fullpath
-    File.join(basefolder, pcm_audio_file) if pcm_audio_file
+  def pcm_audio_file_fullpath(uid = nil, stage = nil)
+    File.join(basefolder(uid, stage), pcm_audio_file) if pcm_audio_file
   end
 
   # -------------------------------------------------------------
   # S3
   # -------------------------------------------------------------
 
-  def outbound_url(key)
-    File.join(ENV['S3_URL'], ENV['S3_OUTBOUND_BUCKET'], key)
+  def s3_origin_bucket_name
+    File.join(ENV['S3_OUTBOUND_BUCKET'], @ingest.uid)
+  end
+
+  def s3_origin_uri(file_name)
+    File.join(self.s3_origin_bucket_name, file_name)
+  end
+
+  def s3_origin_key(file_name)
+    File.join(@ingest.uid, file_name)
+  end
+
+  def s3_origin_url(file_name)
+    File.join(ENV['S3_URL'], self.s3_origin_uri(file_name))
   end
 
   def s3_copy_object(source_bucket_name, destination_bucket_name, source_key, destination_key = nil)
@@ -145,7 +158,7 @@ module CPW::Worker::Helper
   # ffmpeg
   # -------------------------------------------------------------
 
-  def ffmpeg_convert_to_mp3(source_file, mp3_file, options = {})
+  def ffmpeg_audio_to_mp3(source_file, mp3_file, options = {})
     options = options.merge(mp3_bitrate: 128)
     # https://trac.ffmpeg.org/wiki/Encode/MP3
     # ffmpeg -i input.wav -codec:a libmp3lame -qscale:a 2 output.mp3
@@ -162,7 +175,7 @@ module CPW::Worker::Helper
     end
   end
 
-  def ffmpeg_convert_to_wav_and_strip_audio_channel(input_file, output_file)
+  def ffmpeg_audio_to_wav_and_single_channel(input_file, output_file)
     cmd = "ffmpeg -i #{input_file} -y -f wav -ac 1 #{output_file}   >/dev/null 2>&1"
 
     CPW::logger.info "-> $ #{cmd}"
@@ -173,7 +186,7 @@ module CPW::Worker::Helper
     end
   end
 
-  def ffmpeg_convert_to_wav_and_keep_dual_audio_channel(input_file, output_file)
+  def ffmpeg_audio_to_wav(input_file, output_file)
     cmd = "ffmpeg -i #{input_file} -y -f wav -ac 2 #{output_file}   >/dev/null 2>&1"
 
     CPW::logger.info "-> $ #{cmd}"
@@ -184,9 +197,9 @@ module CPW::Worker::Helper
     end
   end
 
-  def ffmpeg_downsample_and_convert_to_pcm(input_file, output_file)
-    cmd = "ffmpeg -i #{input_file} -ar 16000 -y -f s16le -acodec pcm_s16le #{output_file}"
-
+  def ffmpeg_audio_to_pcm(input_file, output_file = nil, options = {})
+    options = options.merge({sample_rate: 16000, endianness: system_endianness})
+    cmd = "ffmpeg -i #{input_file} -y -ar #{options[:sample_rate]} -f s16#{options[:endianness]} -acodec pcm_s16#{options[:endianness]} #{output_file}"
     CPW::logger.info "-> $ #{cmd}"
     if system(cmd)
       true
@@ -195,14 +208,43 @@ module CPW::Worker::Helper
     end
   end
 
-  def ffmpeg_convert_pcm_to_wav(input_file, output_file)
-    cmd = "ffmpeg -f s16le -ar 16k -ac 1 -y -i #{input_file} #{output_file}"
+  def ffmpeg_audio_sampled(input_file, output_file = nil, options = {})
+    options = options.merge({sample_rate: 16000})
+    sampled_file = if !output_file || output_file == input_file
+      input_file.gsub(/#{File.extname(input_file)}$/, ".transient-ar#{options[:sample_rate] / 1000}#{File.extname(input_file)}")
+    else
+      output_file
+    end
+    cmd = "ffmpeg -i #{input_file} -ar #{options[:sample_rate]} -y #{sampled_file}"
+    CPW::logger.info "-> $ #{cmd}"
+    if system(cmd)
+      if sampled_file != output_file
+        File.delete(input_file)
+        FileUtils.mv(sampled_file, input_file)
+      end
+      true
+    else
+      raise "Failed to sample with #{options[:sample_rate]}: #{input_file}\n#{cmd}"
+    end
+  end
 
+  def ffmpeg_pcm_audio_to_wav(input_file, output_file, options = {})
+    options = options.merge({sample_rate: 16000, channels: 1, endianness: system_endianness})
+    cmd = "ffmpeg -f s16#{options[:endianness]} -ar #{options[:sample_rate]} -ac #{options[:channels]} -y -i #{input_file} #{output_file}"
     CPW::logger.info "-> $ #{cmd}"
     if system(cmd)
       true
     else
-      raise "Failed to convert pcm file: #{input_file}\n#{cmd}"
+      raise "Failed to convert pcm audio to wav: #{input_file}\n#{cmd}"
+    end
+  end
+
+  # :le => little endian
+  # :be => big endian
+  def system_endianness
+    @system_endianness ||= begin
+      out = `echo I | tr -d [:space:] | od -to2 | head -n1 | awk '{print $2}' | cut -c6`
+      !!out.match(/1/) ? :le : :be
     end
   end
 
@@ -299,6 +341,28 @@ module CPW::Worker::Helper
     if source_file && File.exist?(source_file)
       FileUtils::mkdir_p "/#{File.join(destination_file.split("/").slice(1...-1))}"
       FileUtils.cp(source_file, destination_file)
+    end
+  end
+
+  def move_file(source_file, destination_file)
+    CPW::logger.info "--> move file #{source_file} to #{destination_file}"
+    if source_file && File.exist?(source_file)
+      FileUtils::mkdir_p "/#{File.join(destination_file.split("/").slice(1...-1))}"
+      FileUtils.mv(source_file, destination_file)
+    end
+  end
+
+  def copy_or_download(file_method_name)
+    file_name = send(file_method_name)
+    file_method_fullpath_name = :"#{file_method_name}_fullpath"
+    previous_stage_file_fullpath = send(file_method_fullpath_name, @ingest.uid, self.class.previous_stage_name)
+    current_stage_file_fullpath  = send(file_method_fullpath_name)
+
+    if File.exist?(previous_stage_file_fullpath)
+      copy_file(previous_stage_file_fullpath, current_stage_file_fullpath)
+    else
+      logger.info "--> downloading from #{s3_origin_url(file_name)} to #{current_stage_file_fullpath}"
+      s3_download_object ENV['S3_OUTBOUND_BUCKET'], s3_origin_key(file_name), current_stage_file_fullpath
     end
   end
 

@@ -7,14 +7,13 @@ module CPW
         attr_accessor :hours, :minutes, :seconds, :total_seconds
 
         def initialize(duration_str)
-          self.hours, self.minutes, self.seconds = duration_str.split(':')
+          self.hours, self.minutes, self.seconds = duration_str.try(:split, ':')
           self.total_seconds = (self.hours.to_i * 3600) + (self.minutes.to_i * 60) + self.seconds.to_f
         end
 
         def to_s
           s,f = seconds.split('.')
           sprintf "%.2d:%.2d:%.2d.%.2d", self.hours.to_i, self.minutes.to_i, s.to_i, (f||0).to_i
-          #"#{hours}:#{minutes}:#{seconds}.#{f}"
         end
 
         def to_f
@@ -46,7 +45,7 @@ module CPW
           raise "No such file or directory: #{file}"
         else
           out = out.scan(/Duration: (.*),/)
-          self.duration = Duration.new(out.first.first)
+          self.duration = Duration.new(out.try(:first).try(:first))
         end
       end
 

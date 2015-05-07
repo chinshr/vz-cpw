@@ -13,7 +13,7 @@ module CPW
         logger.info("+++ #{self.class.name}#perform, body #{body.inspect}")
 
         download
-        convert
+        create_raw
         split
         cleanup
       end
@@ -22,14 +22,17 @@ module CPW
 
       def split
         # file = "/Users/juergen/work/vzo/vz-cpw/examples/assets/audio/i-like-pickles.raw"
-        # file = pcm_audio_file_fullpath
-        # file = original_audio_file_fullpath
+        # file = "/Users/juergen/work/vzo/vz-cpw/examples/assets/audio/i-like-pickles.pcm"
+        # file = "/tmp/d155ef63-0e83-4661-b672-955fd7578a73/transcode/guj58l1j7l.noise-reduced.wav"
+        # file = "/tmp/d155ef63-0e83-4661-b672-955fd7578a73/transcode/guj58l1j7l.noise-reduced.pcm"
+        file = pcm_audio_file_fullpath
         configuration = ::Pocketsphinx::Configuration.default
         configuration['vad_threshold'] = 4
 
         engine = Speech::Engines::PocketsphinxEngine.new(file, configuration)
         puts "****** basefolder: #{basefolder}"
-        engine.perform(locale: "en-US", basefolder: File.join()).each do |chunk|
+        puts "****** file: #{file}"
+        engine.perform(locale: "en-US", basefolder: basefolder).each do |chunk|
           puts "****** mp3_chunk: #{chunk.mp3_chunk}"
           if false && chunk.mp3_chunk
             s3_upload_object(chunk.mp3_chunk, @ingest.s3_origin_bucket_name)
@@ -63,14 +66,16 @@ module CPW
       end
 
       def download
-        copy_or_download_original_audio_file
+        copy_or_download :single_channel_wav_audio_file
       end
 
-      def convert
-        ffmpeg_downsample_and_convert_to_pcm(original_audio_file_fullpath, pcm_audio_file_fullpath)
+      def create_raw
+        # ffmpeg_audio_sampled(single_channel_wav_audio_file_fullpath, pcm_audio_file_fullpath)
+        ffmpeg_audio_to_pcm(single_channel_wav_audio_file_fullpath, pcm_audio_file_fullpath)
       end
 
       def cleanup
+        # delete_file_if_exists pcm_audio_file_fullpath
       end
 
       def create_ingest_chunk(chunk)

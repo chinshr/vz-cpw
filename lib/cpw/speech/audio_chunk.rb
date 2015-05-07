@@ -56,7 +56,6 @@ module CPW
         else
           cmd = "ffmpeg -y -i #{splitter.original_file} -acodec flac -vcodec copy -ss #{offset_ts} -t #{duration_ts} -f flac #{self.chunk}   >/dev/null 2>&1"
         end
-        puts "@@@@@@@@ #{cmd}"
         if system(cmd)
           self.status = STATUS_BUILT
           self

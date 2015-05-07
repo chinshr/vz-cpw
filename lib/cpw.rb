@@ -55,6 +55,14 @@ module CPW
     attr_accessor :user_email
     attr_accessor :user_password
     attr_accessor :logger
+
+    def development?
+      ENV['ENVIRONMENT'] == 'development'
+    end
+
+    def production?
+      ENV['ENVIRONMENT'] == 'production'
+    end
   end
 
   self.root_path     = File.expand_path "../..", __FILE__

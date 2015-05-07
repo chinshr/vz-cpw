@@ -86,7 +86,7 @@ module CPW
         end
 
         def s3_origin_mp3_key
-          "#{self.s3_key}.#{CPW::Worker::Transcode::MP3_BITRATE}.mp3"
+          "#{self.s3_key}.ac2.ab#{CPW::Worker::Transcode::MP3_BITRATE}k.mp3"
         end
 
         def s3_origin_mp3_url
@@ -94,7 +94,7 @@ module CPW
         end
 
         def s3_origin_waveform_json_key
-          "#{self.s3_key}.waveform.json"
+          "#{self.s3_key}.ac2.waveform.json"
         end
 
         def s3_origin_waveform_json_url

@@ -72,8 +72,10 @@ Mac: https://github.com/beschulz/wav2json#on-max-os
   - https://github.com/bbcrd/audiowaveform
   - https://github.com/beschulz/wav2json
 * Dual-microphone speech extraction -- http://www.dsp.agh.edu.pl/_media/pl:05337185.pdf
-* Jin Zhou, Google Engineer, working on dual-microphone extraction -- https://www.linkedin.com/in/ferryzhou
+* Jin Zhou, Google Engineer, working on dual-microphone extraction, noise cancellation -- https://www.linkedin.com/in/ferryzhou
+  - Speech enhancement: http://www.signalpro.net/se_dual2.htm
 * Isabella aka semi-intelligent voice commands using pocketsphinx-ruby -- https://github.com/chrisvfritz/isabella
 * Confidence measures for speech recognition -- http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.93.6890&rep=rep1&type=pdf
 * Pocketsphinx utterance confidence -- http://sourceforge.net/p/cmusphinx/discussion/help/thread/48335932/
 * Pocketsphinx ps_seg_prob for probablity score of the utterance looking promising -- http://www.speech.cs.cmu.edu/sphinx/doc/doxygen/pocketsphinx/pocketsphinx_8h.html#dfd45d93c3fc9de6b7be89d5417f6abb
+* Noise cancellation C library -- https://github.com/nathesh/Noise-cancellation
