@@ -10,7 +10,8 @@ module CPW
       STATUS_ENCODING_ERROR      = -2
       STATUS_TRANSCRIPTION_ERROR = -3
 
-      attr_accessor :id, :splitter, :chunk, :flac_chunk, :wav_chunk, :raw_chunk, :mp3_chunk, :offset, :duration, :flac_rate, :copied,
+      attr_accessor :id, :splitter, :chunk, :flac_chunk, :wav_chunk, :raw_chunk,
+        :mp3_chunk, :waveform_chunk, :offset, :duration, :flac_rate, :copied,
         :captured_json, :best_text, :best_score, :status, :errors, :response
 
       def initialize(splitter, offset, duration, options = {})
@@ -161,7 +162,7 @@ module CPW
       # convert the audio file to mp3 format
       def to_mp3(options = {})
         options = options.reverse_merge({bitrate: 128, sample_rate: 16000})
-        chunk_outputfile = chunk.gsub(/#{File.extname(chunk)}$/, ".ar#{options[:sample_rate] / 1000}k.ab#{options[:bitrate]}k.mp3")
+        chunk_outputfile = chunk.gsub(/#{File.extname(chunk)}$/, ".ab#{options[:bitrate]}k.mp3")
         cmd = "ffmpeg -y -i #{chunk} -ar #{options[:sample_rate]} -vn -ab #{options[:bitrate]}k -f mp3 #{chunk_outputfile}   >/dev/null 2>&1"
         if system(cmd)
           self.mp3_chunk = chunk_outputfile
@@ -180,6 +181,21 @@ module CPW
 
       def mp3_size
         File.size(self.mp3_chunk)
+      end
+
+      # convert the audio file to waveform json
+      def to_waveform(options = {})
+        options = options.reverse_merge({channels: [:left, :right]})
+        chunk_outputfile = chunk.gsub(/#{File.extname(chunk)}$/, ".waveform.json")
+
+        cmd = "wav2json #{chunk} --channels #{Array.wrap(options[:channels]).join(' ')} -o #{chunk_outputfile}   >/dev/null 2>&1"
+        if system(cmd)
+          self.waveform_chunk = chunk_outputfile
+        else
+          self.status = STATUS_ENCODING_ERROR
+          raise "failed to convert chunk: #{chunk} to #{chunk_outputfile}: #{cmd}"
+        end
+        self
       end
 
       # delete the chunk file
@@ -201,7 +217,7 @@ module CPW
         fb = fn.gsub(/#{ex}$/, "")
         of = AudioInspector::Duration.from_seconds(self.offset).to_s(:file)
         fo = AudioInspector::Duration.from_seconds(self.offset + self.duration).to_s(:file)
-        File.join(bf, fb + "-chunk-" + of + "-" + fo + ex)
+        File.join(bf, fb + "-chunk#{id ? "-#{id}" : ""}-" + of + "-" + fo + ex)
       end
 
       def base_file_type

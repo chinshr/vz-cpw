@@ -34,11 +34,15 @@ module CPW
           if chunk.status > 0
             chunk.build({source_file: single_channel_wav_audio_file_fullpath,
               base_file_type: :wav}).to_mp3
+            chunk.build({source_file: single_channel_wav_audio_file_fullpath,
+              base_file_type: :wav}).to_waveform({channels: []})
+
             puts "****** mp3_chunk: #{chunk.mp3_chunk}"
+            puts "****** wafeform_chunk: #{chunk.waveform_chunk}"
             puts "****** mp3 s3_key: #{File.basename(chunk.mp3_chunk)}"
 
             s3_upload_object(chunk.mp3_chunk, s3_origin_bucket_name, File.basename(chunk.mp3_chunk))
-
+            s3_upload_object(chunk.waveform_chunk, s3_origin_bucket_name, File.basename(chunk.waveform_chunk))
           end
 
           puts "****** chunk.id: #{chunk.id}"
@@ -75,8 +79,11 @@ module CPW
           any_of_type: "Chunk::Pocketsphinx", any_of_position: chunk.id,
           any_of_ingest_iteration: @ingest.iteration).first
 
-        track_attributes = {s3_url: chunk.mp3_chunk, s3_mp3_url: chunk.mp3_chunk}
+        track_attributes = {s3_url: chunk.mp3_chunk, s3_mp3_url: chunk.mp3_chunk,
+          s3_waveform_json_url: chunk.waveform_chunk}
+
         track_attributes.merge({id: ingest_chunk.track.id}) if ingest_chunk
+
         chunk_attributes = {
           ingest_id: @ingest.id,
           type: "Chunk::Pocketsphinx",
@@ -93,7 +100,7 @@ module CPW
           track_attributes: track_attributes
         }
 
-        if ingest_chunk
+        if ingest_chunk.try(:id)
           ingest_chunk.update_attributes(chunk_attributes)
         else
           Ingest::Chunk.create(chunk_attributes)
