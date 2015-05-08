@@ -16,8 +16,12 @@ module CPW
         self.logger        = CPW::logger
       end
 
-      def base_audio_file_type
-        engine ? engine.base_audio_file_type : :flac
+      def base_file_type
+        engine ? engine.base_file_type : :flac
+      end
+
+      def source_file_type
+        engine ? engine.source_file_type : nil
       end
 
       def split

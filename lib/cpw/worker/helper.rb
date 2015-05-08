@@ -159,7 +159,7 @@ module CPW::Worker::Helper
   # -------------------------------------------------------------
 
   def ffmpeg_audio_to_mp3(source_file, mp3_file, options = {})
-    options = options.merge(mp3_bitrate: 128)
+    options = options.reverse_merge(mp3_bitrate: 128)
     # https://trac.ffmpeg.org/wiki/Encode/MP3
     # ffmpeg -i input.wav -codec:a libmp3lame -qscale:a 2 output.mp3
     # ffmpeg -i input.wav -codec:a libmp3lame -b:a 128k output.mp3
@@ -198,7 +198,7 @@ module CPW::Worker::Helper
   end
 
   def ffmpeg_audio_to_pcm(input_file, output_file = nil, options = {})
-    options = options.merge({sample_rate: 16000, endianness: system_endianness})
+    options = options.reverse_merge({sample_rate: 16000, endianness: system_endianness})
     cmd = "ffmpeg -i #{input_file} -y -ar #{options[:sample_rate]} -f s16#{options[:endianness]} -acodec pcm_s16#{options[:endianness]} #{output_file}"
     CPW::logger.info "-> $ #{cmd}"
     if system(cmd)
@@ -209,7 +209,7 @@ module CPW::Worker::Helper
   end
 
   def ffmpeg_audio_sampled(input_file, output_file = nil, options = {})
-    options = options.merge({sample_rate: 16000})
+    options = options.reverse_merge({sample_rate: 16000})
     sampled_file = if !output_file || output_file == input_file
       input_file.gsub(/#{File.extname(input_file)}$/, ".transient-ar#{options[:sample_rate] / 1000}#{File.extname(input_file)}")
     else
@@ -229,7 +229,7 @@ module CPW::Worker::Helper
   end
 
   def ffmpeg_pcm_audio_to_wav(input_file, output_file, options = {})
-    options = options.merge({sample_rate: 16000, channels: 1, endianness: system_endianness})
+    options = options.reverse_merge({sample_rate: 16000, channels: 1, endianness: system_endianness})
     cmd = "ffmpeg -f s16#{options[:endianness]} -ar #{options[:sample_rate]} -ac #{options[:channels]} -y -i #{input_file} #{output_file}"
     CPW::logger.info "-> $ #{cmd}"
     if system(cmd)

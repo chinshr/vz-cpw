@@ -11,9 +11,16 @@ module CPW
           self.total_seconds = (self.hours.to_i * 3600) + (self.minutes.to_i * 60) + self.seconds.to_f
         end
 
-        def to_s
-          s,f = seconds.split('.')
-          sprintf "%.2d:%.2d:%.2d.%.2d", self.hours.to_i, self.minutes.to_i, s.to_i, (f||0).to_i
+        # 00:00:01.37
+        def to_s(format = nil)
+          format = (format == :file) ? "%.2d-%.2d-%.2d_%.2d" : (format || "%.2d:%.2d:%.2d.%.2d")
+          s, f   = seconds.split('.')
+          sprintf format, self.hours.to_i, self.minutes.to_i, s.to_i, (f||0).to_i
+        end
+
+        # 00+00+01_37
+        def to_file_s
+          to_s.gsub(/\./, "_").gsub(/\:/, "+")
         end
 
         def to_f

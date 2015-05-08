@@ -6,8 +6,21 @@ module CPW
 
         def initialize(file, configuration, options = {})
           super file, options
-          self.base_audio_file_type = :raw
-          self.configuration = configuration
+          self.base_file_type   = :raw
+          self.source_file_type = options[:source_file_type]
+          self.configuration    = configuration
+        end
+
+        def perform(options = {})
+          reset! options
+
+          chunks.each do |chunk|
+            convert_chunk(chunk, audio_chunk_options(options))
+            yield chunk if block_given?
+          end
+
+          self.score /= self.segments
+          chunks
         end
 
         def split(audio_splitter)
@@ -26,14 +39,10 @@ module CPW
 
         protected
 
-        def build(chunk)
-          chunk.build.to_mp3
-        end
-
         def convert_chunk(chunk, options = {})
           result = {'status' => chunk.status}
-          if response
-            parse(chunk, response, result)
+          if chunk.response  # from splitter
+            parse(chunk, chunk.response, result)
 
             logger.info "#{segments} processed: #{result.inspect}" if self.verbose
           else
@@ -50,14 +59,16 @@ module CPW
           result['external_id']     = data['id']
           result['external_status'] = data['status']
 
-          if data.key?('hypotheses')
-            result['hypotheses']    = data['hypotheses']
+          if data.key?('hypothesis')
+            result['hypothesis']    = data['hypothesis']
             chunk.status            = result['status'] = AudioChunk::STATUS_TRANSCRIBED
-            chunk.best_text         = result['hypotheses']
-            # chunk.best_score        = data['confidence']
+            chunk.best_text         = result['hypothesis']
+            chunk.best_score        = data['confidence'] || -1
             self.score              += data['confidence'] || 0
             self.segments           += 1
             logger.info "hypothesis: #{result['hypotheses']}" if self.verbose
+          else
+            chunk.status = AudioChunk::STATUS_TRANSCRIPTION_ERROR
           end
           result
         end

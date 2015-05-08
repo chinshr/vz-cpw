@@ -21,25 +21,34 @@ module CPW
       protected
 
       def split
-        # file = "/Users/juergen/work/vzo/vz-cpw/examples/assets/audio/i-like-pickles.raw"
-        # file = "/Users/juergen/work/vzo/vz-cpw/examples/assets/audio/i-like-pickles.pcm"
-        # file = "/tmp/d155ef63-0e83-4661-b672-955fd7578a73/transcode/guj58l1j7l.noise-reduced.wav"
-        # file = "/tmp/d155ef63-0e83-4661-b672-955fd7578a73/transcode/guj58l1j7l.noise-reduced.pcm"
-        file = pcm_audio_file_fullpath
         configuration = ::Pocketsphinx::Configuration.default
         configuration['vad_threshold'] = 4
 
-        engine = Speech::Engines::PocketsphinxEngine.new(file, configuration)
+        engine = Speech::Engines::PocketsphinxEngine.new(pcm_audio_file_fullpath,
+          configuration, {source_file_type: :raw})
+
         puts "****** basefolder: #{basefolder}"
-        puts "****** file: #{file}"
+        puts "****** file: #{single_channel_wav_audio_file_fullpath}"
         engine.perform(locale: "en-US", basefolder: basefolder).each do |chunk|
-          puts "****** mp3_chunk: #{chunk.mp3_chunk}"
-          if false && chunk.mp3_chunk
-            s3_upload_object(chunk.mp3_chunk, @ingest.s3_origin_bucket_name)
+          if chunk.status > 0
+            chunk.build({source_file: single_channel_wav_audio_file_fullpath,
+              base_file_type: :wav}).to_mp3
+            puts "****** mp3_chunk: #{chunk.mp3_chunk}"
+            puts "****** mp3 s3_key: #{File.basename(chunk.mp3_chunk)}"
+
+            s3_upload_object(chunk.mp3_chunk, s3_origin_bucket_name, File.basename(chunk.mp3_chunk))
+
           end
           # create_ingest_chunk(chunk)
+          puts "****** chunk.id: #{chunk.id}"
+          puts "****** chunk.status: #{chunk.status}"
           puts "****** chunk.best_text: #{chunk.best_text}"
+          puts "****** chunk.best_score: #{chunk.best_score}"
+          puts "****** chunk.offset: #{chunk.offset}"
+          puts "****** chunk.duration: #{chunk.duration}"
           puts "****** chunk.response: #{chunk.response}"
+
+          chunk.clean
         end
 
         if false
@@ -75,7 +84,10 @@ module CPW
       end
 
       def cleanup
-        # delete_file_if_exists pcm_audio_file_fullpath
+        if CPW::production?
+          delete_file_if_exists pcm_audio_file_fullpath
+          delete_file_if_exists single_channel_wav_audio_file_fullpath
+        end
       end
 
       def create_ingest_chunk(chunk)

@@ -16,7 +16,6 @@ module CPW
       def initialize(splitter, offset, duration, options = {})
         self.offset        = offset
         self.splitter      = splitter
-        self.chunk         = chunk_file_name(splitter)
         self.duration      = duration
         self.id            = options[:id]
         self.response      = options[:response]
@@ -26,6 +25,7 @@ module CPW
         self.best_score    = nil
         self.status        = STATUS_UNPROCESSED
         self.errors        = []
+        self.chunk         = chunk_file_name(splitter)
       end
 
       def engine
@@ -40,28 +40,36 @@ module CPW
         chunk
       end
 
-      # given the original file from the splitter and the chunked file name with duration and offset run the ffmpeg command
-      def build
+      # given the original file from the splitter and the chunked file name
+      # with duration and offset run the ffmpeg command
+      def build(options = {})
+        options = options.reverse_merge({source_file_type: source_file_type,
+          base_file_type: base_file_type, source_file: splitter.original_file})
         return self if self.copied
-        # ffmpeg -y -i sample.audio.wav -acodec copy -vcodec copy -ss 00:00:00.00 -t 00:00:30.00 sample.audio.out.wav
+
         offset_ts   = AudioInspector::Duration.from_seconds(self.offset).to_s
         duration_ts = AudioInspector::Duration.from_seconds(self.duration).to_s
-        # NOTE: kind of a hack, but if the original source is less than or equal to 1 second, we should skip ffmpeg
-        # logger.info "building chunk: #{duration_ts.inspect} and offset: #{offset_ts}"
-        # logger.info "offset: #{ offset_ts.to_s }, duration: #{duration_ts.to_s}"
-        # cmd = "ffmpeg -y -i #{splitter.original_file} -acodec copy -vcodec copy -ss #{offset_ts} -t #{duration_ts} #{self.chunk}   >/dev/null 2>&1"
-        # cmd = "ffmpeg -y -i #{splitter.original_file} -acodec copy -vcodec copy -ss #{offset_ts} -t #{duration_ts} -f aiff #{self.chunk}   >/dev/null 2>&1"
-        if base_audio_file_type == :raw
-          cmd = "ffmpeg -y -i #{splitter.original_file} -f s16le -acodec pcm_s16le -vcodec copy -ss #{offset_ts} -t #{duration_ts} -ar 16000 -ac 1 #{self.chunk}   >/dev/null 2>&1"
-        else
-          cmd = "ffmpeg -y -i #{splitter.original_file} -acodec flac -vcodec copy -ss #{offset_ts} -t #{duration_ts} -f flac #{self.chunk}   >/dev/null 2>&1"
+        cmd         = nil
+
+        if options[:base_file_type] == :raw &&
+          options[:base_file_type] != options[:source_file_type]
+          cmd = "ffmpeg -y -i #{options[:source_file]} -f s16le -acodec pcm_s16le -vcodec copy -ss #{offset_ts} -t #{duration_ts} -ar 16000 -ac 1 #{self.chunk}   >/dev/null 2>&1"
+        elsif options[:base_file_type] == :flac &&
+          options[:base_file_type] != options[:source_file_type]
+          cmd = "ffmpeg -y -i #{options[:source_file]} -acodec flac -vcodec copy -ss #{offset_ts} -t #{duration_ts} -f flac #{self.chunk}   >/dev/null 2>&1"
+        elsif options[:base_file_type] == :wav &&
+          options[:base_file_type] != options[:source_file_type]
+          cmd = "ffmpeg -y -i #{options[:source_file]} -f wav -vcodec copy -ss #{offset_ts} -t #{duration_ts} #{self.chunk}   >/dev/null 2>&1"
         end
-        if system(cmd)
-          self.status = STATUS_BUILT
-          self
-        else
-          self.status = STATUS_BUILD_ERROR
-          raise "Failed to generate chunk at offset: #{offset_ts}, duration: #{duration_ts}\n#{cmd}"
+        # only build base audio file if needed
+        if cmd
+          if system(cmd)
+            self.status = STATUS_BUILT
+            self
+          else
+            self.status = STATUS_BUILD_ERROR
+            raise "Failed to generate chunk at offset: #{offset_ts}, duration: #{duration_ts}\n#{cmd}"
+          end
         end
       end
 
@@ -152,9 +160,9 @@ module CPW
 
       # convert the audio file to mp3 format
       def to_mp3(options = {})
-        options = options.merge({mp3_bitrate: 128})
-        chunk_outputfile = chunk.gsub(/#{File.extname(chunk)}$/, ".#{options[:mp3_bitrate]}k.mp3")
-        cmd = "ffmpeg -y -i #{chunk} -ar 16000 -vn -ab #{options[:mp3_bitrate]}k -f mp3 #{chunk_outputfile}   >/dev/null 2>&1"
+        options = options.reverse_merge({bitrate: 128, sample_rate: 16000})
+        chunk_outputfile = chunk.gsub(/#{File.extname(chunk)}$/, ".ar#{options[:sample_rate] / 1000}k.ab#{options[:bitrate]}k.mp3")
+        cmd = "ffmpeg -y -i #{chunk} -ar #{options[:sample_rate]} -vn -ab #{options[:bitrate]}k -f mp3 #{chunk_outputfile}   >/dev/null 2>&1"
         if system(cmd)
           self.mp3_chunk = chunk_outputfile
           self.flac_rate = 16000
@@ -185,18 +193,23 @@ module CPW
 
       private
 
-      # "abc123-chunk-1_51-a191.128k.mp3"
+      # "abc123-chunk-00+00+01_37-00+00+03_47.128k.mp3"
       def chunk_file_name(splitter)
         bf = splitter.basefolder || "/tmp"
         fn = File.basename(splitter.original_file)
         ex = File.extname(fn)
         fb = fn.gsub(/#{ex}$/, "")
-        of = offset.to_s.gsub(/\./, "_")
-        File.join(bf, fb + "-chunk-" + of + "-" + SecureRandom.hex(2) + ex)
+        of = AudioInspector::Duration.from_seconds(self.offset).to_s(:file)
+        fo = AudioInspector::Duration.from_seconds(self.offset + self.duration).to_s(:file)
+        File.join(bf, fb + "-chunk-" + of + "-" + fo + ex)
       end
 
-      def base_audio_file_type
-        splitter.base_audio_file_type
+      def base_file_type
+        splitter.base_file_type
+      end
+
+      def source_file_type
+        splitter.source_file_type
       end
 
     end # AudioChunk
