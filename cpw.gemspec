@@ -25,7 +25,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "pry-byebug"
   spec.add_development_dependency "yard"
 
-  spec.add_dependency "pocketsphinx-ruby"
+  spec.add_dependency "pocketsphinx-ruby", ["~> 0.3.0", '< 1']
   spec.add_dependency "multi_json"
   spec.add_dependency "spyke"
   spec.add_dependency "faraday"
