@@ -30,6 +30,7 @@ module CPW
         puts "****** basefolder: #{basefolder}"
         puts "****** file: #{single_channel_wav_audio_file_fullpath}"
         engine.perform(locale: "en-US", basefolder: basefolder).each do |chunk|
+
           if chunk.status > 0
             chunk.build({source_file: single_channel_wav_audio_file_fullpath,
               base_file_type: :wav}).to_mp3
@@ -39,7 +40,7 @@ module CPW
             s3_upload_object(chunk.mp3_chunk, s3_origin_bucket_name, File.basename(chunk.mp3_chunk))
 
           end
-          # create_ingest_chunk(chunk)
+
           puts "****** chunk.id: #{chunk.id}"
           puts "****** chunk.status: #{chunk.status}"
           puts "****** chunk.best_text: #{chunk.best_text}"
@@ -48,29 +49,8 @@ module CPW
           puts "****** chunk.duration: #{chunk.duration}"
           puts "****** chunk.response: #{chunk.response}"
 
-          chunk.clean
-        end
-
-        if false
-          recognizer = CPW::Pocketsphinx::AudioFileSpeechRecognizer.new(configuration)
-          recognizer.recognize(file) do |decoder|
-
-
-            if decoder.respond_to?(:hypothesis) && decoder.hypothesis
-              logger.info "++++++ #{decoder.hypothesis}"
-              logger.info "++++++ #{decoder.hypothesis.path_score}"
-              logger.info "++++++ #{decoder.words.to_json}"
-
-            end
-          end
-        elsif false
-          decoder = ::Pocketsphinx::Decoder.new(configuration)
-          decoder.decode file
-
-          logger.info "++++++ #{decoder.class}"
-          logger.info "++++++ #{decoder.hypothesis}"
-          logger.info "++++++ #{decoder.hypothesis.path_score}"
-          logger.info "++++++ #{decoder.words.to_json}"
+          create_or_update_ingest_with chunk
+          chunk.clean if CPW::production?
         end
       end
 
@@ -90,9 +70,14 @@ module CPW
         end
       end
 
-      def create_ingest_chunk(chunk)
-        s3_url = File.join(@ingest.s3_origin_bucket_name, chunk.mp3_chunk)
-        Ingest::Chunk.create({
+      def create_or_update_ingest_with(chunk)
+        ingest_chunk = Ingest::Chunk.where(ingest_id: @ingest.id,
+          any_of_type: "Chunk::Pocketsphinx", any_of_position: chunk.id,
+          any_of_ingest_iteration: @ingest.iteration).first
+
+        track_attributes = {s3_url: chunk.mp3_chunk, s3_mp3_url: chunk.mp3_chunk}
+        track_attributes.merge({id: ingest_chunk.track.id}) if ingest_chunk
+        chunk_attributes = {
           ingest_id: @ingest.id,
           type: "Chunk::Pocketsphinx",
           position: chunk.id,
@@ -101,12 +86,18 @@ module CPW
           start_time: chunk.offset,
           end_time: chunk.offset + chunk.duration,
           text: chunk.best_text,  # response[:hypothesis],
-          score: chunk.score,  #response[:confidence],
+          score: chunk.best_score,  #response[:confidence],
           processing_errors: chunk.response['errors'],
           processing_status: chunk.status,
           response: chunk.response,
-          track_attributes: {s3_url: s3_url, s3_mp3_url: s3_url}
-        })
+          track_attributes: track_attributes
+        }
+
+        if ingest_chunk
+          ingest_chunk.update_attributes(chunk_attributes)
+        else
+          Ingest::Chunk.create(chunk_attributes)
+        end
       end
 
       class AudioChunk

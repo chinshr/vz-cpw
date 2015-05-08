@@ -34,7 +34,7 @@ module CPW
 
       def self.copy(splitter, id = nil)
         chunk        = AudioChunk.new(splitter, 0, splitter.duration.to_f, {id: id})
-        chunk.status = STATUS_BUILT
+        chunk.status = STATUS_BUILT if chunk.status < STATUS_BUILT
         chunk.copied = true
         system("cp #{splitter.original_file} #{chunk.chunk}")
         chunk
@@ -64,7 +64,7 @@ module CPW
         # only build base audio file if needed
         if cmd
           if system(cmd)
-            self.status = STATUS_BUILT
+            self.status = STATUS_BUILT if self.status < STATUS_BUILT
             self
           else
             self.status = STATUS_BUILD_ERROR
@@ -84,10 +84,10 @@ module CPW
           if system("ffmpeg -i #{self.flac_chunk} -ar 16000 -y #{down_sampled} >/dev/null 2>&1")
             system("mv #{down_sampled} #{self.flac_chunk} 2>&1 >/dev/null")
             self.flac_rate = 16000
-            self.status    = STATUS_ENCODED
+            self.status    = STATUS_ENCODED if self.status < STATUS_ENCODED
             self
           else
-            self.status    = STATUS_ENCODING_ERROR
+            self.status = STATUS_ENCODING_ERROR
             raise "failed to convert to lower audio rate"
           end
         else
@@ -116,7 +116,7 @@ module CPW
           if system("ffmpeg -i #{self.wav_chunk} -ar 16000 -y #{down_sampled} >/dev/null 2>&1")
             system("mv #{down_sampled} #{self.wav_chunk} 2>&1 >/dev/null")
             self.flac_rate = 16000
-            self.status    = STATUS_ENCODED
+            self.status    = STATUS_ENCODED if self.status < STATUS_ENCODED
           else
             self.status    = STATUS_ENCODING_ERROR
             raise "failed to convert WAV to lower audio rate"
@@ -142,7 +142,7 @@ module CPW
         if system("ffmpeg -i #{chunk} -y -f s16le -acodec pcm_s16le -ar 16000 -ac 1 #{chunk_outputfile}   >/dev/null 2>&1")
           self.raw_chunk = chunk_outputfile
           self.flac_rate = 16000
-          self.status    = STATUS_ENCODED
+          self.status    = STATUS_ENCODED if self.status < STATUS_ENCODED
         else
           self.status = STATUS_ENCODING_ERROR
           raise "failed to convert chunk: #{chunk} with RAW #{chunk}"
@@ -166,7 +166,7 @@ module CPW
         if system(cmd)
           self.mp3_chunk = chunk_outputfile
           self.flac_rate = 16000
-          self.status    = STATUS_ENCODED
+          self.status    = STATUS_ENCODED if self.status < STATUS_ENCODED
         else
           self.status = STATUS_ENCODING_ERROR
           raise "failed to convert chunk: #{chunk} to #{chunk_outputfile}: #{cmd}"
