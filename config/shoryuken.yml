@@ -14,6 +14,6 @@ queues:
   - [HARVEST_<%= ENV['ENVIRONMENT'].upcase %>_QUEUE, 4]
   - [TRANSCODE_<%= ENV['ENVIRONMENT'].upcase %>_QUEUE, 9]
   - [SPLIT_<%= ENV['ENVIRONMENT'].upcase %>_QUEUE, 7]
-  - [CROWD_<%= ENV['ENVIRONMENT'].upcase %>_QUEUE, 2]
+  - [CROWDOUT_<%= ENV['ENVIRONMENT'].upcase %>_QUEUE, 2]
   - [FINISH_<%= ENV['ENVIRONMENT'].upcase %>_QUEUE, 1]
   - [ARCHIVE_<%= ENV['ENVIRONMENT'].upcase %>_QUEUE, 1]

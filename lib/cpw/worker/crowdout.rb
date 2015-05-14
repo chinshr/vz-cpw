@@ -1,6 +1,6 @@
 module CPW
   module Worker
-    class Crowd < Worker::Base
+    class Crowdout < Worker::Base
       extend Worker::Helper
 
       SOURCE_CHUNK_SCORE_THRESHOLD    = 0.8
