@@ -22,7 +22,6 @@ module CPW
       end
 
       def download
-        # copy_or_download_original_audio_file
         copy_or_download :original_audio_file
       end
 
@@ -52,13 +51,13 @@ module CPW
 
       def upload
         # Upload mp3
-        s3_upload_object(mp3_audio_file_fullpath, @ingest.s3_origin_bucket_name, @ingest.s3_origin_mp3_key)
+        s3_upload_object(mp3_audio_file_fullpath, s3_origin_bucket_name, @ingest.s3_origin_mp3_key)
 
         # Upload waveform json
-        s3_upload_object(waveform_json_file_fullpath, @ingest.s3_origin_bucket_name, @ingest.s3_origin_waveform_json_key)
+        s3_upload_object(waveform_json_file_fullpath, s3_origin_bucket_name, @ingest.s3_origin_waveform_json_key)
 
         # Upload single channel WAV file
-        s3_upload_object(single_channel_wav_audio_file_fullpath, s3_origin_bucket_name, single_channel_wav_audio_file)
+        s3_upload_object(single_channel_wav_audio_file_fullpath, s3_origin_bucket_name, single_channel_wav_audio_key)
 
         # Upload normalized + noise reduced audio
         # s3_upload_object(noise_reduced_wav_audio_file_fullpath, @ingest.s3_origin_bucket_name, noise_reduced_wav_audio_file)

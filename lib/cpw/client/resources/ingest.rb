@@ -74,31 +74,51 @@ module CPW
         end
 
         def s3_origin_bucket_name
-          File.join(ENV['S3_OUTBOUND_BUCKET'], self.uid)
-        end
-
-        def s3_origin_uri
-          File.join(self.s3_origin_bucket_name, self.s3_key)
+          ENV['S3_OUTBOUND_BUCKET']
         end
 
         def s3_origin_url
-          File.join(ENV['S3_URL'], self.s3_origin_uri)
+          File.join(ENV['S3_URL'], self.s3_key)
         end
 
         def s3_origin_mp3_key
-          "#{self.s3_key}.ac2.ab#{CPW::Worker::Transcode::MP3_BITRATE}k.mp3"
+          if self.track && self.track.s3_mp3_key
+            # already uploaded as url
+            self.track.s3_mp3_key
+          elsif self.track && self.track.s3_key
+            # when created
+            "#{self.track.s3_key}.ac2.ab#{CPW::Worker::Transcode::MP3_BITRATE}k.mp3"
+          else
+            raise "Could not derive 's3_origin_mp3_key'"
+          end
         end
 
         def s3_origin_mp3_url
-          File.join(ENV['S3_URL'], s3_origin_bucket_name, s3_origin_mp3_key)
+          if self.track && self.track.s3_mp3_url
+            self.track.s3_mp3_url
+          else
+            File.join(ENV['S3_URL'], s3_origin_bucket_name, s3_origin_mp3_key)
+          end
         end
 
         def s3_origin_waveform_json_key
-          "#{self.s3_key}.ac2.waveform.json"
+          if self.track && self.track.s3_waveform_json_key
+            # already uploaded as url
+            self.track.s3_waveform_json_key
+          elsif self.track && self.track.s3_key
+            # when being created
+            "#{self.track.s3_key}.ac2.waveform.json"
+          else
+            raise "Could not derive 's3_origin_waveform_json_key'"
+          end
         end
 
         def s3_origin_waveform_json_url
-          File.join(ENV['S3_URL'], s3_origin_bucket_name, s3_origin_waveform_json_key)
+          if self.track && self.track.s3_waveform_json_url
+            self.track.s3_waveform_json_url
+          else
+            File.join(ENV['S3_URL'], s3_origin_bucket_name, s3_origin_waveform_json_key)
+          end
         end
 
         def set_progress!(percent)

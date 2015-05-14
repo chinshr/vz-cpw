@@ -8,8 +8,13 @@ module CPW::Worker::Helper
     File.join("/tmp", (uid || @ingest.uid), (stage || @ingest.stage))
   end
 
+  # key is "<folder>/<file>"
   def original_audio_file
-    @ingest.track.s3_key if @ingest
+    @ingest.track.s3_key.split("/").last if @ingest && @ingest.track
+  end
+
+  def original_audio_key
+    @ingest.track.s3_key if @ingest && @ingest.track
   end
 
   def original_audio_file_fullpath(uid = nil, stage = nil)
@@ -17,7 +22,11 @@ module CPW::Worker::Helper
   end
 
   def single_channel_wav_audio_file
-    "#{@ingest.track.s3_key}.ac1.wav" if @ingest
+    "#{original_audio_file}.ac1.wav" if @ingest
+  end
+
+  def single_channel_wav_audio_key
+    "#{original_audio_key}.ac1.wav" if @ingest
   end
 
   def single_channel_wav_audio_file_fullpath(uid = nil, stage = nil)
@@ -25,7 +34,7 @@ module CPW::Worker::Helper
   end
 
   def dual_channel_wav_audio_file
-    "#{@ingest.track.s3_key}.ac2.wav" if @ingest
+    "#{original_audio_file}.ac2.wav" if @ingest
   end
 
   def dual_channel_wav_audio_file_fullpath(uid = nil, stage = nil)
@@ -33,7 +42,7 @@ module CPW::Worker::Helper
   end
 
   def normalized_audio_file
-    "#{@ingest.track.s3_key}.ac1.normalized.wav" if @ingest
+    "#{original_audio_file}.ac1.normalized.wav" if @ingest
   end
 
   def normalized_audio_file_fullpath(uid = nil, stage = nil)
@@ -41,7 +50,7 @@ module CPW::Worker::Helper
   end
 
   def noise_reduced_wav_audio_file
-    "#{@ingest.track.s3_key}.ac1.normalized.noise-reduced.wav" if @ingest
+    "#{original_audio_file}.ac1.normalized.noise-reduced.wav" if @ingest
   end
 
   def noise_reduced_wav_audio_file_fullpath(uid = nil, stage = nil)
@@ -49,7 +58,7 @@ module CPW::Worker::Helper
   end
 
   def mp3_audio_file
-    @ingest.s3_origin_mp3_key
+    @ingest.s3_origin_mp3_key.split("/").last if @ingest
   end
 
   def mp3_audio_file_fullpath(uid = nil, stage = nil)
@@ -57,7 +66,7 @@ module CPW::Worker::Helper
   end
 
   def waveform_json_file
-    @ingest.s3_origin_waveform_json_key if @ingest
+    @ingest.s3_origin_waveform_json_key.split("/").last if @ingest
   end
 
   def waveform_json_file_fullpath(uid = nil, stage = nil)
@@ -66,7 +75,7 @@ module CPW::Worker::Helper
 
   def pcm_audio_file
     endianness = system_endianness
-    "#{@ingest.track.s3_key}.ac1.ar16k.#{endianness}.pcm" if @ingest
+    "#{original_audio_file}.ac1.ar16k.#{endianness}.pcm" if @ingest
   end
 
   def pcm_audio_file_fullpath(uid = nil, stage = nil)
@@ -78,19 +87,25 @@ module CPW::Worker::Helper
   # -------------------------------------------------------------
 
   def s3_origin_bucket_name
-    File.join(ENV['S3_OUTBOUND_BUCKET'], @ingest.uid)
+    File.join(ENV['S3_OUTBOUND_BUCKET'])
   end
 
   def s3_origin_uri(file_name)
     File.join(self.s3_origin_bucket_name, file_name)
   end
 
-  def s3_origin_key(file_name)
-    File.join(@ingest.uid, file_name)
+  def s3_key_from(file_name)
+    if @ingest && @ingest.track && @ingest.track.s3_key
+      key = @ingest.track.s3_key
+      folder = key.split("/").size > 1 ? key.split("/").slice(0...-1) : ""
+      File.join(folder, file_name)
+    else
+      File.join(@ingest.uid, file_name)
+    end
   end
 
-  def s3_origin_url(file_name)
-    File.join(ENV['S3_URL'], self.s3_origin_uri(file_name))
+  def s3_origin_url_from(file_name)
+    File.join(ENV['S3_URL'], s3_key_from(file_name))
   end
 
   def s3_copy_object(source_bucket_name, destination_bucket_name, source_key, destination_key = nil)
@@ -361,8 +376,8 @@ module CPW::Worker::Helper
     if File.exist?(previous_stage_file_fullpath)
       copy_file(previous_stage_file_fullpath, current_stage_file_fullpath)
     else
-      logger.info "--> downloading from #{s3_origin_url(file_name)} to #{current_stage_file_fullpath}"
-      s3_download_object ENV['S3_OUTBOUND_BUCKET'], s3_origin_key(file_name), current_stage_file_fullpath
+      logger.info "--> downloading from #{s3_origin_url_from(file_name)} to #{current_stage_file_fullpath}"
+      s3_download_object ENV['S3_OUTBOUND_BUCKET'], s3_key_from(file_name), current_stage_file_fullpath
     end
   end
 
