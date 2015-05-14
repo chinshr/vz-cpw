@@ -16,7 +16,11 @@ module CPW
 
         # Create ingest's track and save s3 references
         # [POST] /api/ingests/:ingest_id/tracks.rb?s3_url=abcd
-        Ingest::Track.create(ingest_id: @ingest.id, s3_url: @ingest.s3_origin_url, ingest_iteration: @ingest.iteration)
+        Ingest::Track.create({
+          ingest_id: @ingest.id,
+          s3_url: @ingest.s3_origin_url,
+          ingest_iteration: @ingest.iteration
+        })
 
         # Delete uploaded object
         s3_delete_object_if_exists(ENV['S3_INBOUND_BUCKET'], @ingest.s3_key)

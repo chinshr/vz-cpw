@@ -94,7 +94,7 @@ module CPW::Worker::Helper
     File.join(self.s3_origin_bucket_name, file_name)
   end
 
-  def s3_key_from(file_name)
+  def s3_key_for(file_name)
     if @ingest && @ingest.track && @ingest.track.s3_key
       key = @ingest.track.s3_key
       folder = key.split("/").size > 1 ? key.split("/").slice(0...-1) : ""
@@ -104,8 +104,8 @@ module CPW::Worker::Helper
     end
   end
 
-  def s3_origin_url_from(file_name)
-    File.join(ENV['S3_URL'], s3_key_from(file_name))
+  def s3_origin_url_for(file_name)
+    File.join(ENV['S3_URL'], s3_origin_bucket_name, s3_key_for(file_name))
   end
 
   def s3_copy_object(source_bucket_name, destination_bucket_name, source_key, destination_key = nil)
@@ -376,8 +376,8 @@ module CPW::Worker::Helper
     if File.exist?(previous_stage_file_fullpath)
       copy_file(previous_stage_file_fullpath, current_stage_file_fullpath)
     else
-      logger.info "--> downloading from #{s3_origin_url_from(file_name)} to #{current_stage_file_fullpath}"
-      s3_download_object ENV['S3_OUTBOUND_BUCKET'], s3_key_from(file_name), current_stage_file_fullpath
+      logger.info "--> downloading from #{s3_origin_url_for(file_name)} to #{current_stage_file_fullpath}"
+      s3_download_object ENV['S3_OUTBOUND_BUCKET'], s3_key_for(file_name), current_stage_file_fullpath
     end
   end
 

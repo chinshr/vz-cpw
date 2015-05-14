@@ -35,14 +35,15 @@ module CPW
             chunk.build({source_file: single_channel_wav_audio_file_fullpath,
               base_file_type: :wav}).to_mp3
             chunk.build({source_file: single_channel_wav_audio_file_fullpath,
-              base_file_type: :wav}).to_waveform({channels: []})
+              base_file_type: :wav}).to_waveform({channels: [:left]})
 
             puts "****** mp3_chunk: #{chunk.mp3_chunk}"
-            puts "****** wafeform_chunk: #{chunk.waveform_chunk}"
-            puts "****** mp3 s3_key: #{File.basename(chunk.mp3_chunk)}"
+            puts "****** mp3_key: #{s3_key_for(File.basename(chunk.mp3_chunk))}"
+            puts "****** waveform_chunk: #{chunk.waveform_chunk}"
+            puts "****** waveform_key: #{s3_key_for(File.basename(chunk.waveform_chunk))}"
 
-            s3_upload_object(chunk.mp3_chunk, s3_origin_bucket_name, File.basename(chunk.mp3_chunk))
-            s3_upload_object(chunk.waveform_chunk, s3_origin_bucket_name, File.basename(chunk.waveform_chunk))
+            s3_upload_object(chunk.mp3_chunk, s3_origin_bucket_name, s3_key_for(File.basename(chunk.mp3_chunk)))
+            s3_upload_object(chunk.waveform_chunk, s3_origin_bucket_name, s3_key_for(File.basename(chunk.waveform_chunk)))
           end
 
           puts "****** chunk.id: #{chunk.id}"
@@ -79,10 +80,15 @@ module CPW
           any_of_type: "Chunk::Pocketsphinx", any_of_position: chunk.id,
           any_of_ingest_iteration: @ingest.iteration).first
 
-        track_attributes = {s3_url: chunk.mp3_chunk, s3_mp3_url: chunk.mp3_chunk,
-          s3_waveform_json_url: chunk.waveform_chunk}
+        track_attributes = {
+          s3_url: s3_origin_url_for(File.basename(chunk.mp3_chunk)),
+          s3_mp3_url: s3_origin_url_for(File.basename(chunk.mp3_chunk)),
+          s3_waveform_json_url: s3_origin_url_for(File.basename(chunk.waveform_chunk))
+        }
 
-        track_attributes.merge({id: ingest_chunk.track.id}) if ingest_chunk
+        if ingest_chunk.try(:id) && ingest_chunk.track && ingest_chunk.track.try(:id)
+          track_attributes.merge({id: ingest_chunk.track.id})
+        end
 
         chunk_attributes = {
           ingest_id: @ingest.id,
@@ -107,23 +113,6 @@ module CPW
         end
       end
 
-      class AudioChunk
-        attr_reader :decoder, :offset, :duration, :id
-
-        def initialize(decoder, offset, duration, id = nil)
-          self.decoder  = decoder
-          self.offset   = offset
-          self.duration = duration
-          self.id       = id
-
-          start_time = decode_start_time(decoder)
-            offset     = decode_start_time(decoder)
-            duration   = decode_duration(decoder)
-            end_time   = start_time + BigDecimal.new(duration.to_s)
-
-
-        end
-      end
     end
   end
 end
