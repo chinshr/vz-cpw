@@ -79,10 +79,10 @@ Mac: https://github.com/beschulz/wav2json#on-max-os
 * Pocketsphinx utterance confidence -- http://sourceforge.net/p/cmusphinx/discussion/help/thread/48335932/
 * Pocketsphinx ps_seg_prob for probablity score of the utterance looking promising -- http://www.speech.cs.cmu.edu/sphinx/doc/doxygen/pocketsphinx/pocketsphinx_8h.html#dfd45d93c3fc9de6b7be89d5417f6abb
 * Noise cancellation C library -- https://github.com/nathesh/Noise-cancellation
-* Speaker recognition, segmentation, clustering 
+* Speaker recognition, segmentation, clustering
   - Speaker diarization paper -- http://publications.idiap.ch/downloads/papers/2012/Vijayasenan_INTERSPEECH2012_2012.pdf
   - LIUM_SpkDiarization tool -- http://www-lium.univ-lemans.fr/diarization/doku.php/welcome
   - Segmentation diarization using LIUM tool -- http://cmusphinx.sourceforge.net/wiki/speakerdiarization
   - Speaker diarization projects from UC Berkeley -- http://multimedia.icsi.berkeley.edu/speaker-diarization/
   - StackOverflow question on speaker recognition: http://stackoverflow.com/questions/14248983/cmu-sphinx-for-voice-speaker-recognition
-* Noise reduction Sphinx recommendations -- http://cmusphinx.sourceforge.net/wiki/faq
+* Noise reduction tools (Ephraim Malach or Kalman) Sphinx recommendations -- http://cmusphinx.sourceforge.net/wiki/faq
