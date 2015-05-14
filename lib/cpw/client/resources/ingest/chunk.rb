@@ -2,7 +2,7 @@ module CPW
   module Client
     module Resources
       class Ingest::Chunk < CPW::Client::Base
-        uri "ingests/:ingest_id/chunks/(:id)"
+        uri "ingests/(:ingest_id)/chunks/(:id)"
         include_root_in_json :chunk
 
         STATUS_UNPROCESSED         = 0
