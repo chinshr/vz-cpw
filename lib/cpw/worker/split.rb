@@ -16,6 +16,8 @@ module CPW
         create_raw
         split
         cleanup
+
+        Crowd.perform_async(body.delete("workflow")) unless test?
       end
 
       protected
@@ -92,12 +94,10 @@ module CPW
 
         chunk_attributes = {
           ingest_id: @ingest.id,
-          type: "Chunk::Pocketsphinx",
+          type: "pocketsphinx",  # instead of "Chunk::PocketsphinxChunk"
           position: chunk.id,
           offset: chunk.offset,
           duration: chunk.duration,
-          # start_time: chunk.offset,
-          # end_time: chunk.offset + chunk.duration,
           text: chunk.best_text,  # response[:hypothesis],
           score: chunk.best_score,  #response[:confidence],
           processing_errors: chunk.response['errors'],

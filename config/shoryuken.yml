@@ -10,9 +10,10 @@ aws:
 concurrency: 25  # The number of allocated threads to process messages. Default 25
 delay: 25        # The delay in seconds to pause a queue when it's empty. Default 0
 queues:
-  - [START_DEVELOPMENT_QUEUE, 1]
-  - [HARVEST_DEVELOPMENT_QUEUE, 4]
-  - [TRANSCODE_DEVELOPMENT_QUEUE, 9]
-  - [TRANSCRIBE_DEVELOPMENT_QUEUE, 9]
-  - [FINISH_DEVELOPMENT_QUEUE, 1]
-  - [ARCHIVE_DEVELOPMENT_QUEUE, 1]
+  - [START_<%= ENV['ENVIRONMENT'].upcase %>_QUEUE, 1]
+  - [HARVEST_<%= ENV['ENVIRONMENT'].upcase %>_QUEUE, 4]
+  - [TRANSCODE_<%= ENV['ENVIRONMENT'].upcase %>_QUEUE, 9]
+  - [SPLIT_<%= ENV['ENVIRONMENT'].upcase %>_QUEUE, 9]
+  - [CROWD_<%= ENV['ENVIRONMENT'].upcase %>_QUEUE, 9]
+  - [FINISH_<%= ENV['ENVIRONMENT'].upcase %>_QUEUE, 1]
+  - [ARCHIVE_<%= ENV['ENVIRONMENT'].upcase %>_QUEUE, 1]
