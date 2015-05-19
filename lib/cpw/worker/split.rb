@@ -79,8 +79,8 @@ module CPW
 
       def create_or_update_ingest_with(chunk)
         ingest_chunk = Ingest::Chunk.where(ingest_id: @ingest.id,
-          any_of_type: "Chunk::Pocketsphinx", any_of_position: chunk.id,
-          any_of_ingest_iteration: @ingest.iteration).first
+          any_of_types: "pocketsphinx", any_of_positions: chunk.id,
+          any_of_ingest_iterations: @ingest.iteration).first
 
         track_attributes = {
           s3_url: s3_origin_url_for(File.basename(chunk.mp3_chunk)),

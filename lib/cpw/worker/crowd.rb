@@ -9,7 +9,7 @@ module CPW
       def perform(sqs_message, body)
         logger.info("+++ #{self.class.name}#perform, body #{body.inspect}")
 
-        update_ingest({status: Ingest::STATE_STARTED})
+        Ingest::Chunks.where(ingest_id: @ingest.id).where(score_lt: 0.8).where(any_of_types: "pocketsphinx")
       end
 
     end
