@@ -58,9 +58,9 @@ module CPW
         merged_s3_mp3_url = upload_merged_mp3_file(merged_mp3_fullpath)
 
         # * Upload merged waveform json file
-        merged_waveform_json_url = upload_merged_waveform_json_file(merged_mp3_fullpath)
+        merged_waveform_json_url = upload_merged_waveform_json_file(merged_waveform_json_fullpath)
 
-        # * Create chunk+track
+        # * Create chunk + track
         track_attributes = {
           s3_url: merged_s3_mp3_url,
           s3_mp3_url: merged_s3_mp3_url,
@@ -127,8 +127,19 @@ module CPW
       end
 
       def upload_merged_mp3_file(merged_mp3_fullpath)
-        key = s3_key_for
-        s3_upload_object(merged_mp3_fullpath, s3_origin_bucket_name, key = nil)
+        file_name = File.basename(merged_mp3_fullpath)
+        key = s3_key_for(file_name)
+        url = s3_origin_url_for(file_name)
+        s3_upload_object(merged_mp3_fullpath, s3_origin_bucket_name, key)
+        url
+      end
+
+      def upload_merged_waveform_json_file(merged_waveform_json_fullpath)
+        file_name = File.basename(merged_waveform_json_fullpath)
+        key = s3_key_for(file_name)
+        url = s3_origin_url_for(file_name)
+        s3_upload_object(merged_mp3_fullpath, s3_origin_bucket_name, key)
+        url
       end
 
       def locale_language(locale)
