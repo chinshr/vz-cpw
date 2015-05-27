@@ -7,6 +7,7 @@ module CPW
 
         has_one :document
         has_one :ingest
+
       end
     end
   end

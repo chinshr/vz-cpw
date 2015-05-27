@@ -8,6 +8,10 @@ module CPW::Worker::Helper
     File.join("/tmp", (uid || @ingest.uid), (stage || @ingest.stage))
   end
 
+  def expand_fullpath_name(file_name, uid = nil, stage = nil)
+    File.join(basefolder(uid, stage), file_name)
+  end
+
   # key is "<folder>/<file>"
   def original_audio_file
     @ingest.track.s3_key.split("/").last if @ingest && @ingest.track
