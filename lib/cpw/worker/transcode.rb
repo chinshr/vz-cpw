@@ -62,10 +62,18 @@ module CPW
         # Upload normalized + noise reduced audio
         # s3_upload_object(noise_reduced_wav_audio_file_fullpath, @ingest.s3_origin_bucket_name, noise_reduced_wav_audio_file)
 
+        # Calculate file duration, start_at and end_at
+        audio    = CPW::Speech::AudioInspector.new(dual_channel_wav_audio_file_fullpath)
+        start_at = Chronic.parse(@ingest.upload['recorded_at'])
+        end_at   = start_at + audio.duration.to_f.round if start_at
+
         # Update s3 references
         @ingest.track.update_attributes({
           s3_mp3_url: @ingest.s3_origin_mp3_url,
-          s3_waveform_json_url: @ingest.s3_origin_waveform_json_url
+          s3_waveform_json_url: @ingest.s3_origin_waveform_json_url,
+          duration: audio.duration.to_f,
+          start_at: start_at,
+          end_at: end_at
         })
       end
 

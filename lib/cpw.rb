@@ -5,6 +5,7 @@ require "multi_json"
 require "pstore"
 require "aws-sdk-v1"
 require "mono_logger"
+require "chronic"
 require "dotenv"
 Dotenv.load
 
