@@ -119,6 +119,7 @@ module CPW::Worker::Helper
   end
 
   def s3_download_object(source_bucket_name, source_key, destination_filename)
+    CPW::logger.info "-->> S3 download : #{source_bucket_name}, #{source_key}, #{destination_filename}"
     # create directory if not exists
     FileUtils::mkdir_p "/#{File.join(destination_filename.split("/").slice(1...-1))}"
     # download to folder

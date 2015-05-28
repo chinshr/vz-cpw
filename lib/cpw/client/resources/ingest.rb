@@ -97,7 +97,7 @@ module CPW
           if self.track && self.track.try(:s3_url)
             self.track.s3_url
           else
-            File.join(ENV['S3_URL'], self.s3_origin_key)
+            File.join(ENV['S3_URL'], ENV['S3_OUTBOUND_BUCKET'], self.s3_origin_key)
           end
         end
 
