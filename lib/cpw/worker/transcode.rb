@@ -63,8 +63,10 @@ module CPW
         # s3_upload_object(noise_reduced_wav_audio_file_fullpath, @ingest.s3_origin_bucket_name, noise_reduced_wav_audio_file)
 
         # Update s3 references
-        @ingest.track.update_attributes(s3_mp3_url: @ingest.s3_origin_mp3_url,
-          s3_waveform_json_url: @ingest.s3_origin_waveform_json_url)
+        @ingest.track.update_attributes({
+          s3_mp3_url: @ingest.s3_origin_mp3_url,
+          s3_waveform_json_url: @ingest.s3_origin_waveform_json_url
+        })
       end
 
       def cleanup

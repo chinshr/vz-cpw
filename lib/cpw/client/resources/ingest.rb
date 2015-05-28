@@ -61,7 +61,7 @@ module CPW
               Ingest.new(Ingest.find(id).update_attributes(attributes))
             end
           end
-        end
+        end  # class methods
 
         # State inquiry
         # E.g. @ingest.state_created? || @ingest.state_starting?
@@ -75,19 +75,37 @@ module CPW
           STATES.keys[status].try(:to_sym)
         end
 
+        def s3_upload_key
+          upload['s3_key']
+        end
+
         def s3_origin_bucket_name
           ENV['S3_OUTBOUND_BUCKET']
         end
 
+        def s3_origin_key
+          if self.track && self.track.try(:s3_key)
+            # already uploaded as url
+            self.track.s3_key
+          else
+            # to be used for main track
+            File.join(uid, File.basename(s3_upload_key))
+          end
+        end
+
         def s3_origin_url
-          File.join(ENV['S3_URL'], self.s3_key)
+          if self.track && self.track.try(:s3_url)
+            self.track.s3_url
+          else
+            File.join(ENV['S3_URL'], self.s3_origin_key)
+          end
         end
 
         def s3_origin_mp3_key
-          if self.track && self.track.s3_mp3_key
+          if self.track && self.track.try(:s3_mp3_key)
             # already uploaded as url
             self.track.s3_mp3_key
-          elsif self.track && self.track.s3_key
+          elsif self.track && self.track.try(:s3_key)
             # when created
             "#{self.track.s3_key}.ac2.ab#{CPW::Worker::Transcode::MP3_BITRATE}k.mp3"
           else
@@ -96,7 +114,7 @@ module CPW
         end
 
         def s3_origin_mp3_url
-          if self.track && self.track.s3_mp3_url
+          if self.track && self.track.try(:s3_mp3_url)
             self.track.s3_mp3_url
           else
             File.join(ENV['S3_URL'], s3_origin_bucket_name, s3_origin_mp3_key)
