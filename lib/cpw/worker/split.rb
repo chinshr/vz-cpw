@@ -83,7 +83,7 @@ module CPW
           any_of_ingest_iterations: @ingest.iteration).first
 
         start_at = Chronic.parse(@ingest.upload['recorded_at']) + chunk.offset.to_f rescue nil
-        end_at   = start_at + chunk.duration.round if start_at
+        end_at   = start_at + chunk.duration.ceil if start_at
 
         track_attributes = {
           s3_url: s3_origin_url_for(File.basename(chunk.mp3_chunk)),

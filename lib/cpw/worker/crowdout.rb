@@ -16,21 +16,28 @@ module CPW
         source_chunks = Ingest::Chunk.where({ingest_id: @ingest.id,
           any_of_ingest_iterations: @ingest.iteration,
           score_lt: SOURCE_CHUNK_SCORE_THRESHOLD,
-          any_of_types: "pocketsphinx"
+          any_of_types: "pocketsphinx",
+          any_of_processing_status: [Ingest::Chunk::STATUS_ENCODED, Ingest::Chunk::STATUS_TRANSCRIBED]
         })
 
         # Go through each and find any high-confidence reference chunk
         source_chunks.each do |source_chunk|
+          logger.info "-> source_chunk = #{source_chunk.id}"
+
           reference_chunks = Ingest::Chunk.where({
             none_of_ingest_ids: [@ingest.id],
             none_of_types: ["mechanical_turk"],
             score_gteq: REFERENCE_CHUNK_SCORE_THRESHOLD,
             duration_lteq: source_chunk.duration.to_f + 3.0,
             any_of_locales: locale_language(source_chunk.locale),
+            any_of_processing_status: [Ingest::Chunk::STATUS_ENCODED, Ingest::Chunk::STATUS_TRANSCRIBED],
             sort_order: [:random], limit: 1
           })
 
-          merged_chunk = create_merged_chunk(source_chunk, reference_chunks)
+          logger.info "-> reference_chunks(#{reference_chunks.size}) = #{reference_chunks.map(&:id)}"
+          if reference_chunks.size > 0
+            merged_chunk = create_merged_chunk(source_chunk, reference_chunks)
+          end
         end
       end
 
@@ -60,19 +67,26 @@ module CPW
         # * Upload merged waveform json file
         merged_waveform_json_url = upload_merged_waveform_json_file(merged_waveform_json_fullpath)
 
+        # * Calculate file duration
+        audio    = CPW::Speech::AudioInspector.new(merged_mp3_fullpath)
+        start_at = Chronic.parse("now")
+        end_at   = start_at + audio.duration.to_f.ceil if start_at
+
         # * Create chunk + track
         track_attributes = {
           s3_url: merged_s3_mp3_url,
           s3_mp3_url: merged_s3_mp3_url,
-          s3_waveform_json_url: merged_waveform_json_url
+          s3_waveform_json_url: merged_waveform_json_url,
+          duration: chunk_duration,
+          start_at: start_at,
+          end_at: end_at
         }
 
         chunk_attributes = {
           ingest_id: @ingest.id,
           type: "Chunk::CaptchaChunk",
-          position: -1,  # we don't need a position
+          position: 1,  # we don't need a position
           offset: 0,
-          duration: chunk_duration,
           text: chunk_text,
           chunk_ids: chunk_ids,
           processing_status: Chunk::STATUS_ENCODED,

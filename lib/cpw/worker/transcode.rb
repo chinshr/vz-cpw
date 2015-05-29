@@ -65,7 +65,7 @@ module CPW
         # Calculate file duration, start_at and end_at
         audio    = CPW::Speech::AudioInspector.new(dual_channel_wav_audio_file_fullpath)
         start_at = Chronic.parse(@ingest.upload['recorded_at'])
-        end_at   = start_at + audio.duration.to_f.round if start_at
+        end_at   = start_at + audio.duration.to_f.ceil if start_at
 
         # Update s3 references
         @ingest.track.update_attributes({
