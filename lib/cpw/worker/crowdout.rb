@@ -69,7 +69,7 @@ module CPW
 
         chunk_attributes = {
           ingest_id: @ingest.id,
-          type: "captcha",
+          type: "Chunk::CaptchaChunk",
           position: -1,  # we don't need a position
           offset: 0,
           duration: chunk_duration,

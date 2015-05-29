@@ -82,10 +82,16 @@ module CPW
           any_of_types: "pocketsphinx", any_of_positions: chunk.id,
           any_of_ingest_iterations: @ingest.iteration).first
 
+        start_at = Chronic.parse(@ingest.upload['recorded_at']) + chunk.offset.to_f rescue nil
+        end_at   = start_at + chunk.duration.round if start_at
+
         track_attributes = {
           s3_url: s3_origin_url_for(File.basename(chunk.mp3_chunk)),
           s3_mp3_url: s3_origin_url_for(File.basename(chunk.mp3_chunk)),
-          s3_waveform_json_url: s3_origin_url_for(File.basename(chunk.waveform_chunk))
+          s3_waveform_json_url: s3_origin_url_for(File.basename(chunk.waveform_chunk)),
+          duration: chunk.duration,
+          start_at: start_at,
+          end_at: end_at
         }
 
         if ingest_chunk.try(:id) && ingest_chunk.track && ingest_chunk.track.try(:id)
@@ -94,10 +100,9 @@ module CPW
 
         chunk_attributes = {
           ingest_id: @ingest.id,
-          type: "pocketsphinx",  # instead of "Chunk::PocketsphinxChunk"
+          type: "Chunk::PocketsphinxChunk",
           position: chunk.id,
           offset: chunk.offset,
-          duration: chunk.duration,
           text: chunk.best_text,  # response[:hypothesis],
           score: chunk.best_score,  #response[:confidence],
           processing_errors: chunk.response['errors'],
