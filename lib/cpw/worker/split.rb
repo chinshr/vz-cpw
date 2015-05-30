@@ -1,9 +1,9 @@
 module CPW
   module Worker
     class Split < Worker::Base
-      attr_accessor :splitter
-
       include Worker::Helper
+
+      attr_accessor :splitter
       self.finished_progress = 80
 
       shoryuken_options queue: -> { queue_name },

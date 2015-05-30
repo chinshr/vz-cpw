@@ -1,7 +1,7 @@
 module CPW::Worker::Helper
 
   # -------------------------------------------------------------
-  # file name helpers
+  # file + file name helpers
   # -------------------------------------------------------------
 
   def basefolder(uid = nil, stage = nil)
@@ -10,6 +10,11 @@ module CPW::Worker::Helper
 
   def expand_fullpath_name(file_name, uid = nil, stage = nil)
     File.join(basefolder(uid, stage), file_name)
+  end
+
+  # replace_file_extension("test.128Kb.mp3", ".wav") -> "test.128Kb.wav"
+  def replace_file_extension(file_name, new_extension)
+    file_name.gsub(/#{File.extname(file_name)}$/, new_extension)
   end
 
   # key is "<folder>/<file>"
@@ -179,19 +184,19 @@ module CPW::Worker::Helper
   # -------------------------------------------------------------
 
   def ffmpeg_audio_to_mp3(source_file, mp3_file, options = {})
-    options = options.reverse_merge(mp3_bitrate: 128)
+    options = options.reverse_merge(bitrate: 128)
     # https://trac.ffmpeg.org/wiki/Encode/MP3
     # ffmpeg -i input.wav -codec:a libmp3lame -qscale:a 2 output.mp3
     # ffmpeg -i input.wav -codec:a libmp3lame -b:a 128k output.mp3
     # => ffmpeg -i input.avi -vn -ar 44100 -ac 2 -ab 192 -f mp3 output.mp3
-    # cmd = "ffmpeg -y -i #{source_file} -f mp2 -b #{@mp3_bitrate}k #{mp3_file}   >/dev/null 2>&1"
-    cmd = "ffmpeg -y -i #{source_file} -vn -ab #{options[:mp3_bitrate]}k -f mp3 #{mp3_file}   >/dev/null 2>&1"
+    # cmd = "ffmpeg -y -i #{source_file} -f mp2 -b #{@bitrate}k #{mp3_file}   >/dev/null 2>&1"
+    cmd = "ffmpeg -y -i #{source_file} -vn -ab #{options[:bitrate]}k -f mp3 #{mp3_file}   >/dev/null 2>&1"
 
     CPW::logger.info "-> $ #{cmd}"
     if system(cmd)
       true
     else
-      raise "Failed converting audio to mp3 with bitrate #{@mp3_bitrate}k: #{source_file}\n#{cmd}"
+      raise "Failed converting audio to mp3 with bitrate #{options[:bitrate]}k: #{source_file}\n#{cmd}"
     end
   end
 
@@ -206,14 +211,14 @@ module CPW::Worker::Helper
     end
   end
 
-  def ffmpeg_audio_to_wav(input_file, output_file)
-    cmd = "ffmpeg -i #{input_file} -y -f wav -ac 2 #{output_file}   >/dev/null 2>&1"
-
+  def ffmpeg_audio_to_wav(input_file, output_file, options = {})
+    options = options.reverse_merge(audio_channels: 2)
+    cmd = "ffmpeg -i #{input_file} -y -f wav -ac #{options[:audio_channels]} #{output_file}   >/dev/null 2>&1"
     CPW::logger.info "-> $ #{cmd}"
     if system(cmd)
       true
     else
-      raise "Failed convert audio to wav and strip audio channel: #{input_file}\n#{cmd}"
+      raise "Failed convert audio to wav (audio_channels: #{options[:audio_channels]}): #{input_file}\n#{cmd}"
     end
   end
 

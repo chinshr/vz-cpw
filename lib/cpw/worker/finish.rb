@@ -1,7 +1,8 @@
 module CPW
   module Worker
     class Finish < Worker::Base
-      extend Worker::Helper
+      include Worker::Helper
+
       self.finished_progress = 100
 
       shoryuken_options queue: -> { queue_name },

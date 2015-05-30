@@ -42,7 +42,7 @@ module CPW
 
       def create_mp3
         ffmpeg_audio_to_mp3 dual_channel_wav_audio_file_fullpath,
-          mp3_audio_file_fullpath, {mp3_bitrate: MP3_BITRATE}
+          mp3_audio_file_fullpath, {bitrate: MP3_BITRATE}
       end
 
       def create_waveform
