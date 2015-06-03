@@ -76,8 +76,6 @@ module CPW
         start_at = Chronic.parse("now")
         end_at   = start_at + audio.duration.to_f.ceil if start_at
 
-raise
-
         # * Create chunk + track
         track_attributes = {
           s3_url: merged_s3_mp3_url,
@@ -89,17 +87,18 @@ raise
         }
 
         chunk_attributes = {
+          document_id: source_chunk.id,
           ingest_id: @ingest.id,
           type: "captcha_chunk",
           position: source_chunk.position,  # we don't need a position
           offset: 0,
           text: chunk_text,
           chunk_ids: chunk_ids,
-          processing_status: Chunk::STATUS_ENCODED,
+          processing_status: Ingest::Chunk::STATUS_ENCODED,
           track_attributes: track_attributes
         }
 
-        #Ingest::Chunk.create(chunk_attributes)
+        Ingest::Chunk.create(chunk_attributes)
       ensure
         delete_file_if_exists(merged_wav_fullpath)
       end

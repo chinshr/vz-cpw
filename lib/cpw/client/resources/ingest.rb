@@ -39,8 +39,8 @@ module CPW
 
         belongs_to :document
         has_many :chunks, uri: "ingests/:ingest_id/chunks/(:id)", class_name: "CPW::Client::Resources::Ingest::Chunk"
-        has_one :track, uri: "ingests/:ingest_id/tracks/(:id)?is_master=1", class_name: "CPW::Client::Resources::Ingest::Track"
-        has_many :tracks, uri: "ingests/:ingest_id/tracks/(:id)", class_name: "CPW::Client::Resources::Ingest::Track"
+        has_many :tracks, uri: "ingests/:ingest_id/tracks/(:id)?none_of_types[]=document_track", class_name: "CPW::Client::Resources::Ingest::Track"
+        has_many :tracks_including_master_track, uri: "ingests/:ingest_id/tracks/(:id)", class_name: "CPW::Client::Resources::Ingest::Track"
 
         scope :started, -> { where(any_of_status: Ingest::STATE_STARTED) }
 
@@ -69,6 +69,10 @@ module CPW
           define_method("state_#{inquiry}?") do
             STATES[inquiry] == self.status
           end
+        end
+
+        def track
+          tracks_including_master_track.where(any_of_types: ["document_track"]).first
         end
 
         def state
