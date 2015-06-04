@@ -12,6 +12,8 @@ module CPW
         STAGE_CROWDOUT    = 450
         STAGE_FINISH      = 500
         STAGE_ARCHIVE     = 600
+        STAGE_STOP        = -100
+        STAGE_RESET        = -100
         STAGES = {
           start: STAGE_START, harvest: STAGE_HARVEST,
           transcode: STAGE_TRANSCODE, split: STAGE_SPLIT,

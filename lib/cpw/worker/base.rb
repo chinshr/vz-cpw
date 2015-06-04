@@ -148,11 +148,11 @@ module CPW
       end
 
       def busy?
-        @ingest && !!@ingest.busy
+        @ingest.try(:id) && !!@ingest.busy
       end
 
       def terminate?
-        @ingest && !!@ingest.terminate
+        @ingest.try(:id) && !!@ingest.terminate
       end
 
       def can_lock?
