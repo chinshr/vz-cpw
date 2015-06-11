@@ -7,7 +7,7 @@ require "aws-sdk-v1"
 require "mono_logger"
 require "chronic"
 require "dotenv"
-Dotenv.load
+Dotenv.load(*[".env.#{ENV.fetch("CPW_ENV", 'development')}", ".env"])
 
 require "shoryuken"
 
@@ -57,12 +57,16 @@ module CPW
     attr_accessor :user_password
     attr_accessor :logger
 
+    def test?
+      ENV['CPW_ENV'] == 'test'
+    end
+
     def development?
-      ENV['ENVIRONMENT'] == 'development'
+      ENV['CPW_ENV'] == 'development'
     end
 
     def production?
-      ENV['ENVIRONMENT'] == 'production'
+      ENV['CPW_ENV'] == 'production'
     end
   end
 

@@ -5,22 +5,6 @@ module CPW
         uri "ingests/(:id)"
         include_root_in_json :ingest
 
-        STAGE_START       = 100
-        STAGE_HARVEST     = 200
-        STAGE_TRANSCODE   = 300
-        STAGE_SPLIT       = 400
-        STAGE_CROWDOUT    = 450
-        STAGE_FINISH      = 500
-        STAGE_ARCHIVE     = 600
-        STAGE_STOP        = -100
-        STAGE_RESET        = -100
-        STAGES = {
-          start: STAGE_START, harvest: STAGE_HARVEST,
-          transcode: STAGE_TRANSCODE, split: STAGE_SPLIT,
-          crowdout: STAGE_CROWDOUT, finish: STAGE_FINISH,
-          archive: STAGE_ARCHIVE
-        }
-
         STATE_CREATED     = 0
         STATE_STARTING    = 1
         STATE_STARTED     = 2
@@ -33,9 +17,9 @@ module CPW
         STATE_FINISHED    = 9
         STATE_RESTARTING  = 10
         STATES = {
-          created: STATE_CREATED, starting: STATE_STARTING, started: STATE_STARTED, 
+          created: STATE_CREATED, starting: STATE_STARTING, started: STATE_STARTED,
           stopping: STATE_STOPPING, stopped: STATE_STOPPED, resetting: STATE_RESETTING,
-          reset: STATE_RESET, removing: STATE_REMOVING, removed: STATE_REMOVED, 
+          reset: STATE_RESET, removing: STATE_REMOVING, removed: STATE_REMOVED,
           finished: STATE_FINISHED,  restarting: STATE_RESTARTING
         }
 
@@ -47,10 +31,7 @@ module CPW
         scope :started, -> { where(any_of_status: Ingest::STATE_STARTED) }
 
         class << self
-          @@workflow  = [:start, :harvest, :transcode, :split, :crowdout, :finish]
           @@semaphore = Mutex.new
-
-          def workflow; @@workflow; end
 
           def secure_find(id)
             @@semaphore.synchronize do
@@ -101,6 +82,7 @@ module CPW
 
         def s3_origin_url
           if self.track && self.track.try(:s3_url)
+            raise
             self.track.s3_url
           else
             File.join(ENV['S3_URL'], ENV['S3_OUTBOUND_BUCKET'], self.s3_origin_key)
@@ -151,6 +133,34 @@ module CPW
           new_progress = percent
           new_progress = new_progress > 100 ? 100 : new_progress
           update_attribute(:progress, new_progress)
+        end
+
+        def workflow_stage_names
+          self[:workflow_stage_names]
+        end
+
+        def current_stage_name
+          self[:stage]
+        end
+
+        def previous_stage_name
+          self[:previous_stage_name]
+        end
+
+        def next_stage_name
+          self[:next_stage_name]
+        end
+
+        def current_stage_worker_class
+          CPW::Worker::Base.class_for(current_stage_name)
+        end
+
+        def previous_stage_worker_class
+          CPW::Worker::Base.class_for(previous_stage_name)
+        end
+
+        def next_stage_worker_class
+          CPW::Worker::Base.class_for(next_stage_name)
         end
       end
     end

@@ -24,6 +24,10 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "pry"
   spec.add_development_dependency "pry-byebug"
   spec.add_development_dependency "yard"
+  spec.add_development_dependency "minitest", "~> 5.5"
+  spec.add_development_dependency "test-unit", "~> 3.0"
+  spec.add_development_dependency "mocha"
+  spec.add_development_dependency "webmock"
 
   spec.add_dependency "pocketsphinx-ruby", ["~> 0.3.0", '< 1']
   spec.add_dependency "multi_json"
@@ -35,5 +39,5 @@ Gem::Specification.new do |spec|
   spec.add_dependency "shoryuken"
   spec.add_dependency "chronic"
 
-  spec.add_runtime_dependency('gli','2.13.0')
+  spec.add_runtime_dependency('gli', '2.13.0')
 end

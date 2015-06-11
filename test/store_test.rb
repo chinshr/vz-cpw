@@ -1,6 +1,6 @@
 require_relative "test_helper"
 
-class StoreTest < Minitest::Test
+class StoreTest < Test::Unit::TestCase # Minitest::Test
   def setup
     @store = CPW::Store.new("test-store.pstore")
   end
@@ -31,7 +31,6 @@ class StoreTest < Minitest::Test
     @store.delete(:test_set_get_mixed)
     @store.delete(:foo)
 =end
-  puts "#{CPW.root_path}/test-store.pstore"
-  File.delete("#{CPW.root_path}/test-store.pstore")
+    File.delete("#{CPW.root_path}/test-store.pstore")
   end
 end

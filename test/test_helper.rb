@@ -1,8 +1,15 @@
-require "test/unit"
-require "minitest/autorun"
-require "cpw"
+ENV['CPW_ENV'] = 'test'
 
-# Add test libraries you want to use here, e.g. mocha
+require "test/unit"
+# require "minitest/autorun"
+require "cpw"
+require 'mocha/test_unit'
+# require 'mocha/mini_test'
+require 'webmock/test_unit'
+# require 'webmock/minitest'
+
+# Require support files
+Dir[File.expand_path('../support/**/*.rb', __FILE__)].each { |f| require f }
 
 class Test::Unit::TestCase
 

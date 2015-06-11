@@ -17,33 +17,11 @@ module CPW
         def queue_name
           name = ENV['QUEUE_NAME'].dup
           name.gsub!(/%{stage}/i, stage_name)
-          name.gsub!(/%{environment}/i, ENV.fetch('ENVIRONMENT', 'development'))
+          name.gsub!(/%{env}/i, ENV.fetch('CPW_ENV', 'development'))
           name.upcase
         end
 
-        def next_stage_name
-          index = CPW::Client::Resources::Ingest::workflow.index(stage_name.to_sym)
-          CPW::Client::Resources::Ingest::workflow[index + 1].try(:to_s) if index
-        end
-
-        def next_stage_class
-          class_for(next_stage_name) if next_stage_name
-        end
-
-        def previous_stage_name
-          index = CPW::Client::Resources::Ingest::workflow.index(stage_name.to_sym)
-          CPW::Client::Resources::Ingest::workflow[index - 1].try(:to_s) if index
-        end
-
-        def previous_stage_class
-          class_for(previous_stage_name) if previous_stage_name
-        end
-
         def register_cpw_workers
-          # Shoryuken.register_worker("HARVEST_DEVELOPMENT_QUEUE", CPW::Worker::Harvest)
-          # Shoryuken.register_worker("TRANSCODE_DEVELOPMENT_QUEUE", CPW::Worker::Transcode)
-          # Shoryuken.register_worker("TRANSRIBE_DEVELOPMENT_QUEUE", CPW::Worker::Transcribe)
-          # Shoryuken.register_worker("ARCHIVE_DEVELOPMENT_QUEUE", CPW::Worker::Archive)
           Dir[File.dirname(__FILE__) + "/*.rb"].each do |file|
             unless ["base", "helper"].include?(File.basename(file, ".rb"))
               Shoryuken.register_worker(class_for(file).queue_name, class_for(file))
@@ -67,13 +45,14 @@ module CPW
           worker_instance.after_perform(sqs_message, body)
         end
 
-        private
-
+        # class_for('finish') -> CPW::Worker::Finish
         def class_for(file_name_or_stage_name)
-          name = File.basename(file_name_or_stage_name, ".rb")
-          ("CPW::Worker::" + name[0].upcase + name[1...name.length]).constantize
+          name = File.basename(file_name_or_stage_name.to_s, ".rb")
+          if name.length > 0
+            ("CPW::Worker::" + name.classify).constantize
+          end
         end
-      end
+      end  # class methods
 
       self.finished_progress = 0
 
@@ -105,10 +84,10 @@ module CPW
         logger.info("+++ #{self.class.name}#should_retry? -> #{should_retry?}")
 
         # Launch next stage, if part of a workflow
-        if workflow? && has_next_stage? && !should_retry? && !terminate?
+        if workflow? && has_next_stage? && !should_retry? && !terminate? && !test?
           new_body = body.merge({"workflow" => workflow?})
-          logger.info "+++ #{next_stage_class.name}#perform_async: #{new_body.inspect}\n"
-          next_stage_class.perform_async(new_body) unless test?
+          logger.info "+++ #{ingest.next_stage_worker_class.name}#perform_async: #{new_body.inspect}\n"
+          ingest.next_stage_worker_class.perform_async(new_body)
         end
       end
 
@@ -118,7 +97,7 @@ module CPW
         if block_given?
           begin
             if can_lock?
-              update_ingest({stage: stage_name, busy: true})
+              update_ingest({stage: self.class.stage_name, busy: true})
               if can_stage?
                 @can_perform = true
                 yield
@@ -148,11 +127,11 @@ module CPW
       end
 
       def busy?
-        @ingest.try(:id) && !!@ingest.busy
+        @ingest.try(:id) && !!ingest.busy
       end
 
       def terminate?
-        @ingest.try(:id) && !!@ingest.terminate
+        @ingest.try(:id) && !!ingest.terminate
       end
 
       def can_lock?
@@ -161,15 +140,15 @@ module CPW
 
       def can_stage?
         if workflow?
-          current_stage_position  = Ingest::STAGES[stage_name.to_sym].to_i
-          previous_stage_position = previous_stage_name ? Ingest::STAGES[previous_stage_name.to_sym].to_i : 0
+          current_stage_position  = ingest.workflow_stage_names.index(self.class.stage_name)
+          previous_stage_position = ingest.previous_stage_name ? ingest.workflow_stage_names.index(previous_stage_name) : 0
 
-          logger.info("+++ #{self.class.name}@stage -> #{@ingest.stage}")
-          logger.info("+++ #{self.class.name}@ingest.state_started? -> #{@ingest.state_started?}")
+          logger.info("+++ #{self.class.name}@stage -> #{ingest.current_stage_name}")
+          logger.info("+++ #{self.class.name}@ingest.state_started? -> #{ingest.state_started?}")
           logger.info("+++ #{self.class.name}@current_stage_position -> #{current_stage_position}")
           logger.info("+++ #{self.class.name}@previous_stage_position -> #{previous_stage_position}")
 
-          ((@ingest.stage && @ingest.state_started?) || @ingest.stage == "start") &&
+          ((ingest.current_stage_name && ingest.state_started?) || ingest.current_stage_name == "start") &&
             current_stage_position > previous_stage_position
         else
           true
@@ -189,20 +168,8 @@ module CPW
         logger.info "+++ #{self.class.name}#unlock #{attributes.inspect}"
       end
 
-      def stage_name
-        self.class.stage_name
-      end
-
-      def next_stage_name
-        self.class.next_stage_name
-      end
-
       def has_next_stage?
-        !!self.class.next_stage_name
-      end
-
-      def next_stage_class
-        self.class.next_stage_class
+        ingest && ingest.next_stage_name
       end
 
       def queue_name
@@ -221,7 +188,7 @@ module CPW
       end
 
       def previous_stage_name
-        @previous_stage_name
+        @previous_stage_name || ingest.previous_stage_name
       end
 
       def terminate?
