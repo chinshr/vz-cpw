@@ -110,11 +110,7 @@ module CPW
             @has_perform_error = true
             raise ex
           ensure
-            if has_perform_error?
-              unlock({stage: @saved_stage_name}) if busy?
-            else
-              unlock if busy?
-            end
+            unlock if busy?
           end
         else
           raise "no block given"
