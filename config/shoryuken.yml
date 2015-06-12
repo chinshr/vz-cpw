@@ -19,3 +19,4 @@ queues:
   - [FINISH_<%= ENV.fetch('CPW_ENV', 'development').upcase %>_QUEUE, 1]
   - [STOP_<%= ENV.fetch('CPW_ENV', 'development').upcase %>_QUEUE, 1]
   - [RESET_<%= ENV.fetch('CPW_ENV', 'development').upcase %>_QUEUE, 1]
+  - [REMOVE_<%= ENV.fetch('CPW_ENV', 'development').upcase %>_QUEUE, 1]

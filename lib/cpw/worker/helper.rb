@@ -96,7 +96,7 @@ module CPW::Worker::Helper
   # -------------------------------------------------------------
 
   def s3_origin_bucket_name
-    File.join(ENV['S3_OUTBOUND_BUCKET'])
+    ENV['S3_OUTBOUND_BUCKET']
   end
 
   def s3_origin_uri(file_name)
