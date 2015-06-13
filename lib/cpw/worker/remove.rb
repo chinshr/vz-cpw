@@ -9,7 +9,7 @@ module CPW
       def perform(sqs_message, body)
         logger.info("+++ #{self.class.name}#perform, body #{body.inspect}")
 
-        update_ingest({state: Ingest::STATE_REMOVED})
+        update_ingest({status: Ingest::STATE_REMOVED})
 
         sqs_message.delete
       end

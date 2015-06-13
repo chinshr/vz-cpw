@@ -69,6 +69,10 @@ module CPW
         !!(body && body['workflow'])
       end
 
+      def force?
+        !!(body && body['force'])
+      end
+
       def before_perform(sqs_message, body)
         logger.info "+++ #{self.class.name}#before_perform: #{body.inspect}\n"
         self.sqs_message, self.body = sqs_message, body
@@ -96,21 +100,23 @@ module CPW
         if block_given?
           begin
             if can_lock?
-              @saved_stage_name = ingest.stage_name
-              update_ingest({stage: self.class.stage_name, busy: true})
+              @saved_stage_name = ingest.current_stage_name
+              lock!
               if can_stage? @saved_stage_name
                 @can_perform = true
                 yield
               end
             else
+              logger.info "+++ #{self.class.name}#can_lock? -> false = unable to lock ingest id=#{ingest.id}, retrying."
               @should_retry = true
             end
           rescue => ex
+            logger.info "+++ #{self.class.name}#lock exception = something went wrong performing ingest id=#{ingest.id}, retrying."
             @should_retry = true
             @has_perform_error = true
             raise ex
           ensure
-            unlock if busy?
+            unlock! if busy?
           end
         else
           raise "no block given"
@@ -132,27 +138,21 @@ module CPW
       end
 
       def busy?
-        @ingest.try(:id) && !!ingest.busy
+        @ingest.try(:id) && !!@ingest.busy
       end
 
       def terminate?
-        @ingest.try(:id) && !!ingest.terminate
+        @ingest.try(:id) && !!@ingest.terminate
       end
 
       def can_lock?
-        !busy? && !terminate?
+        force? ? true : (!busy? && !terminate?)
       end
 
       def can_stage?(previous_stage)
         if workflow?
           current_stage_position = ingest.workflow_stage_names.index(self.class.stage_name)
           previous_stage_position = previous_stage ? ingest.workflow_stage_names.index(previous_stage) : -1
-
-          # logger.info("+++ #{self.class.name}@stage_name -> #{self.class.stage_name}")
-          # logger.info("+++ previous_stage -> #{previous_stage}")
-          # logger.info("+++ ingest@current_stage_name -> #{ingest.current_stage_name}")
-          # logger.info("+++ current_stage_position -> #{current_stage_position}")
-          # logger.info("+++ previous_stage_position -> #{previous_stage_position}")
 
           ((ingest.current_stage_name && ingest.state_started?) || (!ingest.current_stage_name && self.class.stage_name == "start")) &&
             current_stage_position > previous_stage_position
@@ -165,12 +165,19 @@ module CPW
         self.class.finished_progress.to_i
       end
 
-      def unlock(attributes = {})
+      def lock!(attributes = {})
+        attributes = attributes.merge({busy: true}).reject {|k,v| v.nil?}
+        attributes.merge!({stage: self.class.stage_name}) if workflow?
+        logger.info "+++ #{self.class.name}#lock! #{attributes.inspect}"
+        update_ingest(attributes)
+      end
+
+      def unlock!(attributes = {})
         attributes = attributes.merge({busy: false}).reject {|k,v| v.nil?}
         if finished_progress > 0 && can_perform? && !has_perform_error?
           attributes.merge!({progress: finished_progress})
         end
-        logger.info "+++ #{self.class.name}#unlock #{attributes.inspect}"
+        logger.info "+++ #{self.class.name}#unlock! #{attributes.inspect}"
         update_ingest(attributes)
       end
 

@@ -87,3 +87,5 @@ Mac: https://github.com/beschulz/wav2json#on-max-os
   - StackOverflow question on speaker recognition: http://stackoverflow.com/questions/14248983/cmu-sphinx-for-voice-speaker-recognition
 * Noise reduction tools (Ephraim Malach or Kalman) Sphinx recommendations -- http://cmusphinx.sourceforge.net/wiki/faq
 * Concatenate wav files -- http://superuser.com/questions/587511/concatenate-multiple-wav-files-using-single-command-without-extra-file
+* Ruby Pocketsphinx server -- https://github.com/alumae/ruby-pocketsphinx-server
+* Kaldi GStreamer server -- https://github.com/alumae/kaldi-gstreamer-server
