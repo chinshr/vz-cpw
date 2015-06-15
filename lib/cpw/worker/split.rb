@@ -24,11 +24,14 @@ module CPW
 
       def split
         configuration = ::Pocketsphinx::Configuration.default
-        # According to http://sourceforge.net/p/cmusphinx/discussion/help/thread/a85ee9a4/
+        # According to: http://sourceforge.net/p/cmusphinx/discussion/help/thread/a85ee9a4/
         # -vad_prespeech  20
         # -vad_postspeech 45
         # -vad_threshold  2.0
-        configuration['vad_threshold'] = 4
+        # configuration['vad_threshold'] = 4
+        configuration['vad_prespeech']  = 20
+        configuration['vad_postspeech'] = 45
+        configuration['vad_threshold']  = 2
 
         engine = Speech::Engines::PocketsphinxEngine.new(pcm_audio_file_fullpath,
           configuration, {source_file_type: :raw})

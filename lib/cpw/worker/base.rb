@@ -111,7 +111,7 @@ module CPW
               @should_retry = true
             end
           rescue => ex
-            logger.info "+++ #{self.class.name}#lock exception = something went wrong performing ingest id=#{ingest.id}, retrying."
+            logger.info "+++ #{self.class.name}#lock exception caught performing ingest id=#{ingest.id}, retrying."
             @should_retry = true
             @has_perform_error = true
             raise ex
@@ -149,13 +149,24 @@ module CPW
         force? ? true : (!busy? && !terminate?)
       end
 
-      def can_stage?(previous_stage)
+      def can_stage?(saved_stage_name)
         if workflow?
           current_stage_position = ingest.workflow_stage_names.index(self.class.stage_name)
-          previous_stage_position = previous_stage ? ingest.workflow_stage_names.index(previous_stage) : -1
+          current_finished_stage_progress = self.class.finished_progress.to_i
+          saved_stage_position   = saved_stage_name ? ingest.workflow_stage_names.index(saved_stage_name) : -1
 
-          ((ingest.current_stage_name && ingest.state_started?) || (!ingest.current_stage_name && self.class.stage_name == "start")) &&
-            current_stage_position > previous_stage_position
+    #byebug
+
+          # Can perform/stage if:
+          # (1) We are at the beginning of the workflow (stage `start`)
+          # (2) Or, the workflow has started and staged
+          # (3) And, current stage position greater equal saved stage position
+
+          ((ingest.state_starting? && self.class.stage_name == "start") ||
+           (ingest.state_started? && !!ingest.current_stage_name)) &&
+
+          current_stage_position >= saved_stage_position &&
+            ingest.progress < current_finished_stage_progress
         else
           true
         end
@@ -201,7 +212,7 @@ module CPW
       end
 
       def previous_stage_name
-        @previous_stage_name || ingest.previous_stage_name
+        @previous_stage_name || @ingest.previous_stage_name
       end
 
       def terminate?

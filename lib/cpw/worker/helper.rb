@@ -5,7 +5,7 @@ module CPW::Worker::Helper
   # -------------------------------------------------------------
 
   def basefolder(uid = nil, stage = nil)
-    File.join("/tmp", (uid || @ingest.uid), (stage || @ingest.stage))
+    File.join("/tmp", (uid || @ingest.uid), (stage || self.class.stage_name))
   end
 
   def expand_fullpath_name(file_name, uid = nil, stage = nil)
@@ -380,7 +380,7 @@ module CPW::Worker::Helper
   def copy_or_download(file_method_name)
     file_name = send(file_method_name)
     file_method_fullpath_name = :"#{file_method_name}_fullpath"
-    previous_stage_file_fullpath = send(file_method_fullpath_name, @ingest.uid, self.class.previous_stage_name)
+    previous_stage_file_fullpath = send(file_method_fullpath_name, @ingest.uid, @ingest.previous_stage_name)
     current_stage_file_fullpath  = send(file_method_fullpath_name)
 
     if File.exist?(previous_stage_file_fullpath)

@@ -54,6 +54,18 @@ module CPW
           end
         end
 
+        # Adds stage helper methods
+        # E.g. stage_start?
+        def method_missing(method_name, *arguments)
+          inquiry = method_name[/^stage_(\w+)\?/, 1].try(:to_s)
+
+          if inquiry
+            self.current_stage_name == inquiry
+          else
+            super
+          end
+        end
+
         def track
           tracks_including_master_track.where(any_of_types: ["document_track"]).first
         end

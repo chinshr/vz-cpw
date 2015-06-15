@@ -28,6 +28,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "test-unit", "~> 3.0"
   spec.add_development_dependency "mocha"
   spec.add_development_dependency "webmock"
+  spec.add_development_dependency "byebug"
 
   spec.add_dependency "pocketsphinx-ruby", ["~> 0.3.0", '< 1']
   spec.add_dependency "multi_json"
