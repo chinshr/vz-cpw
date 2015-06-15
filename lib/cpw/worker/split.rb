@@ -16,8 +16,6 @@ module CPW
         create_raw
         split
         cleanup
-
-        Crowd.perform_async(body.delete("workflow")) unless test?
       end
 
       protected
