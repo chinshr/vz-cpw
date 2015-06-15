@@ -193,7 +193,7 @@ module CPW
       end
 
       def has_next_stage?
-        ingest && ingest.next_stage_name
+        !!(workflow? && ingest && ingest.next_stage_name)
       end
 
       def queue_name
