@@ -114,6 +114,7 @@ module CPW
             logger.info "+++ #{self.class.name}#lock exception caught performing ingest id=#{ingest.id}, retrying."
             @should_retry = true
             @has_perform_error = true
+            @saved_exception = ex
             raise ex
           ensure
             unlock! if busy?
@@ -155,12 +156,11 @@ module CPW
           current_finished_stage_progress = self.class.finished_progress.to_i
           saved_stage_position   = saved_stage_name ? ingest.workflow_stage_names.index(saved_stage_name) : -1
 
-    #byebug
-
           # Can perform/stage if:
           # (1) We are at the beginning of the workflow (stage `start`)
           # (2) Or, the workflow has started and staged
           # (3) And, current stage position greater equal saved stage position
+          # (4) And, has not finished with stage progress
 
           ((ingest.state_starting? && self.class.stage_name == "start") ||
            (ingest.state_started? && !!ingest.current_stage_name)) &&
@@ -185,9 +185,24 @@ module CPW
 
       def unlock!(attributes = {})
         attributes = attributes.merge({busy: false}).reject {|k,v| v.nil?}
+
+        # store progress
         if finished_progress > 0 && can_perform? && !has_perform_error?
           attributes.merge!({progress: finished_progress})
         end
+
+        # store exception context
+        if @saved_exception
+          new_messages = ingest.messages || {}
+          new_messages[self.class.stage_name] ||= {}
+          new_messages[self.class.stage_name]["message"] = @saved_exception.message
+          if @saved_exception.backtrace
+            new_messages[self.class.stage_name]["backtrace"] = @saved_exception.backtrace
+          end
+          attributes.merge!({messages: new_messages})
+        end
+
+        # update ingest
         logger.info "+++ #{self.class.name}#unlock! #{attributes.inspect}"
         update_ingest(attributes)
       end

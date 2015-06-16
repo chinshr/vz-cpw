@@ -113,7 +113,7 @@ module CPW
 
       def copy_or_download_from_chunk_track(chunk, key_attribute_name)
         file_name = File.basename(chunk.track.send(key_attribute_name))
-        previous_stage_file_fullpath = expand_fullpath_name(file_name, @ingest.uid, self.class.previous_stage_name)
+        previous_stage_file_fullpath = expand_fullpath_name(file_name, @ingest.uid, @ingest.previous_stage_name)
         current_stage_file_fullpath  = expand_fullpath_name(file_name)
 
         if File.exist?(previous_stage_file_fullpath)

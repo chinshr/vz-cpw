@@ -3,6 +3,8 @@ module CPW
     class Archive < Worker::Base
       include Worker::Helper
 
+      self.finished_progress = 99
+
       shoryuken_options queue: -> { queue_name },
         auto_delete: false, body_parser: :json
 
