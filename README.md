@@ -89,3 +89,4 @@ Mac: https://github.com/beschulz/wav2json#on-max-os
 * Concatenate wav files -- http://superuser.com/questions/587511/concatenate-multiple-wav-files-using-single-command-without-extra-file
 * Ruby Pocketsphinx server -- https://github.com/alumae/ruby-pocketsphinx-server
 * Kaldi GStreamer server -- https://github.com/alumae/kaldi-gstreamer-server
+* Kaldi offline transcriber -- https://github.com/alumae/kaldi-offline-transcriber

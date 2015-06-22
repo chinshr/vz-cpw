@@ -14,14 +14,17 @@ module CPW
         logger.info("+++ #{self.class.name}#perform, body #{body.inspect}")
 
         # Chunks to be crowd sourced
-        source_chunks = Ingest::Chunk.where({ingest_id: @ingest.id,
+        source_chunks = Ingest::Chunk.where({
+          ingest_id: @ingest.id,
           any_of_ingest_iterations: @ingest.iteration,
           score_lt: SOURCE_CHUNK_SCORE_THRESHOLD,
           any_of_types: "pocketsphinx_chunk",
           any_of_processing_status: [Ingest::Chunk::STATUS_ENCODED, Ingest::Chunk::STATUS_TRANSCRIBED]
         })
 
-        # Go through each and find any high-confidence reference chunk
+        # Go through each source chunk, select those with low score
+        # find a qualified high-confidence reference chunk and
+        # merge the two into a CaptchaChunk.
         source_chunks.each do |source_chunk|
           logger.info "-> source_chunk = #{source_chunk.id}"
 
