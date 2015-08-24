@@ -16,6 +16,72 @@ Or install it yourself as:
 
     $ gem install cpw
 
+## Server Tools Installation
+
+Note: Installation done on fresh AWS Ubuntu 64-bit server (ami-d05e75b8) instance.
+
+Example:
+
+    ssh -i ~/.ssh/vz-cpw-ec2.pem ubuntu@54.175.249.21
+
+1. Install `ffmpeg`, use the following this [official script](https://trac.ffmpeg.org/wiki/CompilationGuide/Ubuntu) or that [alternative script](https://gist.github.com/xdamman/e4f713c8cd1a389a5917). Note: Update the /etc/apt/sources.list using this http://superuser.com/questions/467774/how-to-install-libfaac-dev
+
+2. Install `sox`.
+
+    sudo apt-get install sox
+
+3. Install 'wav2json', installation instructions on https://github.com/beschulz/wav2json
+
+4. sphinxbase/pocketsphinx
+
+Install `bison`, a pre-requisite to SphinxBase.
+
+    sudo apt-get install bison
+
+Install SphinxBase:
+
+    wget -O sphinxbase-0.8.tar.gz http://sourceforge.net/projects/cmusphinx/files/sphinxbase/0.8/sphinxbase-0.8.tar.gz/download
+    tar -xvzf sphinxbase-0.8.tar.gz
+    cd sphinxbase-0.8
+    ./configure --prefix=/usr/local
+    make
+    sudo make install
+
+Setup shared library path before proceeding. Add the following lines at the end of `~/.bashrc` or system wide in `/etc/environment`:
+
+    export LD_LIBRARY_PATH=/usr/local/lib
+    export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
+
+Install PocketSphinx:
+
+    wget -O pocketsphinx-0.8.tar.gz http://sourceforge.net/projects/cmusphinx/files/pocketsphinx/0.8/pocketsphinx-0.8.tar.gz/download
+    tar -xvzf pocketsphinx-0.8.tar.gz
+    cd pocketsphinx-0.8
+    ./configure --prefix=/usr/local
+    make
+    sudo make install
+
+Test pocketsphinx on command line:
+
+    pocketsphinx_continuous -inmic yes
+
+Downloading additional language models (here example French), which are located [here](http://sourceforge.net/projects/cmusphinx/files/Acoustic%20and%20Language%20Models/):
+
+    wget -O lium_french_f0.tar.gz http://sourceforge.net/projects/cmusphinx/files/Acoustic%20and%20Language%20Models/French/cmusphinx-fr-5.2.tar.gz/download
+    tar -xvzf lium_french_f0.tar.gz
+    cd cmusphinx-fr-5.2
+    mkdir -p `pkg-config --variable=modeldir pocketsphinx`/hmm/fr_FR/french_f0
+    mv * `pkg-config --variable=modeldir pocketsphinx`/hmm/fr_FR/french_f0
+
+    wget -O french3g62K.lm.dmp http://sourceforge.net/projects/cmusphinx/files/Acoustic%20and%20Language%20Models/French%20Language%20Model/french3g62K.lm.dmp/download
+    sudo mkdir -p `pkg-config --variable=modeldir pocketsphinx`/lm/fr_FR/
+    sudo mv french3g62K.lm.dmp `pkg-config --variable=modeldir pocketsphinx`/lm/fr_FR/
+
+    wget -O frenchWords62K.dic http://sourceforge.net/projects/cmusphinx/files/Acoustic%20and%20Language%20Models/French%20Language%20Model/frenchWords62K.dic/download
+    sudo mv frenchWords62K.dic `pkg-config --variable=modeldir pocketsphinx`/lm/fr_FR/
+
+Note: From [Ubuntu (French) Forum](http://doc.ubuntu-fr.org/pocketsphinx)
+
 ## Usage
 
 ### Start Server
