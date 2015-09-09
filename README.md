@@ -110,6 +110,14 @@ Or, manually startup an IRB session:
 
     bundle exec irb -r "cpw"
 
+On the CPW console, in order to manually test workers, you can start a one-off worker (without going through the rest of the workflow), like this:
+
+    CPW::Worker::Crowdout.perform_test({"ingest_id" => 46})
+
+If you want to start the entire workflow, add the `workflow` key in the body:
+
+    CPW::Worker::Start.perform_test({"ingest_id" => 46, "workflow" => true})
+
 ### Send a message
 
     sqs = AWS::SQS.new
