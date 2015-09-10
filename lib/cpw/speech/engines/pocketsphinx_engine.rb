@@ -62,8 +62,8 @@ module CPW
             result['status']        = AudioChunk::STATUS_TRANSCRIBED
             chunk.status            = AudioChunk::STATUS_TRANSCRIBED
             chunk.best_text         = result['hypothesis']
-            chunk.best_score        = data['confidence'] || -1
-            self.score              += data['confidence'] || 0
+            chunk.best_score        = data['path_score'] || -1
+            self.score              += data['path_score'] || 0
             self.segments           += 1
             logger.info "hypothesis: #{result['hypotheses']}" if self.verbose
           else

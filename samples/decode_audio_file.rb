@@ -6,7 +6,7 @@ require "pocketsphinx-ruby"
 include Pocketsphinx
 
 decoder = Decoder.new(Configuration.default)
-decoder.decode 'examples/assets/audio/goforward.raw'
+decoder.decode 'samples/assets/audio/goforward.raw'
 
 puts decoder.hypothesis # => "go forward ten meters"
 

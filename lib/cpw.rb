@@ -25,11 +25,7 @@ Dir[File.dirname(__FILE__) + "/cpw/client/resources/**/*.rb"].each {|file| requi
 require "pocketsphinx-ruby"
 require "cpw/pocketsphinx/audio_file_speech_recognizer"
 
-require "cpw/speech/audio_inspector"
-require "cpw/speech/audio_splitter"
-require "cpw/speech/audio_chunk"
-require "cpw/speech/engines/base"
-Dir[File.dirname(__FILE__) + "/cpw/speech/engines/**/*.rb"].each {|file| require file}
+require "cpw/speech"
 
 require "cpw/worker/base"
 require "cpw/worker/helper"
