@@ -5,6 +5,10 @@ module CPW
       private
 
       # Override from superclass
+      # This will pass a decoder instance to the block,
+      # instead of the hypothesis instance. This makes is
+      # easy to receive `decoder.words` and
+      # `decoder.hypothesis`.
       def recognize_after_speech(max_samples, buffer)
         if in_speech?
           while in_speech?
