@@ -96,10 +96,6 @@ module CPW
           response['path_score']     = decoder.hypothesis.path_score
           response['posterior_prob'] = average_posterior_probability(decoder)
           response['words']          = build_words_response(decoder)
-          # response['status']       = ???
-          # response['id']           = ???
-          # response['confidence']   = ???
-          # response['errors']       = ???
           response
         end
 
