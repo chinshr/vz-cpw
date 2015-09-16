@@ -62,8 +62,8 @@ module CPW
             result['status']        = AudioChunk::STATUS_TRANSCRIBED
             chunk.status            = AudioChunk::STATUS_TRANSCRIBED
             chunk.best_text         = result['hypothesis']
-            chunk.best_score        = data['path_score'] || -1
-            self.score              += data['path_score'] || 0
+            chunk.best_score        = data['posterior_prob']
+            self.score              += data['posterior_prob']
             self.segments           += 1
             logger.info "hypothesis: #{result['hypotheses']}" if self.verbose
           else
@@ -87,30 +87,45 @@ module CPW
         end
 
         def decode_duration(decoder)
-          decode_end_time(decoder) -  decode_start_time(decoder)
+          decode_end_time(decoder) - decode_start_time(decoder)
         end
 
         def build_response(decoder)
           response = {}
-          response['hypothesis'] = decoder.hypothesis
-          response['path_score'] = decoder.hypothesis.path_score
-          response['words']      = build_words_response(decoder)
-          # response['status']     = ???
-          # response['id']         = ???
-          # response['confidence'] = ???
-          # response['errors']     = ???
+          response['hypothesis']     = decoder.hypothesis
+          response['path_score']     = decoder.hypothesis.path_score
+          response['posterior_prob'] = average_posterior_probability(decoder)
+          response['words']          = build_words_response(decoder)
+          # response['status']       = ???
+          # response['id']           = ???
+          # response['confidence']   = ???
+          # response['errors']       = ???
           response
         end
 
         def build_words_response(decoder)
           decoder.words.map do |word|
             {
-              'word' => word.word,
-              'start_frame' => word.start_frame,
-              'end_frame' => word.end_frame,
-              'start_time' => (word.start_frame * 10) / 1000.to_f,
-              'end_time' => (word.end_frame * 10) / 1000.to_f,
+              'word'           => word.word,
+              'start_frame'    => word.start_frame,
+              'end_frame'      => word.end_frame,
+              'start_time'     => (word.start_frame * 10) / 1000.to_f,
+              'end_time'       => (word.end_frame * 10) / 1000.to_f,
+              'acoustic_score' => word.acoustic_score,
+              'language_score' => word.language_score,
+              'backoff_mode'   => word.backoff_mode,
+              'posterior_prob' => word.posterior_prob
             }
+          end
+        end
+
+        def average_posterior_probability(decoder)
+          words = decoder.words.dup
+          words.delete_if {|w| %w(<s> </s>).include?(w.word)}
+          if words.size > 0
+            words.inject(0) {|s, w| s + w.posterior_prob} / words.size.to_f
+          else
+            0.0
           end
         end
       end

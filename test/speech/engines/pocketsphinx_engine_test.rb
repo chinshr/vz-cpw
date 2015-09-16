@@ -9,7 +9,7 @@ class CPW::Speech::Engines::PocketsphinxEngineTest < Test::Unit::TestCase
   end
 
   def test_should_convert_audio_to_text
-    engine = CPW::Speech::Engines::PocketsphinxEngine.new("#{fixtures_root}/i-like-pickles.wav",
+    engine = CPW::Speech::Engines::PocketsphinxEngine.new("#{fixtures_root}/goforward.raw",
       @configuration, {source_file_type: :raw})
 
     engine.perform(locale: "en-US", basefolder: "/tmp").each do |audio_chunk|
@@ -17,10 +17,27 @@ class CPW::Speech::Engines::PocketsphinxEngineTest < Test::Unit::TestCase
       assert_not_nil audio_chunk.best_text
       assert_equal true, audio_chunk.best_score > 0.3
       assert_equal CPW::Speech::AudioChunk::STATUS_TRANSCRIBED, audio_chunk.status
+
+      assert_equal audio_chunk.best_text, audio_chunk.response['hypothesis']
+      assert_equal "go forward ten meters", audio_chunk.best_text
+      assert_equal audio_chunk.best_score, audio_chunk.response['posterior_prob']
+      assert_equal true, audio_chunk.best_score >= 0.59 && audio_chunk.best_score <= 0.6
+      assert_equal 2.55, audio_chunk.duration
+
       assert audio_chunk.response['hypothesis']
-      assert_equal audio_chunk.best_score, audio_chunk.response['path_score']
+      assert audio_chunk.response['path_score']
+      assert audio_chunk.response['posterior_prob']
+
       assert audio_chunk.response['words']
-      assert_equal true, audio_chunk.duration >= 2.55
+      assert_equal "go", audio_chunk.response['words'][1]['word']
+      assert audio_chunk.response['words'][1]['start_frame']
+      assert audio_chunk.response['words'][1]['end_frame']
+      assert audio_chunk.response['words'][1]['start_time']
+      assert audio_chunk.response['words'][1]['end_time']
+      assert audio_chunk.response['words'][1]['acoustic_score']
+      assert audio_chunk.response['words'][1]['language_score']
+      assert audio_chunk.response['words'][1]['backoff_mode']
+      assert audio_chunk.response['words'][1]['posterior_prob']
     end
 
   end
