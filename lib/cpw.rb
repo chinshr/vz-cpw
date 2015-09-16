@@ -79,6 +79,7 @@ module CPW
   self.logger        = MonoLogger.new(STDOUT)
   #self.logger.level  = MonoLogger::WARN
 
+  logger.info "Loading #{ENV.fetch("CPW_ENV", 'development')} environment (CPW #{CPW::VERSION})"
   logger.info "Base URL:      " + ENV['BASE_URL']
   logger.info "Client key:    " + ENV['CLIENT_KEY']
   logger.info "Access token:  " + store[:access_token]
