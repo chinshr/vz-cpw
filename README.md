@@ -18,21 +18,45 @@ Or install it yourself as:
 
 ## Server Tools Installation
 
+Run `rake check` to see if all server tool dependencies are installed.
+
 Note: Installation done on fresh AWS Ubuntu 64-bit server (ami-d05e75b8) instance.
 
-Example:
+SSH'ing to server (get `vz-cpw-ec2.pem` from [vz-certs](https://github.com/vzo/vz-certs)):
 
     ssh -i ~/.ssh/vz-cpw-ec2.pem ubuntu@54.175.249.21
 
-1. Install `ffmpeg`, use the following this [official script](https://trac.ffmpeg.org/wiki/CompilationGuide/Ubuntu) or that [alternative script](https://gist.github.com/xdamman/e4f713c8cd1a389a5917). Note: Update the /etc/apt/sources.list using this http://superuser.com/questions/467774/how-to-install-libfaac-dev
+### Ruby
 
-2. Install `sox`.
+As standard package install:
+
+    sudo apt-get install ruby
+
+### RVM
+
+Use these [installation instructions](https://rvm.io/rvm/install).
+
+Install public key:
+
+    gpg --keyserver hkp://keys.gnupg.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3
+
+Install RVM:
+
+    \curl -sSL https://get.rvm.io | bash -s stable --ruby
+
+### Install `ffmpeg`
+
+Use the following this [official script](https://trac.ffmpeg.org/wiki/CompilationGuide/Ubuntu) or that [alternative script](https://gist.github.com/xdamman/e4f713c8cd1a389a5917). Note: Update the /etc/apt/sources.list using this http://superuser.com/questions/467774/how-to-install-libfaac-dev
+
+### Install `sox`
 
     sudo apt-get install sox
 
-3. Install 'wav2json', installation instructions on https://github.com/beschulz/wav2json
+### Install `wav2json`
 
-4. sphinxbase/pocketsphinx
+Follow these [installation instructions](https://github.com/beschulz/wav2json).
+
+### Install Sphinxbase + Pocketsphinx
 
 Install `bison`, a pre-requisite to SphinxBase.
 
@@ -82,6 +106,18 @@ Downloading additional language models (here example French), which are located 
 
 Note: From [Ubuntu (French) Forum](http://doc.ubuntu-fr.org/pocketsphinx)
 
+### Install CPW
+
+    cd
+    git clone git@github.com:vzo/vz-cpw.git
+    cd vz-cpw
+    bundle install
+    rake check
+
+### Launch CPW
+
+    CPW_ENV=production bundle exec shoryuken -r cpw.rb -C config/shoryuken.yml
+
 ## Usage
 
 ### Start Server
@@ -96,7 +132,7 @@ Type `cpw help` for more help.
 
 Or, manually starting up the server:
 
-    bundle exec shoryuken -r cpw.rb -C config/shoryuken.yml
+    CPW_ENV=development bundle exec shoryuken -r cpw.rb -C config/shoryuken.yml
 
 ### Start Console
 
