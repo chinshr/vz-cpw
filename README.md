@@ -16,11 +16,9 @@ Or install it yourself as:
 
     $ gem install cpw
 
-## Server Tools Installation
+## Server Installation
 
-Note: If you have installed CPW already, run `rake check` to see if all server tool dependencies are installed.
-
-Note: Installation performed on fresh AWS Ubuntu 64-bit server (ami-d05e75b8) instance.
+The following instructions describe all necessary steps to install CPW its dependencies on 3rd party tools on a fresh AWS instance of Ubuntu 64-bit server (ami-d05e75b8).
 
 ### SSH + PEM
 
@@ -70,36 +68,44 @@ Follow these [installation instructions](https://github.com/beschulz/wav2json).
 
 ### Install Sphinxbase + Pocketsphinx
 
-Install `bison`, a pre-requisite to SphinxBase.
+#### Install Pre-requisite
 
     sudo apt-get install bison
+    sudo apt-get install python-dev
+    sudo apt-get install swig
 
-Install SphinxBase:
+#### Install SphinxBase from GitHub (Source)
 
-    wget -O sphinxbase-0.8.tar.gz http://sourceforge.net/projects/cmusphinx/files/sphinxbase/0.8/sphinxbase-0.8.tar.gz/download
-    tar -xvzf sphinxbase-0.8.tar.gz
-    cd sphinxbase-0.8
-    ./configure --prefix=/usr/local
+    cd
+    git clone https://github.com/cmusphinx/sphinxbase
+    cd sphinxbase
+    ./autogen.sh
     make
     sudo make install
 
-Setup shared library path before proceeding. Add the following lines at the end of `~/.bashrc` or system wide in `/etc/environment`:
+Note: Setup shared library path before proceeding. Add the following lines at the end of `~/.bashrc` or system wide in `/etc/environment`:
 
     export LD_LIBRARY_PATH=/usr/local/lib
     export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
 
-Install PocketSphinx:
+#### Install Pocketsphinx from GitHub (Source)
 
-    wget -O pocketsphinx-0.8.tar.gz http://sourceforge.net/projects/cmusphinx/files/pocketsphinx/0.8/pocketsphinx-0.8.tar.gz/download
-    tar -xvzf pocketsphinx-0.8.tar.gz
-    cd pocketsphinx-0.8
+    cd
+    git clone git@github.com:cmusphinx/pocketsphinx.git
+    cd pocketsphinx
+    ./autogen.sh
     ./configure --prefix=/usr/local
-    make
+    make clean all
+    make check
     sudo make install
 
 Test pocketsphinx on command line:
 
-    pocketsphinx_continuous -inmic yes
+    $ which pocketsphinx_continuous
+    # /usr/local/bin/pocketsphinx_continuous
+    $ pocketsphinx_continuous # -inmic yes
+
+#### Download Language Models
 
 Downloading additional language models (here example French), which are located [here](http://sourceforge.net/projects/cmusphinx/files/Acoustic%20and%20Language%20Models/):
 
@@ -120,17 +126,63 @@ Note: From [Ubuntu (French) Forum](http://doc.ubuntu-fr.org/pocketsphinx)
 
 ### Install CPW
 
+Install correct ruby version:
+
+    rvm install ruby-2.1.1
+    rvm --default use 2.1.1
+    ruby -v # check
+
+Clone repo into home folder:
+
     cd
     git clone git@github.com:vzo/vz-cpw.git
     cd vz-cpw
+
+Install bundler:
+
+    sudo apt-get install bundler
+    gem install bundler
+
+Install `libcurl` native extension:
+
+    apt-get install libcurl4-gnutls-dev
+
+Install gems:
+
     bundle install
     rake check
 
-### Launch CPW
+If all dependencies are installed correctly you should see following output:
+
+    Checking tools...
+    checking for ruby... yes
+    checking for rvm... yes
+    checking for git... yes
+    checking for ffmpeg... yes
+    checking for sox... yes
+    checking for wav2json... yes
+    checking for pocketsphinx_continuous... yes
+
+Create a `.env` in the CPW root folder as the core credentials are not stored in the Git repo.
+
+    vi .env
+    export CLIENT_KEY="<get-client-key-from-vz-service>"
+    export DEVICE_UID="aws-ec2-vz-cpw"
+    export USER_EMAIL="cpw@voyz.es"
+    export USER_PASSWORD="<get-cpw-password-from-vz-service>"
+    export QUEUE_NAME="%{stage}_%{env}_QUEUE"
+    export AWS_REGION="us-east-1"
+    export S3_URL="http://s3.amazonaws.com"
+
+Launch CPW console in production environemnt:
+
+    CPW_ENV=production cpw c
+
+### Launch Server
 
     CPW_ENV=production bundle exec shoryuken -r cpw.rb -C config/shoryuken.yml
 
-## Usage
+## Development Environment Usage
 
 ### Start Server
 
