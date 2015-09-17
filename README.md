@@ -40,7 +40,7 @@ Install standard package (ruby 1.9.3):
 
 Use these [installation instructions](https://rvm.io/rvm/install). Install public key first, then install RVM ruby.
 
-### Git + SSH keys
+### Git + GitHub SSH keys
 
     sudo apt-get install git
 
@@ -169,7 +169,7 @@ Create a `.env` in the CPW root folder as the core credentials are not stored in
     export S3_KEY="<s3-key>"
     export S3_SECRET="s3-secret"
 
-Launch CPW console in production environemnt:
+Test to launch CPW console in production environment:
 
     CPW_ENV=production cpw c
 
