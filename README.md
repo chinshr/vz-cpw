@@ -18,11 +18,11 @@ Or install it yourself as:
 
 ## Server Installation
 
-The following instructions describe all necessary steps to install CPW its dependencies on 3rd party tools on a fresh AWS instance of Ubuntu 64-bit server (ami-d05e75b8).
+The following instructions describe all necessary steps to install CPW and its dependencies on 3rd party tools on a freshly created AWS instance of Ubuntu 64-bit server (ami-d05e75b8).
 
 ### SSH + PEM
 
-SSH'ing to server (get `vz-cpw-ec2.pem` from [vz-certs](https://github.com/vzo/vz-certs)):
+From your terminal ssh into server (first, get `vz-cpw-ec2.pem` from [vz-certs](https://github.com/vzo/vz-certs)):
 
     ssh -i ~/.ssh/vz-cpw-ec2.pem ubuntu@<public-ip/dn>
 
@@ -38,25 +38,17 @@ Install standard package (ruby 1.9.3):
 
 ### Install RVM
 
-Use these [installation instructions](https://rvm.io/rvm/install).
-
-Install public key:
-
-    gpg --keyserver hkp://keys.gnupg.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3
-
-Install RVM:
-
-    \curl -sSL https://get.rvm.io | bash -s stable --ruby
+Use these [installation instructions](https://rvm.io/rvm/install). Install public key first, then install RVM ruby.
 
 ### Git + SSH keys
 
     sudo apt-get install git
 
-Follow [Generating SSH keys instructions](https://help.github.com/articles/generating-ssh-keys/#platform-linux) to get access to the [VZO Git repos](https://github.com/vzo).
+Follow [Generating SSH keys instructions](https://help.github.com/articles/generating-ssh-keys/#platform-linux) to get have access to the [VZO GitHub repo](https://github.com/vzo).
 
 ### Install `ffmpeg`
 
-Use the following this [official script](https://trac.ffmpeg.org/wiki/CompilationGuide/Ubuntu) or that [alternative script](https://gist.github.com/xdamman/e4f713c8cd1a389a5917). Note: Update the /etc/apt/sources.list using this http://superuser.com/questions/467774/how-to-install-libfaac-dev
+Use the following [this official script](https://trac.ffmpeg.org/wiki/CompilationGuide/Ubuntu) or [this alternative script](https://gist.github.com/xdamman/e4f713c8cd1a389a5917). Note: Update the /etc/apt/sources.list using this http://superuser.com/questions/467774/how-to-install-libfaac-dev
 
 ### Install `sox`
 
@@ -68,13 +60,15 @@ Follow these [installation instructions](https://github.com/beschulz/wav2json).
 
 ### Install Sphinxbase + Pocketsphinx
 
-#### Install Pre-requisite
+#### Install Prerequisites
 
     sudo apt-get install bison
     sudo apt-get install python-dev
     sudo apt-get install swig
 
 #### Install SphinxBase from GitHub (Source)
+
+The following steps were derived from [these Homebrew scripts](https://github.com/watsonbox/homebrew-cmu-sphinx).
 
     cd
     git clone https://github.com/cmusphinx/sphinxbase
