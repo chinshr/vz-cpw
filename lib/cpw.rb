@@ -41,6 +41,7 @@ module CPW
   include Client::Resources
 
   class << self
+    attr_accessor :env
     attr_accessor :root_path
     attr_accessor :lib_path
     attr_accessor :store
@@ -54,18 +55,19 @@ module CPW
     attr_accessor :logger
 
     def test?
-      ENV['CPW_ENV'] == 'test'
+      env == 'test'
     end
 
     def development?
-      ENV['CPW_ENV'] == 'development'
+      env == 'development'
     end
 
     def production?
-      ENV['CPW_ENV'] == 'production'
+      env == 'production'
     end
   end
 
+  self.env           = ENV.fetch("CPW_ENV", 'development')
   self.root_path     = File.expand_path "../..", __FILE__
   self.lib_path      = File.expand_path "..", __FILE__
   self.base_url      = ENV['BASE_URL']
@@ -73,13 +75,13 @@ module CPW
   self.device_uid    = ENV['DEVICE_UID']
   self.user_email    = ENV['USER_EMAIL']
   self.user_password = ENV['USER_PASSWORD']
-  self.store         = CPW::Store.new
+  self.store         = CPW::Store.new("cpw.#{self.env}.pstore")
   self.access_token  = store[:access_token]
   self.access_secret = store[:access_secret]
   self.logger        = MonoLogger.new(STDOUT)
   #self.logger.level  = MonoLogger::WARN
 
-  logger.info "Loading #{ENV.fetch("CPW_ENV", 'development')} environment (CPW #{CPW::VERSION})"
+  logger.info "Loading #{CPW.env} environment (CPW #{CPW::VERSION})"
   logger.info "Using API Base URL: " + ENV.fetch('BASE_URL', 'unknown, missing BASE_URL in .env files')
   logger.info "Client key: " + ENV.fetch('CLIENT_KEY', 'unknown, missing CLIENT_KEY in .env files')
   if store[:access_token] && store[:access_secret]
