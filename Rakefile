@@ -14,7 +14,7 @@ task :yard do
 end
 
 task :check do
-  puts "Checking tools..."
+  puts "Checking dependencies..."
   find_executable 'ruby'
   find_executable 'rvm'
   find_executable 'git'

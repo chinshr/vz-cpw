@@ -80,10 +80,14 @@ module CPW
   #self.logger.level  = MonoLogger::WARN
 
   logger.info "Loading #{ENV.fetch("CPW_ENV", 'development')} environment (CPW #{CPW::VERSION})"
-  logger.info "Base URL: " + ENV.fetch('BASE_URL', 'unknown, missing BASE_URL in .env files')
+  logger.info "Using API Base URL: " + ENV.fetch('BASE_URL', 'unknown, missing BASE_URL in .env files')
   logger.info "Client key: " + ENV.fetch('CLIENT_KEY', 'unknown, missing CLIENT_KEY in .env files')
-  logger.info "Access token: " + (store[:access_token] || "n/a in store")
-  logger.info "Access secret: " + (store[:access_secret] || "n/a in store")
+  if store[:access_token] && store[:access_secret]
+    logger.info "Signing in with access token: " + (store[:access_token] || "n/a in store")
+    logger.info "Access secret: " + (store[:access_secret] || "n/a in store")
+  else
+    logger.info "Signing in with email: " + ENV.fetch('USER_EMAIL', 'unknown, missing USER_EMAIL in .env files')
+  end
 
   Spyke::Base.connection = Faraday.new(url: ENV['BASE_URL']) do |c|
    c.request :json
