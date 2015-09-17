@@ -18,21 +18,27 @@ Or install it yourself as:
 
 ## Server Tools Installation
 
-Run `rake check` to see if all server tool dependencies are installed.
+Note: If you have installed CPW already, run `rake check` to see if all server tool dependencies are installed.
 
-Note: Installation done on fresh AWS Ubuntu 64-bit server (ami-d05e75b8) instance.
+Note: Installation performed on fresh AWS Ubuntu 64-bit server (ami-d05e75b8) instance.
+
+### SSH + PEM
 
 SSH'ing to server (get `vz-cpw-ec2.pem` from [vz-certs](https://github.com/vzo/vz-certs)):
 
+    ssh -i ~/.ssh/vz-cpw-ec2.pem ubuntu@<public-ip/dn>
+
+Example:
+
     ssh -i ~/.ssh/vz-cpw-ec2.pem ubuntu@54.175.249.21
 
-### Ruby
+### Install Ruby
 
-As standard package install:
+Install standard package (ruby 1.9.3):
 
     sudo apt-get install ruby
 
-### RVM
+### Install RVM
 
 Use these [installation instructions](https://rvm.io/rvm/install).
 
@@ -43,6 +49,12 @@ Install public key:
 Install RVM:
 
     \curl -sSL https://get.rvm.io | bash -s stable --ruby
+
+### Git + SSH keys
+
+    sudo apt-get install git
+
+Follow [Generating SSH keys instructions](https://help.github.com/articles/generating-ssh-keys/#platform-linux) to get access to the [VZO Git repos](https://github.com/vzo).
 
 ### Install `ffmpeg`
 
