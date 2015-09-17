@@ -164,9 +164,10 @@ Create a `.env` in the CPW root folder as the core credentials are not stored in
     export DEVICE_UID="aws-ec2-vz-cpw"
     export USER_EMAIL="cpw@voyz.es"
     export USER_PASSWORD="<get-cpw-password-from-vz-service>"
-    export QUEUE_NAME="%{stage}_%{env}_QUEUE"
     export AWS_REGION="us-east-1"
     export S3_URL="http://s3.amazonaws.com"
+    export S3_KEY="<s3-key>"
+    export S3_SECRET="s3-secret"
 
 Launch CPW console in production environemnt:
 
