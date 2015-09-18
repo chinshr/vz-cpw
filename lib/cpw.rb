@@ -63,6 +63,8 @@ module CPW
       env == 'production'
     end
 
+    protected
+
     def load_workers!
       # Load workers
       Dir[File.dirname(__FILE__) + "/cpw/worker/**/*.rb"].each {|file| require file}
