@@ -164,7 +164,7 @@ Create a `.env` in the CPW root folder as the core credentials are not stored in
     export DEVICE_UID="aws-ec2-vz-cpw"
     export USER_EMAIL="cpw@voyz.es"
     export USER_PASSWORD="<get-cpw-password-from-vz-service>"
-    export AWS_REGION="us-east-1"
+    export S3_AWS_REGION="us-east-1"
     export S3_URL="http://s3.amazonaws.com"
     export S3_KEY="<s3-key>"
     export S3_SECRET="s3-secret"
@@ -174,6 +174,12 @@ Test to launch CPW console in production environment:
     CPW_ENV=production cpw c
 
 ### Launch Server
+
+Create SQS queues in the production enviroment:
+
+    CPW_ENV=production rake sqs:queues:create
+
+Start the server:
 
     CPW_ENV=production bundle exec shoryuken -r cpw.rb -C config/shoryuken.yml
 
