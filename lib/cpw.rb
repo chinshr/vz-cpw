@@ -33,10 +33,6 @@ require "cpw/middleware/lock_ingest"
 
 require_relative "../config/initializers/shoryuken"
 
-# Load workers
-Dir[File.dirname(__FILE__) + "/cpw/worker/**/*.rb"].each {|file| require file}
-CPW::Worker::Base.register_cpw_workers
-
 module CPW
   include Client::Resources
 
@@ -52,6 +48,7 @@ module CPW
     attr_accessor :access_secret
     attr_accessor :user_email
     attr_accessor :user_password
+    attr_accessor :queue_name_mask
     attr_accessor :logger
 
     def test?
@@ -65,21 +62,29 @@ module CPW
     def production?
       env == 'production'
     end
+
+    def load_workers!
+      # Load workers
+      Dir[File.dirname(__FILE__) + "/cpw/worker/**/*.rb"].each {|file| require file}
+      CPW::Worker::Base.register_cpw_workers
+    end
   end
 
-  self.env           = ENV.fetch("CPW_ENV", 'development')
-  self.root_path     = File.expand_path "../..", __FILE__
-  self.lib_path      = File.expand_path "..", __FILE__
-  self.base_url      = ENV['BASE_URL']
-  self.client_key    = ENV['CLIENT_KEY']
-  self.device_uid    = ENV['DEVICE_UID']
-  self.user_email    = ENV['USER_EMAIL']
-  self.user_password = ENV['USER_PASSWORD']
-  self.store         = CPW::Store.new("cpw.#{self.env}.pstore")
-  self.access_token  = store[:access_token]
-  self.access_secret = store[:access_secret]
-  self.logger        = MonoLogger.new(STDOUT)
-  #self.logger.level  = MonoLogger::WARN
+  self.env             = ENV.fetch("CPW_ENV", 'development')
+  self.root_path       = File.expand_path "../..", __FILE__
+  self.lib_path        = File.expand_path "..", __FILE__
+  self.base_url        = ENV['BASE_URL']
+  self.client_key      = ENV['CLIENT_KEY']
+  self.device_uid      = ENV['DEVICE_UID']
+  self.user_email      = ENV['USER_EMAIL']
+  self.user_password   = ENV['USER_PASSWORD']
+  self.queue_name_mask = ENV.fetch('QUEUE_NAME_MASK', "%{stage}_%{env}_QUEUE")
+  self.store           = CPW::Store.new("cpw.#{self.env}.pstore")
+  self.access_token    = store[:access_token]
+  self.access_secret   = store[:access_secret]
+  self.logger          = MonoLogger.new(STDOUT)
+
+  self.load_workers!
 
   logger.info "Loading #{CPW.env} environment (CPW #{CPW::VERSION})"
   logger.info "Using API Base URL: " + ENV.fetch('BASE_URL', 'unknown, missing BASE_URL in .env files')

@@ -15,9 +15,9 @@ module CPW
         end
 
         def queue_name
-          name = ENV.fetch('QUEUE_NAME', "%{stage}_%{env}_QUEUE").dup
+          name = CPW.queue_name_mask.dup
           name.gsub!(/%{stage}/i, stage_name)
-          name.gsub!(/%{env}/i, ENV.fetch('CPW_ENV', 'development'))
+          name.gsub!(/%{env}/i, CPW.env)
           name.upcase
         end
 
