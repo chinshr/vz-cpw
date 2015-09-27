@@ -183,6 +183,42 @@ Start the server:
 
     CPW_ENV=production bundle exec shoryuken -r cpw.rb -C config/shoryuken.yml
 
+### Configure Monit
+
+Download and start `monit`.
+
+    sudo apt-get install monit
+    sudo monit
+
+Create a shared folder and sub-folders (for pids, log, etc.)
+
+    mkdir ~/shared
+    mkdir ~/shared/pids
+    mkdir ~/shared/log
+
+Create `shoryuken.monitrc` file
+
+    sudo touch /etc/monit/conf.d/shoryuken.monitrc
+    sudo chmod 0644 /etc/monit/conf.d/shoryuken.monitrc
+
+Edit `sudo vi /etc/monit/conf.d/shoryuken.monitrc`, add:
+
+check process shoryuken
+  with pidfile /home/ubuntu/shared/pids/shoryuken.pid
+  start program = "/bin/su - ubuntu -c 'cd /home/ubuntu/vz-cpw/ && CPW_ENV=production bundle exec shoryuken -r cpw.rb -L /home/ubuntu/vz-cpw/shared/log/shoryuken.log -C /home/ubuntu/vz-cpw/config/shoryuken.yml -P /home/ubuntu/shared/pids/shoryuken.pid  2>&1 | logger -t shoryuken'" with timeout 90 seconds
+  stop program = "/bin/su - ubuntu -c 'kill -s TERM `cat /home/ubuntu/shared/pids/shoryuken.pid`'" with timeout 90 seconds
+  group shoryuken_cpw_group
+
+Next, you should check the syntax of your monit file using:
+
+    sudo monit -t
+
+If everything is OK, start CPW with:
+
+    sudo monit start shoryuken
+
+You should see the CPW appear in the process list using `ps -ef`. If shoryuken shows up in the process, check if the PID file is created correctly in `~/shared/pids`. Tail the log at `tail -100 /var/log/monit.log`
+
 ## Development Environment Usage
 
 ### Start Server
