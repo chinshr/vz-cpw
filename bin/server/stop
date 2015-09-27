@@ -1,0 +1,6 @@
+#!/bin/bash
+set -e -x
+echo "stopping..."
+sudo monit
+sudo monit stop shoryuken
+echo "stopped."

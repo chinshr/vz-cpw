@@ -38,7 +38,7 @@ Install standard package (ruby 1.9.3):
 
 ### Install RVM
 
-Use these [installation instructions](https://rvm.io/rvm/install). Install public key first, then install RVM ruby.
+Use these [installation instructions](https://rvm.io/rvm/install). Install public key first, then install RVM Ruby.
 
 ### Git + GitHub SSH keys
 
@@ -120,10 +120,10 @@ Note: From [Ubuntu (French) Forum](http://doc.ubuntu-fr.org/pocketsphinx)
 
 ### Install CPW
 
-Install correct ruby version:
+Install correct Ruby version (or, same as in `.ruby-version`):
 
-    rvm install ruby-2.1.1
-    rvm --default use 2.1.1
+    rvm install ruby-2.1.7
+    rvm --default use 2.1.7
     ruby -v # check
 
 Clone repo into home folder:
@@ -131,6 +131,8 @@ Clone repo into home folder:
     cd
     git clone git@github.com:vzo/vz-cpw.git
     cd vz-cpw
+
+Note: Ruby 2.1.7 requires lates gmp libraries, install with `sudo apt-get install libgmp3-dev`.
 
 Install bundler:
 

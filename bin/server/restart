@@ -1,0 +1,5 @@
+#!/bin/bash
+echo "restarting..."
+./stop
+./start
+echo "restarted."

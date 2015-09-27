@@ -1,0 +1,9 @@
+#!/bin/bash
+set -e -x
+echo "starting..."
+apt-get update && apt-get upgrade -y
+cd ~/vz-cpw
+git pull
+bundle
+cd
+echo "started."
