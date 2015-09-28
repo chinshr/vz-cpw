@@ -3,5 +3,9 @@ set -e -x
 echo "stopping..."
 sudo monit stop shoryuken
 sudo /etc/init.d/monit stop
-# kill -s TERM `cat ~/shared/pids/shoryuken.pid`
+
+# Pull new repo
+cd ~/vz-cpw && git pull
+cd
+
 echo "stopped."

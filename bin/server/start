@@ -2,7 +2,6 @@
 set -e -x
 echo "starting..."
 # sudo apt-get update && apt-get upgrade -y
-cd ~/vz-cpw && git pull
 cd ~/vz-cpw && bundle
 cd
 sudo /etc/init.d/monit start
