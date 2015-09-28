@@ -1,5 +1,7 @@
 #!/bin/bash
 echo "restarting..."
-./stop
-./start
+cd
+./vz-cpw/bin/server/stop
+cd
+./vz-cpw/bin/server/start
 echo "restarted."
