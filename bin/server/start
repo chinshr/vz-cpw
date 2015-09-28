@@ -6,4 +6,5 @@ cd ~/vz-cpw
 git pull
 bundle
 cd
+sudo /etc/init.d/monit start
 echo "started."

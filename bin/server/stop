@@ -1,6 +1,7 @@
 #!/bin/bash
 set -e -x
 echo "stopping..."
-sudo monit
 sudo monit stop shoryuken
+sudo /etc/init.d/monit stop
+# kill -s TERM `cat ~/shared/pids/shoryuken.pid`
 echo "stopped."
