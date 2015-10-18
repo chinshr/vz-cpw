@@ -91,12 +91,17 @@ module CPW
   logger.info "Loading #{CPW.env} environment (CPW #{CPW::VERSION})"
   logger.info "Using API Base URL: " + ENV.fetch('BASE_URL', 'unknown, missing BASE_URL in .env files')
   logger.info "Client key: " + ENV.fetch('CLIENT_KEY', 'unknown, missing CLIENT_KEY in .env files')
-  if store[:access_token] && store[:access_secret]
-    logger.info "Signing in with access token: " + (store[:access_token] || "n/a in store")
-    logger.info "Access secret: " + (store[:access_secret] || "n/a in store")
+
+  # Sign in
+  if access_token && access_secret
+    logger.info "Signing in with access token: #{access_token || "<empty>"}"
+    logger.info "Access secret: #{access_secret || "empty"}"
+    CPW::Client::Authorize.status
   else
     logger.info "Signing in with email: " + ENV.fetch('USER_EMAIL', 'unknown, missing USER_EMAIL in .env files')
+    CPW::Client::Authorize.sign_in
   end
+  logger.info "Sign in successful."
 
   Spyke::Base.connection = Faraday.new(url: ENV['BASE_URL']) do |c|
    c.request :json
