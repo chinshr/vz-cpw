@@ -138,10 +138,13 @@ module CPW::Worker::Helper
 
   def s3_copy_object_if_exists(source_bucket_name, source_key, destination_bucket_name, destination_key = nil)
     s3 = AWS::S3.new
+    result = false
     destination_key = source_key if destination_key.nil?
     if s3.buckets[source_bucket_name].objects[source_key].exists?
       s3.buckets[source_bucket_name].objects[source_key].copy_to(destination_key, :bucket_name => destination_bucket_name)
+      result = true
     end
+    result
   end
 
   def s3_delete_object(bucket_name, key)
@@ -151,10 +154,12 @@ module CPW::Worker::Helper
 
   def s3_delete_object_if_exists(bucket_name, key)
     s3 = AWS::S3.new
+    result = false
     if bucket_name.present? && key.present? && s3.buckets[bucket_name].objects[key].exists?
       s3.buckets[bucket_name].objects.delete(key)
+      result = true
     end
-    true
+    result
   rescue AWS::S3::Errors::NoSuchKey => ex
     false
   end
