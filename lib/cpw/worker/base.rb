@@ -81,14 +81,14 @@ module CPW
       def after_perform(sqs_message, body)
         logger.info "+++ #{self.class.name}#after_perform: #{body.inspect}\n"
 
-        sqs_message.delete unless should_retry?
+        sqs_message.delete if should_not_retry? || terminate?
 
         logger.info("+++ #{self.class.name}#workflow? -> #{workflow?}")
         logger.info("+++ #{self.class.name}#has_next_stage? -> #{has_next_stage?}")
         logger.info("+++ #{self.class.name}#should_retry? -> #{should_retry?}")
 
         # Launch next stage, if part of a workflow
-        if workflow? && has_next_stage? && !should_retry? && !terminate? && !test?
+        if workflow? && has_next_stage? && should_not_retry? && !terminate? && !test?
           logger.info "+++ #{ingest.next_stage_worker_class.name}#perform_async: #{body.inspect}\n"
           ingest.next_stage_worker_class.perform_async(body)
         end
@@ -108,11 +108,11 @@ module CPW
               end
             else
               logger.info "+++ #{self.class.name}#can_lock? -> false = unable to lock ingest id=#{ingest.id}, retrying."
-              @should_retry = true
+              @should_retry = !terminate?
             end
           rescue => ex
             logger.info "+++ #{self.class.name}#lock exception caught performing ingest id=#{ingest.id}, retrying."
-            @should_retry = true
+            @should_retry = !terminate?
             @has_perform_error = true
             @saved_exception = ex
             raise ex
@@ -122,6 +122,10 @@ module CPW
         else
           raise "no block given"
         end
+      end
+
+      def terminate!
+        @terminate = true
       end
 
       protected
@@ -134,16 +138,16 @@ module CPW
         !!@should_retry
       end
 
+      def should_not_retry?
+        !should_retry?
+      end
+
       def has_perform_error?
         !!@has_perform_error
       end
 
       def busy?
         @ingest.try(:id) && !!@ingest.busy
-      end
-
-      def terminate?
-        @ingest.try(:id) && !!@ingest.terminate
       end
 
       def can_lock?
@@ -231,7 +235,7 @@ module CPW
       end
 
       def terminate?
-        @terminate || (@ingest && @ingest.terminate)
+        @terminate || (@ingest.try(:id) && @ingest.terminate)
       end
     end  # Base
   end  # Worker
