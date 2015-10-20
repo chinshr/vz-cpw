@@ -183,7 +183,7 @@ Create SQS queues in the production enviroment:
 
 Start the server:
 
-    CPW_ENV=production bundle exec shoryuken -r cpw.rb -C config/shoryuken.yml
+    CPW_ENV=production bundle exec shoryuken -v -r cpw.rb -C config/shoryuken.yml
 
 ### Configure Monit
 
