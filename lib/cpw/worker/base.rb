@@ -87,6 +87,9 @@ module CPW
         logger.info("+++ #{self.class.name}#has_next_stage? -> #{has_next_stage?}")
         logger.info("+++ #{self.class.name}#should_retry? -> #{should_retry?}")
 
+        # Sprinkle a bit of joy...
+        GC.start
+
         # Launch next stage, if part of a workflow
         if workflow? && has_next_stage? && should_not_retry? && !terminate? && !test?
           logger.info "+++ #{ingest.next_stage_worker_class.name}#perform_async: #{body.inspect}\n"
