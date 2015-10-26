@@ -42,7 +42,7 @@ module CPW
             chunk.build({source_file: single_channel_wav_audio_file_fullpath,
               base_file_type: :wav}).to_mp3
             chunk.build({source_file: single_channel_wav_audio_file_fullpath,
-              base_file_type: :wav}).to_waveform({channels: [:left]})
+              base_file_type: :wav}).to_waveform({channels: ['left', 'right']})
 
             puts "****** mp3_chunk: #{chunk.mp3_chunk}"
             puts "****** mp3_key: #{s3_key_for(File.basename(chunk.mp3_chunk))}"

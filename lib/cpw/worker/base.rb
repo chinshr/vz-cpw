@@ -115,9 +115,9 @@ module CPW
             end
           rescue => ex
             logger.info "+++ #{self.class.name}#lock exception caught performing ingest id=#{ingest.id}, retrying."
-            @should_retry = !terminate?
+            @should_retry      = !terminate?
             @has_perform_error = true
-            @saved_exception = ex
+            @saved_exception   = ex
             raise ex
           ensure
             unlock! if busy?
@@ -198,7 +198,7 @@ module CPW
           attributes.merge!({progress: finished_progress})
         end
 
-        # store exception context
+        # process stored exception context
         if @saved_exception
           new_messages = ingest.messages || {}
           new_messages[self.class.stage_name] ||= {}
@@ -207,6 +207,11 @@ module CPW
             new_messages[self.class.stage_name]["backtrace"] = @saved_exception.backtrace
           end
           attributes.merge!({messages: new_messages})
+        end
+
+        # stop workflow when exception was raised in perform block
+        if workflow? && has_perform_error?
+          attributes.merge!({status: Ingest::STATE_STOPPING})
         end
 
         # update ingest
