@@ -1,0 +1,1 @@
+worker: bundle exec shoryuken -v -r cpw.rb -C config/shoryuken.yml
