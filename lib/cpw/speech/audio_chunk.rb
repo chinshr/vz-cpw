@@ -185,15 +185,18 @@ module CPW
 
       # convert the audio file to waveform json
       def to_waveform(options = {})
-        options = options.reverse_merge({channels: [:left, :right]})
+        options = options.reverse_merge({channels: ['left', 'right'],
+          sampling_rate: 25, precision: 2})
         chunk_outputfile = chunk.gsub(/#{File.extname(chunk)}$/, ".waveform.json")
+        channels         = [options[:channels]].flatten.map(&:split).flatten.join(' ')
+        total_samples    = duration.to_i * options[:sampling_rate]
 
-        cmd = "wav2json #{chunk} --channels #{Array.wrap(options[:channels]).join(' ')} -o #{chunk_outputfile}   >/dev/null 2>&1"
+        cmd = "wav2json #{chunk} --channels #{channels} --no-header --precision #{options[:precision]} --samples #{total_samples} -o #{chunk_outputfile}   >/dev/null 2>&1"
         if system(cmd)
           self.waveform_chunk = chunk_outputfile
         else
           self.status = STATUS_ENCODING_ERROR
-          raise "failed to convert chunk: #{chunk} to #{chunk_outputfile}: #{cmd}"
+          raise "failed to convert chunk #{chunk} to #{chunk_outputfile}: #{cmd}"
         end
         self
       end
@@ -205,6 +208,7 @@ module CPW
         File.unlink self.wav_chunk if self.wav_chunk && File.exist?(self.wav_chunk)
         File.unlink self.raw_chunk if self.raw_chunk && File.exist?(self.raw_chunk)
         File.unlink self.mp3_chunk if self.mp3_chunk && File.exist?(self.mp3_chunk)
+        File.unlink self.waveform_chunk if self.waveform_chunk && File.exist?(self.waveform_chunk)
       end
 
       private

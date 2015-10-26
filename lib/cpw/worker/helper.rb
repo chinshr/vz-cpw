@@ -411,8 +411,13 @@ module CPW::Worker::Helper
   # waveform
   # -------------------------------------------------------------
 
-  def wav2json(input_wav_file, output_json_file)
-    cmd = "wav2json #{input_wav_file} --channels left right -o #{output_json_file}"
+  def wav2json(input_wav_file, output_json_file, options = {})
+    options = {channels: ['left', 'right'],
+      sampling_rate: 25, precision: 2}.merge(options)
+    inspector     = CPW::Speech::AudioInspector.new(input_wav_file)
+    channels      = [options[:channels]].flatten.map(&:split).flatten.join(' ')
+    total_samples = inspector.duration.to_i * options[:sampling_rate]
+    cmd = "wav2json #{input_wav_file} --channels #{channels} --no-header --precision #{options[:precision]} --samples #{total_samples} -o #{output_json_file}"
     CPW::logger.info "-> $ #{cmd}"
     if system(cmd)
       true
