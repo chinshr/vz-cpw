@@ -186,10 +186,10 @@ module CPW
       # convert the audio file to waveform json
       def to_waveform(options = {})
         options = options.reverse_merge({channels: ['left', 'right'],
-          sampling_rate: 25, precision: 2})
+          sampling_rate: 30, precision: 2})
         chunk_outputfile = chunk.gsub(/#{File.extname(chunk)}$/, ".waveform.json")
         channels         = [options[:channels]].flatten.map(&:split).flatten.join(' ')
-        total_samples    = duration.to_i * options[:sampling_rate]
+        total_samples    = (duration.to_f * options[:sampling_rate]).to_i
 
         cmd = "wav2json #{chunk} --channels #{channels} --no-header --precision #{options[:precision]} --samples #{total_samples} -o #{chunk_outputfile}   >/dev/null 2>&1"
         if system(cmd)

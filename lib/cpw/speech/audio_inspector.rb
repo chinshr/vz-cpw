@@ -27,10 +27,6 @@ module CPW
           (self.hours.to_i * 3600) + (self.minutes.to_i * 60) + self.seconds.to_f
         end
 
-        def to_i
-          to_f.to_i
-        end
-
         def self.from_seconds(seconds)
           duration = Duration.new("00:00:00.00")
           duration.hours = (seconds.to_i / 3600).to_i
