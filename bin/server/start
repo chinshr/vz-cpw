@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e -x
-echo "starting..."
+echo "shoryuken starting..."
 # sudo apt-get update && apt-get upgrade -y
 cd ~/vz-cpw
 rvm gemset use vz-cpw
@@ -8,4 +8,4 @@ bundle
 cd
 sudo /etc/init.d/monit start
 sudo monit start shoryuken
-echo "started."
+echo "shoryuken started."

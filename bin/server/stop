@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e -x
-echo "stopping..."
+echo "stopping shoryuken..."
 sudo monit stop shoryuken
 sudo /etc/init.d/monit stop
 
@@ -8,4 +8,4 @@ sudo /etc/init.d/monit stop
 cd ~/vz-cpw && git pull
 cd
 
-echo "stopped."
+echo "shoryuken stopped."

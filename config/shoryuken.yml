@@ -8,7 +8,7 @@ aws:
       - ApproximateReceiveCount
       - SentTimestamp
 concurrency: 25  # The number of allocated threads to process messages. Default 25
-delay: 25        # The delay in seconds to pause a queue when it's empty. Default 0
+delay: 10        # The delay in seconds to pause a queue when it's empty. Default 0
 timeout: 8
 queues:
   - [START_<%= ENV.fetch('CPW_ENV', 'development').upcase %>_QUEUE, 1]
