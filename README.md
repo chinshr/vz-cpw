@@ -314,3 +314,4 @@ Mac: https://github.com/beschulz/wav2json#on-max-os
 * Ruby Pocketsphinx server -- https://github.com/alumae/ruby-pocketsphinx-server
 * Kaldi GStreamer server -- https://github.com/alumae/kaldi-gstreamer-server
 * Kaldi offline transcriber -- https://github.com/alumae/kaldi-offline-transcriber
+* Siri like open source system -- https://github.com/claritylab/sirius
