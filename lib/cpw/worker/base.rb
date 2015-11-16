@@ -1,40 +1,45 @@
 module CPW
   module Worker
+    class ResourceLockError < Exception; end
+
     class Base
       include ::Shoryuken::Worker
-      include CPW::Client::Resources
 
-      attr_reader :logger
-      attr_accessor :ingest, :body, :sqs_message, :test
+      attr_accessor :logger, :ingest, :body, :sqs_message, :test
 
       class << self
         attr_accessor :finished_progress
 
+        # E.g. Ingest::MediaIngest::ArchiveWorker -> 'archive'
         def stage_name
-          name.split("::").last.underscore
+          result = name.split("::").last.underscore
+          result.gsub!(/_worker$/i, '')
+          result
+        end
+
+        # E.g. Ingest::MediaIngest::ArchiveWorker -> :archive_stage
+        def stage
+          "#{stage_name}_stage".to_sym if stage_name
         end
 
         def queue_name
-          name = CPW.queue_name_mask.dup
-          name.gsub!(/%{stage}/i, stage_name)
-          name.gsub!(/%{env}/i, CPW.env)
-          name.upcase
+          tokens = self.name.split("::")
+          tokens = tokens.map {|t| t.underscore.gsub(/_worker/, "").upcase }
+          "#{tokens.join('_')}_#{CPW.env.upcase}_QUEUE"
         end
 
-        def register_cpw_workers
-          Dir[File.dirname(__FILE__) + "/*.rb"].each do |file|
-            unless ["base", "helper"].include?(File.basename(file, ".rb"))
-              Shoryuken.register_worker(class_for(file).queue_name, class_for(file))
-            end
+        def register_workers
+          CPW::Worker::Base.subclasses.each do |worker_class|
+            Shoryuken.register_worker(worker_class.queue_name, worker_class)
           end
         end
 
         SQSTestMessage = Struct.new(:name) do; def delete; end; end
 
         # Note: For running workers manually.
-        # E.g. CPW::Worker::Archive.perform_test({"ingest_id" => 46})
+        # E.g. Ingest::MediaIngest::HarvestWorker.perform_test({"ingest_id" => 81})
         def perform_test(body)
-          sqs_message          = SQSTestMessage.new("dev")
+          sqs_message          = SQSTestMessage.new(CPW.env)
           worker_instance      = self.new
           worker_instance.test = true
 
@@ -43,14 +48,6 @@ module CPW
             worker_instance.perform(sqs_message, body)
           end
           worker_instance.after_perform(sqs_message, body)
-        end
-
-        # class_for('finish') -> CPW::Worker::Finish
-        def class_for(file_name_or_stage_name)
-          name = File.basename(file_name_or_stage_name.to_s, ".rb")
-          if name.length > 0
-            ("CPW::Worker::" + name.classify).constantize
-          end
         end
       end  # class methods
 
@@ -69,8 +66,16 @@ module CPW
         !!(body && body['workflow'])
       end
 
+      def workflow_stage?
+        !!(ingest && ingest.stages.include?(self.class.stage))
+      end
+
       def force?
         !!(body && body['force'])
+      end
+
+      def ingest_id
+        body.try(:[], 'ingest_id')
       end
 
       def before_perform(sqs_message, body)
@@ -91,36 +96,30 @@ module CPW
         GC.start
 
         # Launch next stage, if part of a workflow
-        if workflow? && has_next_stage? && should_not_retry? && !terminate? && !test?
-          logger.info "+++ #{ingest.next_stage_worker_class.name}#perform_async: #{body.inspect}\n"
-          ingest.next_stage_worker_class.perform_async(body)
+        if workflow? && has_next_stage? && should_not_retry? && !terminate?
+          attributes = {trigger: "#{self.class.stage}"}
+          logger.info "+++ #{self.class.name}: trigger next stage for Ingest id=#{ingest.id} update_attributes(#{attributes.inspect})\n"
+          update_ingest(attributes)
         end
       end
 
       def lock
         logger.info "+++ #{self.class.name}#lock #{body.inspect}"
-        load_ingest
         if block_given?
           begin
-            if can_lock?
-              @saved_stage_name = ingest.current_stage_name
-              lock!
-              if can_stage? @saved_stage_name
-                @can_perform = true
-                yield
-              end
-            else
-              logger.info "+++ #{self.class.name}#can_lock? -> false = unable to lock ingest id=#{ingest.id}, retrying."
-              @should_retry = !terminate?
-            end
+            lock_ingest!
+            @can_perform = true
+            yield
+          rescue ResourceLockError => ex
+            logger.info "+++ #{self.class.name}#lock ResourceLockError caught: #{ex.message}. Not retrying."
           rescue => ex
-            logger.info "+++ #{self.class.name}#lock exception caught performing ingest id=#{ingest.id}, retrying."
+            logger.info "+++ #{self.class.name}#lock block exception caught performing ingest id=#{ingest.id}, retrying."
             @should_retry      = !terminate?
             @has_perform_error = true
             @saved_exception   = ex
             raise ex
           ensure
-            unlock! if busy?
+            unlock_ingest!
           end
         else
           raise "no block given"
@@ -133,70 +132,23 @@ module CPW
 
       protected
 
-      def can_perform?
-        !!@can_perform
-      end
-
-      def should_retry?
-        !!@should_retry
-      end
-
-      def should_not_retry?
-        !should_retry?
-      end
-
-      def has_perform_error?
-        !!@has_perform_error
-      end
-
-      def busy?
-        @ingest.try(:id) && !!@ingest.busy
-      end
-
-      def can_lock?
-        force? ? true : (!busy? && !terminate?)
-      end
-
-      def can_stage?(saved_stage_name)
-        if workflow?
-          current_stage_position = ingest.workflow_stage_names.index(self.class.stage_name)
-          current_finished_stage_progress = self.class.finished_progress.to_i
-          saved_stage_position   = saved_stage_name ? ingest.workflow_stage_names.index(saved_stage_name) : -1
-
-          # Can perform/stage if:
-          # (1) We are at the beginning of the workflow (stage `start`)
-          # (2) Or, the workflow has started and staged
-          # (3) And, current stage position greater equal saved stage position
-          # (4) And, has not finished with stage progress
-
-          ((ingest.state_starting? && self.class.stage_name == "start") ||
-           (ingest.state_started? && !!ingest.current_stage_name)) &&
-
-          current_stage_position >= saved_stage_position &&
-            ingest.progress < current_finished_stage_progress
-        else
-          true
-        end
-      end
-
-      def finished_progress
-        self.class.finished_progress.to_i
-      end
-
-      def lock!(attributes = {})
+      def lock_ingest!(attributes = {})
+        load_ingest
         attributes = attributes.merge({busy: true}).reject {|k,v| v.nil?}
-        attributes.merge!({stage: self.class.stage_name}) if workflow?
-        logger.info "+++ #{self.class.name}#lock! #{attributes.inspect}"
-        update_ingest(attributes)
+
+        if workflow_stage?
+          attributes.merge!({status: Ingest::STATE_STARTED})
+          attributes.merge!({event: "forward_to_#{self.class.stage}"})
+        end
+
+        logger.info "+++ #{self.class.name}#lock_ingest! id=#{ingest_id}, #{attributes.inspect}"
+
+        @ingest = update_ingest(attributes)
+        raise ResourceLockError, "Cannot lock ingest (id=#{ingest_id}): #{ingest.errors.inspect}" unless ingest.errors.empty?
       end
 
-      def unlock!(attributes = {})
+      def unlock_ingest!(attributes = {})
         attributes = attributes.merge({busy: false}).reject {|k,v| v.nil?}
-
-        # store progress
-        if finished_progress > 0 && can_perform? && !has_perform_error?
-          attributes.merge!({progress: finished_progress})
-        end
 
         # process stored exception context
         if @saved_exception
@@ -215,16 +167,26 @@ module CPW
         end
 
         # update ingest
-        logger.info "+++ #{self.class.name}#unlock! #{attributes.inspect}"
+        logger.info "+++ #{self.class.name}#unlock_ingest! #{attributes.inspect}"
         update_ingest(attributes)
       end
 
       def has_next_stage?
-        !!(workflow? && ingest && ingest.next_stage_name)
+        !!(workflow_stage? && ingest && !!ingest.next_stage)
       end
 
       def queue_name
         self.class.queue_name
+      end
+
+      private
+
+      def busy?
+        @ingest.try(:id) && !!@ingest.busy
+      end
+
+      def finished_progress
+        self.class.finished_progress.to_i
       end
 
       def load_ingest
@@ -233,18 +195,30 @@ module CPW
       end
 
       def update_ingest(attributes = {})
-        logger.info "+++ #{self.class.name}#update_ingest #{attributes.inspect}"
-        @previous_stage_name = @ingest.stage
-        @ingest = Ingest.secure_update(@ingest.id, attributes)
-      end
-
-      def previous_stage_name
-        @previous_stage_name || @ingest.previous_stage_name
+        logger.info "+++ #{self.class.name}#update_ingest id=#{ingest_id}, #{attributes.inspect}"
+        @ingest = Ingest.secure_update(ingest_id, attributes)
       end
 
       def terminate?
-        @terminate || (@ingest.try(:id) && @ingest.terminate)
+        @terminate || (ingest.try(:id) && ingest.terminate)
       end
+
+      def can_perform?
+        !!@can_perform
+      end
+
+      def should_retry?
+        !!@should_retry
+      end
+
+      def should_not_retry?
+        !should_retry?
+      end
+
+      def has_perform_error?
+        !!@has_perform_error
+      end
+
     end  # Base
   end  # Worker
 end  # CPW

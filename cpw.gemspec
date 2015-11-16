@@ -31,9 +31,9 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "byebug"
 
   spec.add_dependency "pocketsphinx-ruby", ["~> 0.3.0", '< 1']
-  spec.add_dependency "att-codekit"
+  #spec.add_dependency "att-codekit"
   spec.add_dependency "multi_json"
-  spec.add_dependency "spyke"
+  spec.add_dependency "spyke", "~> 4.0.1"
   spec.add_dependency "faraday"
   spec.add_dependency "dotenv"
   spec.add_dependency "aws-sdk-v1"

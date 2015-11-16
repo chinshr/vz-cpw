@@ -1,7 +1,10 @@
-require 'curb'
-require 'json'
-require 'uuid'
-require 'att/codekit'
+require "curb"
+require "json"
+require "uuid"
+#require "att/codekit"
+
+require "pocketsphinx-ruby"
+require "cpw/pocketsphinx/audio_file_speech_recognizer"
 
 require "cpw/speech/audio_inspector"
 require "cpw/speech/audio_splitter"

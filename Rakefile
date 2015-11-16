@@ -3,6 +3,8 @@ require "rake/testtask"
 require "mkmf"
 
 Rake::TestTask.new do |t|
+  # t.libs << "lib"
+  t.libs << "test"
   t.test_files = FileList['test/**/*_test.rb']
 end
 
@@ -29,15 +31,17 @@ task :environment do
   require 'cpw'
 end
 
-namespace :sqs do
-  namespace :queues do
-    desc "Create SQS queues"
-    task :create => :environment do
-      sqs = AWS::SQS.new
-      CPW::Worker::Base.subclasses.each do |worker_class|
-        queue_name = worker_class.queue_name
-        puts "Creating '#{queue_name}' queue."
-        queue = sqs.queues.create(queue_name)
+namespace :aws do
+  namespace :sqs do
+    namespace :queues do
+      desc "Create SQS queues"
+      task :create => :environment do
+        sqs = AWS::SQS.new
+        CPW::Worker::Base.subclasses.each do |worker_class|
+          queue_name = worker_class.queue_name
+          puts "Creating '#{queue_name}' queue."
+          queue = sqs.queues.create(queue_name)
+        end
       end
     end
   end
