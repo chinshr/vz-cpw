@@ -132,14 +132,14 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
     end
   end
 
+  private
+
   def sphinx_model(key)
     sources = sphinx_model_sources
     source  = sources[key]
     raise "Missing models for '#{key}' in '#{source}'" unless File.exists?(source)
     source
   end
-
-  private
 
   def sphinx_model_sources
     @sphinx_model_sources ||= begin
