@@ -29,6 +29,13 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
     configuration['vad_postspeech'] = 45
     configuration['vad_threshold']  = 2
 
+=begin
+    path = File.join(CPW::root_path, "models/sphinx/en")
+    configuration["dict"] = path + "/cmu07a.dic"
+    configuration["hmm"]  = path + "/voxforge_en_sphinx.cd_cont_5000/"
+    configuration["lm"]   = path + "/lm_giga_64k_nvp_3gram.lm.DMP"
+=end
+
     engine = CPW::Speech::Engines::PocketsphinxEngine.new(pcm_audio_file_fullpath,
       configuration, {source_file_type: :raw})
 
