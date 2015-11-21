@@ -24,6 +24,7 @@ task :check do
   find_executable 'sox'
   find_executable 'wav2json'
   find_executable 'pocketsphinx_continuous'
+  find_executable 'aws'
 end
 
 desc "Loads CPW environment"
@@ -44,5 +45,17 @@ namespace :aws do
         end
       end
     end
+  end
+end
+
+namespace :models do
+  desc "Sync models with S3"
+  task :sync do
+    `aws s3 sync #{File.dirname(__FILE__)}/../vz-models s3://vz-models --acl public-read --cache-control "public, max-age=86400" --exclude .DS_Store`
+  end
+
+  desc "Cleanup S3"
+  task :cleanup do
+    `aws s3 rm s3://vz-models --recursive`
   end
 end
