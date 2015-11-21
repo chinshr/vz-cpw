@@ -37,6 +37,7 @@ module CPW
   class << self
     attr_accessor :env
     attr_accessor :root_path
+    attr_accessor :models_root_path
     attr_accessor :lib_path
     attr_accessor :store
     attr_accessor :base_url
@@ -80,18 +81,19 @@ module CPW
     end
   end
 
-  self.env             = ENV.fetch("CPW_ENV", 'development')
-  self.root_path       = File.expand_path "../..", __FILE__
-  self.lib_path        = File.expand_path "..", __FILE__
-  self.base_url        = ENV['BASE_URL']
-  self.client_key      = ENV['CLIENT_KEY']
-  self.device_uid      = ENV['DEVICE_UID']
-  self.user_email      = ENV['USER_EMAIL']
-  self.user_password   = ENV['USER_PASSWORD']
-  self.store           = CPW::Store.new("cpw.#{self.env}.pstore")
-  self.access_token    = store[:access_token]
-  self.access_secret   = store[:access_secret]
-  self.logger          = MonoLogger.new(STDOUT)
+  self.env              = ENV.fetch("CPW_ENV", 'development')
+  self.root_path        = File.expand_path "../..", __FILE__
+  self.models_root_path = File.join(File.expand_path("../../..", __FILE__), "vz-models")
+  self.lib_path         = File.expand_path "..", __FILE__
+  self.base_url         = ENV['BASE_URL']
+  self.client_key       = ENV['CLIENT_KEY']
+  self.device_uid       = ENV['DEVICE_UID']
+  self.user_email       = ENV['USER_EMAIL']
+  self.user_password    = ENV['USER_PASSWORD']
+  self.store            = CPW::Store.new("cpw.#{self.env}.pstore")
+  self.access_token     = store[:access_token]
+  self.access_secret    = store[:access_secret]
+  self.logger           = MonoLogger.new(STDOUT)
 
   self.load_workers!
 
