@@ -4,6 +4,14 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
   attr_accessor :splitter
   self.finished_progress = 89
 
+  SPHINX_MODELS = {
+    "en" => {
+      "dict" => "/cmudict-07a.dict",
+      "lm" => "/lm_giga_64k_nvp_3gram.lm.dmp",
+      "hmm" => "/voxforge_en_sphinx.cd_cont_5000/",
+    }
+  }
+
   shoryuken_options queue: -> { queue_name },
     auto_delete: false, body_parser: :json
 
@@ -28,13 +36,9 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
     configuration['vad_prespeech']  = 20
     configuration['vad_postspeech'] = 45
     configuration['vad_threshold']  = 2
-
-=begin
-    path = File.join(CPW::root_path, "models/sphinx/en")
-    configuration["dict"] = path + "/cmu07a.dic"
-    configuration["hmm"]  = path + "/voxforge_en_sphinx.cd_cont_5000/"
-    configuration["lm"]   = path + "/lm_giga_64k_nvp_3gram.lm.DMP"
-=end
+    configuration['dict']           = sphinx_model("dict") # path + "/cmu07a.dic"
+    configuration['hmm']            = sphinx_model("hmm")  # path + "/voxforge_en_sphinx.cd_cont_5000/"
+    configuration['lm']             = sphinx_model("lm")   # path + "/lm_giga_64k_nvp_3gram.lm.dmp"
 
     engine = CPW::Speech::Engines::PocketsphinxEngine.new(pcm_audio_file_fullpath,
       configuration, {source_file_type: :raw})
@@ -125,6 +129,35 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
       ingest_chunk.update_attributes(chunk_attributes)
     else
       Ingest::Chunk.create(chunk_attributes)
+    end
+  end
+
+  def sphinx_model(key)
+    sources = sphinx_model_sources
+    source  = sources[key]
+    raise "Missing models for '#{key}' in '#{source}'" unless File.exists?(source)
+    source
+  end
+
+  private
+
+  def sphinx_model_sources
+    @sphinx_model_sources ||= begin
+      locale = ingest.locale.downcase
+      language, country = ingest.locale.split("-")
+
+      sources, source_locale = if SPHINX_MODELS[locale]
+        [SPHINX_MODELS[locale], locale]
+      else SPHINX_MODELS[language]
+        [SPHINX_MODELS[language], language]
+      end
+      raise "Missing models for locale '#{source_locale}' ('#{locale}')" unless sources
+
+      sources = sources.inject({}) do |result, tuple|
+        result[tuple.first] = File.join(CPW::models_root_path, "sphinx", source_locale, tuple.last)
+        result
+      end
+      sources
     end
   end
 
