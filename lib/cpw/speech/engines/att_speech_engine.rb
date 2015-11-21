@@ -1,3 +1,4 @@
+=begin
 module CPW
   module Speech
     module Engines
@@ -127,3 +128,4 @@ module CPW
     end
   end
 end
+=end

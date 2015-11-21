@@ -163,7 +163,7 @@ module CPW
       def to_mp3(options = {})
         options = options.reverse_merge({bitrate: 128, sample_rate: 16000})
         chunk_outputfile = chunk.gsub(/#{File.extname(chunk)}$/, ".ab#{options[:bitrate]}k.mp3")
-        cmd = "ffmpeg -y -i #{chunk} -ar #{options[:sample_rate]} -vn -ab #{options[:bitrate]}k -f mp3 #{chunk_outputfile}   >/dev/null 2>&1"
+        cmd = "ffmpeg -y -i #{chunk} -ar #{options[:sample_rate]} -vn -ab #{options[:bitrate]}K -f mp3 #{chunk_outputfile}   >/dev/null 2>&1"
         if system(cmd)
           self.mp3_chunk = chunk_outputfile
           self.flac_rate = 16000

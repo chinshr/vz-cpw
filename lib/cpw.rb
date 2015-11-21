@@ -8,6 +8,7 @@ require "mono_logger"
 require "chronic"
 require "dotenv"
 Dotenv.load(*[".env.#{ENV.fetch("CPW_ENV", 'development')}", ".env"])
+require 'byebug'
 
 require "shoryuken"
 
@@ -18,12 +19,10 @@ require "cpw/client/json_parser"
 require "cpw/client/adapter"
 require "cpw/client/authorize"
 require "cpw/client/base"
-# Load client resources
-Dir[File.dirname(__FILE__) + "/cpw/client/resources/*.rb"].each {|file| require file}
-Dir[File.dirname(__FILE__) + "/cpw/client/resources/**/*.rb"].each {|file| require file}
 
-require "pocketsphinx-ruby"
-require "cpw/pocketsphinx/audio_file_speech_recognizer"
+# Load app models
+Dir[File.dirname(__FILE__) + "/../app/models/*.rb"].each {|file| require file}
+Dir[File.dirname(__FILE__) + "/../app/models/**/*.rb"].each {|file| require file}
 
 require "cpw/speech"
 
@@ -34,7 +33,6 @@ require "cpw/middleware/lock_ingest"
 require_relative "../config/initializers/shoryuken"
 
 module CPW
-  include Client::Resources
 
   class << self
     attr_accessor :env
@@ -48,7 +46,6 @@ module CPW
     attr_accessor :access_secret
     attr_accessor :user_email
     attr_accessor :user_password
-    attr_accessor :queue_name_mask
     attr_accessor :logger
 
     def test?
@@ -66,9 +63,20 @@ module CPW
     protected
 
     def load_workers!
-      # Load workers
-      Dir[File.dirname(__FILE__) + "/cpw/worker/**/*.rb"].each {|file| require file}
-      CPW::Worker::Base.register_cpw_workers
+      Dir[File.dirname(__FILE__) + "/../app/workers/**/*.rb"].each do |file|
+        begin
+          require file
+        rescue NameError => ex
+          # TODO: autoload Ingest::MediaWorker module
+          if module_name = ex.message.match(/^uninitialized constant (.*)/).try(:[], 1)
+            eval "module ::#{module_name} end"
+            require file
+          else
+            raise ex
+          end
+        end
+      end
+      CPW::Worker::Base.register_workers
     end
   end
 
@@ -80,7 +88,6 @@ module CPW
   self.device_uid      = ENV['DEVICE_UID']
   self.user_email      = ENV['USER_EMAIL']
   self.user_password   = ENV['USER_PASSWORD']
-  self.queue_name_mask = ENV.fetch('QUEUE_NAME_MASK', "%{stage}_%{env}_QUEUE")
   self.store           = CPW::Store.new("cpw.#{self.env}.pstore")
   self.access_token    = store[:access_token]
   self.access_secret   = store[:access_secret]
@@ -93,15 +100,17 @@ module CPW
   logger.info "Client key: " + ENV.fetch('CLIENT_KEY', 'unknown, missing CLIENT_KEY in .env files')
 
   # Sign in
-  if access_token && access_secret
-    logger.info "Signing in with access token: #{access_token || "<empty>"}"
-    logger.info "Access secret: #{access_secret || "empty"}"
-    CPW::Client::Authorize.status
-  else
-    logger.info "Signing in with email: " + ENV.fetch('USER_EMAIL', 'unknown, missing USER_EMAIL in .env files')
-    CPW::Client::Authorize.sign_in
+  if !CPW.test?
+    if access_token && access_secret
+      logger.info "Signing in with access token: #{access_token || "<empty>"}"
+      logger.info "Access secret: #{access_secret || "empty"}"
+      CPW::Client::Authorize.status
+    else
+      logger.info "Signing in with email: " + ENV.fetch('USER_EMAIL', 'unknown, missing USER_EMAIL in .env files')
+      CPW::Client::Authorize.sign_in
+    end
+    logger.info "Sign in successful."
   end
-  logger.info "Sign in successful."
 
   Spyke::Base.connection = Faraday.new(url: ENV['BASE_URL']) do |c|
    c.request :json
