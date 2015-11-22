@@ -126,6 +126,11 @@ class WorkerBaseTest < Test::Unit::TestCase
     assert_equal false, worker.send(:can_perform?)
   end
 
+  def test_finished_perform?
+    worker = Ingest::MediaIngest::HarvestWorker.new
+    assert_equal false, worker.send(:finished_perform?)
+  end
+
   def test_should_retry?
     worker = Ingest::MediaIngest::HarvestWorker.new
     assert_equal false, worker.send(:should_retry?)

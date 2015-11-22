@@ -96,7 +96,7 @@ module CPW
         GC.start
 
         # Launch next stage, if part of a workflow
-        if workflow? && has_next_stage? && should_not_retry? && !terminate?
+        if workflow? && has_next_stage? && finished_perform? && !terminate?
           attributes = {trigger: "#{self.class.stage}"}
           logger.info "+++ #{self.class.name}: trigger next stage for Ingest id=#{ingest.id} update_attributes(#{attributes.inspect})\n"
           update_ingest(attributes)
@@ -110,8 +110,9 @@ module CPW
             lock_ingest!
             @can_perform = true
             yield
+            @finished_perform = true
           rescue ResourceLockError => ex
-            logger.info "+++ #{self.class.name}#lock ResourceLockError caught: #{ex.message}. Not retrying."
+            logger.info "+++ #{self.class.name}#lock cannot lock #{ex.message}."
           rescue => ex
             logger.info "+++ #{self.class.name}#lock block exception caught performing ingest id=#{ingest.id}, retrying."
             @should_retry      = !terminate?
@@ -205,6 +206,10 @@ module CPW
 
       def can_perform?
         !!@can_perform
+      end
+
+      def finished_perform?
+        !!@finished_perform
       end
 
       def should_retry?

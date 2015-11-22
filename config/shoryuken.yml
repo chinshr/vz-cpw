@@ -11,11 +11,11 @@ concurrency: 25  # The number of allocated threads to process messages. Default 
 delay: 10        # The delay in seconds to pause a queue when it's empty. Default 0
 timeout: 8
 queues:
-  - [MEDIA_INGEST_HARVEST_<%= ENV.fetch('CPW_ENV', 'development').upcase %>_QUEUE, 3]
-  - [MEDIA_INGEST_TRANSCODE_<%= ENV.fetch('CPW_ENV', 'development').upcase %>_QUEUE, 3]
-  - [MEDIA_INGEST_SPLIT_<%= ENV.fetch('CPW_ENV', 'development').upcase %>_QUEUE, 3]
-  - [MEDIA_INGEST_CROWDOUT_<%= ENV.fetch('CPW_ENV', 'development').upcase %>_QUEUE, 3]
-  - [MEDIA_INGEST_ARCHIVE_<%= ENV.fetch('CPW_ENV', 'development').upcase %>_QUEUE, 3]
-  - [STOP_<%= ENV.fetch('CPW_ENV', 'development').upcase %>_QUEUE, 1]
-  - [RESET_<%= ENV.fetch('CPW_ENV', 'development').upcase %>_QUEUE, 1]
-  - [REMOVE_<%= ENV.fetch('CPW_ENV', 'development').upcase %>_QUEUE, 1]
+  - [INGEST_MEDIA_INGEST_HARVEST_<%= ENV.fetch('CPW_ENV', 'development').upcase %>_QUEUE, 3]
+  - [INGEST_MEDIA_INGEST_TRANSCODE_<%= ENV.fetch('CPW_ENV', 'development').upcase %>_QUEUE, 3]
+  - [INGEST_MEDIA_INGEST_SPLIT_<%= ENV.fetch('CPW_ENV', 'development').upcase %>_QUEUE, 3]
+  - [INGEST_MEDIA_INGEST_CROWDOUT_<%= ENV.fetch('CPW_ENV', 'development').upcase %>_QUEUE, 3]
+  - [INGEST_MEDIA_INGEST_ARCHIVE_<%= ENV.fetch('CPW_ENV', 'development').upcase %>_QUEUE, 3]
+  - [INGEST_STOP_<%= ENV.fetch('CPW_ENV', 'development').upcase %>_QUEUE, 1]
+  - [INGEST_RESET_<%= ENV.fetch('CPW_ENV', 'development').upcase %>_QUEUE, 1]
+  - [INGEST_REMOVE_<%= ENV.fetch('CPW_ENV', 'development').upcase %>_QUEUE, 1]
