@@ -6,7 +6,7 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
 
   SPHINX_MODELS = {
     "en" => {
-      "dict" => "/cmudict-07a.dict",
+      "dict" => "/cmudict-07a.dic",
       "lm" => "/lm_giga_64k_nvp_3gram.lm.dmp",
       # "lm" => "/ensemble_wiki_ng_se_so_subs_enron_congress_65k_pruned_huge_sorted_cased.lm.dmp",
       "hmm" => "/voxforge_en_sphinx.cd_cont_5000/",
@@ -73,6 +73,8 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
 
       create_or_update_ingest_with chunk
       chunk.clean if CPW::production?
+
+      increment_progress!
     end
   end
 

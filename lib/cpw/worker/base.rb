@@ -131,6 +131,12 @@ module CPW
         @terminate = true
       end
 
+      def increment_progress!(increment = 1, max_progress = finished_progress)
+        progress = ingest.progress
+        progress += increment
+        @ingest = Ingest.secure_update(ingest.id, progress: progress) if progress < max_progress
+      end
+
       protected
 
       def lock_ingest!(attributes = {})

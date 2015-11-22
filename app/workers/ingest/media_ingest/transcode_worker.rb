@@ -4,6 +4,8 @@ class Ingest::MediaIngest::TranscodeWorker < CPW::Worker::Base
   self.finished_progress = 29
 
   MP3_BITRATE = 128
+  STEPS = [:download, :normalize, :noise_reduce,
+    :create_mp3, :create_waveform, :upload, :cleanup]
 
   shoryuken_options queue: -> { queue_name },
     auto_delete: false, body_parser: :json
@@ -11,13 +13,10 @@ class Ingest::MediaIngest::TranscodeWorker < CPW::Worker::Base
   def perform(sqs_message, body)
     logger.info("+++ #{self.class.name}#perform, body #{body.inspect}")
 
-    download
-    normalize
-    noise_reduce
-    create_mp3
-    create_waveform
-    upload
-    cleanup
+    STEPS.each do |step|
+      send(step)
+      increment_progress!
+    end
   end
 
   def download
