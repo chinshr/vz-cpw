@@ -49,12 +49,17 @@ namespace :aws do
 end
 
 namespace :models do
-  desc "Sync models with S3"
-  task :sync do
-    `aws s3 sync #{File.dirname(__FILE__)}/../vz-models s3://vz-models --acl public-read --cache-control "public, max-age=86400" --exclude .DS_Store`
+  desc "Upload models to S3"
+  task :upload do
+    `aws s3 sync #{File.dirname(__FILE__)}/../vz-models s3://vz-models --acl public-read --cache-control "public, max-age=86400" --exclude '.DS_Store'`
   end
 
-  desc "Cleanup S3"
+  desc "Download models from S3"
+  task :download do
+    `aws s3 sync s3://vz-models #{File.dirname(__FILE__)}/../vz-models --acl public-read --cache-control "public, max-age=86400" --exclude '.DS_Store'`
+  end
+
+  desc "Cleanup models on S3"
   task :cleanup do
     `aws s3 rm s3://vz-models --recursive`
   end
