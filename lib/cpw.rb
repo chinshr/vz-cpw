@@ -63,7 +63,7 @@ module CPW
 
     protected
 
-    def load_workers!
+    def register_workers
       Dir[File.dirname(__FILE__) + "/../app/workers/**/*.rb"].each do |file|
         begin
           require file
@@ -79,6 +79,30 @@ module CPW
       end
       CPW::Worker::Base.register_workers
     end
+
+    def authorize
+      return if CPW.test?
+      sign_in_with_credentials unless sign_in_with_token
+      logger.info "Authorization successful."
+    end
+
+    private
+
+    def sign_in_with_credentials
+      logger.info "Signing in with email: " + ENV.fetch('USER_EMAIL', 'unknown, missing USER_EMAIL in .env files')
+      CPW::Client::Authorize.sign_in
+    end
+
+    def sign_in_with_token
+      if access_token && access_secret
+        logger.info "Signing in with access token: #{access_token || "<empty>"}"
+        logger.info "And access secret: #{access_secret || "empty"}" if access_secret
+        CPW::Client::Authorize.status
+      end
+    rescue Client::AuthorizationError
+      false
+    end
+
   end
 
   self.env              = ENV.fetch("CPW_ENV", 'development')
@@ -95,24 +119,13 @@ module CPW
   self.access_secret    = store[:access_secret]
   self.logger           = MonoLogger.new(STDOUT)
 
-  self.load_workers!
+  self.register_workers
 
   logger.info "Loading #{CPW.env} environment (CPW #{CPW::VERSION})"
   logger.info "Using API Base URL: " + ENV.fetch('BASE_URL', 'unknown, missing BASE_URL in .env files')
   logger.info "Client key: " + ENV.fetch('CLIENT_KEY', 'unknown, missing CLIENT_KEY in .env files')
 
-  # Sign in
-  if !CPW.test?
-    if access_token && access_secret
-      logger.info "Signing in with access token: #{access_token || "<empty>"}"
-      logger.info "Access secret: #{access_secret || "empty"}"
-      CPW::Client::Authorize.status
-    else
-      logger.info "Signing in with email: " + ENV.fetch('USER_EMAIL', 'unknown, missing USER_EMAIL in .env files')
-      CPW::Client::Authorize.sign_in
-    end
-    logger.info "Sign in successful."
-  end
+  self.authorize
 
   Spyke::Base.connection = Faraday.new(url: ENV['BASE_URL']) do |c|
    c.request :json
