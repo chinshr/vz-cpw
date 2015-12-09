@@ -119,13 +119,13 @@ module CPW
   self.access_secret    = store[:access_secret]
   self.logger           = MonoLogger.new(STDOUT)
 
-  self.register_workers
+  register_workers
 
   logger.info "Loading #{CPW.env} environment (CPW #{CPW::VERSION})"
   logger.info "Using API Base URL: " + ENV.fetch('BASE_URL', 'unknown, missing BASE_URL in .env files')
   logger.info "Client key: " + ENV.fetch('CLIENT_KEY', 'unknown, missing CLIENT_KEY in .env files')
 
-  self.authorize
+  authorize
 
   Spyke::Base.connection = Faraday.new(url: ENV['BASE_URL']) do |c|
    c.request :json
@@ -134,8 +134,8 @@ module CPW
    c.authorization "Token", :token => CPW::store[:access_token]
   end
 
-  AWS.config(
+  AWS.config({
     access_key_id: ENV['S3_KEY'],
     secret_access_key: ENV['S3_SECRET']
-  )
+  })
 end
