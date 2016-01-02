@@ -232,6 +232,19 @@ If everything is OK, start CPW with:
 
 You should see the CPW appear in the process list using `ps -ef`. If shoryuken shows up in the process, check if the PID file is created correctly in `~/shared/pids`. Tail the log at `tail -100 /var/log/monit.log`
 
+### Install Python + PIP
+
+From [these instructions](http://askubuntu.com/questions/101591/how-do-i-install-python-2-7-2-on-ubuntu)
+
+PIP Install:
+
+    sudo apt-get install python-pip
+
+### Install AWS Client
+
+    sudo apt-get -f install
+    sudo apt-get install awscli
+
 ## Development Environment Usage
 
 ### Start Server
