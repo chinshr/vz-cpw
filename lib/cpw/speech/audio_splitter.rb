@@ -25,8 +25,9 @@ module CPW
       end
 
       def split
+        result = []
         if engine && engine.respond_to?(:split)
-          self.chunks = engine.split(self)
+          result = engine.split(self)
         else
           # compute the total number of chunks
           chunk_id    = 1
@@ -36,23 +37,23 @@ module CPW
 
           (full_chunks - 1).times do |index|
             if index > 0
-              chunks << AudioChunk.new(self, index * self.size, self.size, {id: chunk_id})
+              result << AudioChunk.new(self, index * self.size, self.size, {id: chunk_id})
             else
               off = (index * self.size) - (self.size / 2)
               off = 0 if off < 0
-              chunks << AudioChunk.new(self, off, self.size, {id: chunk_id})
+              result << AudioChunk.new(self, off, self.size, {id: chunk_id})
             end
             chunk_id += 1
           end
 
-          if chunks.empty?
-            chunks << AudioChunk.copy(self, chunk_id)
+          if result.empty?
+            result << AudioChunk.copy(self, chunk_id)
           else
-            chunks << AudioChunk.new(self, chunks.last.offset.to_i + chunks.last.duration.to_i, self.size + last_chunk, {id: chunk_id})
+            result << AudioChunk.new(self, chunks.last.offset.to_i + chunks.last.duration.to_i, self.size + last_chunk, {id: chunk_id})
           end
-          logger.info "Chunk (id=#{chunk_id}) count: #{chunks.size}" if self.verbose
+          logger.info "Chunk (id=#{chunk_id}) count: #{result.size}" if self.verbose
         end
-        chunks
+        result
       end
     end
 

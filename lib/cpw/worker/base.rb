@@ -143,7 +143,7 @@ module CPW
         load_ingest
         attributes = attributes.merge({busy: true}).reject {|k,v| v.nil?}
 
-        if workflow_stage?
+        if workflow? && workflow_stage?
           attributes.merge!({status: Ingest::STATE_STARTED})
           attributes.merge!({event: "forward_to_#{self.class.stage}"})
         end

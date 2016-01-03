@@ -18,24 +18,26 @@ module CPW::Worker::Helper
   end
 
   # key is "<folder>/<file>"
-  def original_audio_file
-    @ingest.track.s3_key.split("/").last if @ingest && @ingest.track
+  def original_media_file
+    # @ingest.track.s3_key.split("/").last if @ingest && @ingest.track
+    @ingest.s3_origin_key.split("/").last if @ingest
   end
 
-  def original_audio_key
-    @ingest.track.s3_key if @ingest && @ingest.track
+  def original_media_key
+    # @ingest.track.s3_key if @ingest && @ingest.track
+    @ingest.s3_origin_key if @ingest
   end
 
-  def original_audio_file_fullpath(uid = nil, stage = nil)
-    File.join(basefolder(uid, stage), original_audio_file) if original_audio_file
+  def original_media_file_fullpath(uid = nil, stage = nil)
+    File.join(basefolder(uid, stage), original_media_file) if original_media_file
   end
 
   def single_channel_wav_audio_file
-    "#{original_audio_file}.ac1.wav" if @ingest
+    "#{original_media_file}.ac1.wav" if @ingest
   end
 
   def single_channel_wav_audio_key
-    "#{original_audio_key}.ac1.wav" if @ingest
+    "#{original_media_key}.ac1.wav" if @ingest
   end
 
   def single_channel_wav_audio_file_fullpath(uid = nil, stage = nil)
@@ -43,7 +45,7 @@ module CPW::Worker::Helper
   end
 
   def dual_channel_wav_audio_file
-    "#{original_audio_file}.ac2.wav" if @ingest
+    "#{original_media_file}.ac2.wav" if @ingest
   end
 
   def dual_channel_wav_audio_file_fullpath(uid = nil, stage = nil)
@@ -51,7 +53,7 @@ module CPW::Worker::Helper
   end
 
   def normalized_audio_file
-    "#{original_audio_file}.ac1.normalized.wav" if @ingest
+    "#{original_media_file}.ac1.normalized.wav" if @ingest
   end
 
   def normalized_audio_file_fullpath(uid = nil, stage = nil)
@@ -59,7 +61,7 @@ module CPW::Worker::Helper
   end
 
   def noise_reduced_wav_audio_file
-    "#{original_audio_file}.ac1.normalized.noise-reduced.wav" if @ingest
+    "#{original_media_file}.ac1.normalized.noise-reduced.wav" if @ingest
   end
 
   def noise_reduced_wav_audio_file_fullpath(uid = nil, stage = nil)
@@ -84,11 +86,19 @@ module CPW::Worker::Helper
 
   def pcm_audio_file
     endianness = system_endianness
-    "#{original_audio_file}.ac1.ar16k.#{endianness}.pcm" if @ingest
+    "#{original_media_file}.ac1.ar16k.#{endianness}.pcm" if @ingest
   end
 
   def pcm_audio_file_fullpath(uid = nil, stage = nil)
     File.join(basefolder(uid, stage), pcm_audio_file) if pcm_audio_file
+  end
+
+  def srt_file
+    ingest.s3_origin_srt_key.split("/").last if ingest && ingest.s3_origin_srt_key
+  end
+
+  def srt_file_fullpath(uid = nil, stage = nil)
+    File.join(basefolder(uid, stage), srt_file) if srt_file
   end
 
   # -------------------------------------------------------------
@@ -384,26 +394,32 @@ module CPW::Worker::Helper
 
   def copy_or_download(file_method_name)
     file_name = send(file_method_name)
-    file_method_fullpath_name = :"#{file_method_name}_fullpath"
-    previous_stage_file_fullpath = send(file_method_fullpath_name, @ingest.uid, @ingest.previous_stage_name)
+    file_method_fullpath_name    = "#{file_method_name}_fullpath"
     current_stage_file_fullpath  = send(file_method_fullpath_name)
 
-    if File.exist?(previous_stage_file_fullpath)
-      copy_file(previous_stage_file_fullpath, current_stage_file_fullpath)
-    else
-      logger.info "--> downloading from #{s3_origin_url_for(file_name)} to #{current_stage_file_fullpath}"
-      s3_download_object ENV['S3_OUTBOUND_BUCKET'], s3_key_for(file_name), current_stage_file_fullpath
+    # try to copy the file from one of the previous stages
+    previous_stage_name = ingest.stage
+    while previous_stage_name = ingest.previous_stage_name(previous_stage_name)
+      previous_stage_file_fullpath = send(file_method_fullpath_name, ingest.uid, previous_stage_name)
+      if File.exist?(previous_stage_file_fullpath)
+        copy_file(previous_stage_file_fullpath, current_stage_file_fullpath)
+        return
+      end
     end
+
+    # otherwise, download the file again
+    logger.info "--> downloading from #{s3_origin_url_for(file_name)} to #{current_stage_file_fullpath}"
+    s3_download_object ENV['S3_OUTBOUND_BUCKET'], s3_key_for(file_name), current_stage_file_fullpath
   end
 
-  def copy_or_download_original_audio_file
-    previous_stage_original_audio_file_fullpath = original_audio_file_fullpath(@ingest.uid, self.class.previous_stage_name)
+  def copy_or_download_original_media_file
+    previous_stage_original_media_file_fullpath = original_media_file_fullpath(@ingest.uid, self.class.previous_stage_name)
 
-    if File.exist?(previous_stage_original_audio_file_fullpath)
-      copy_file(previous_stage_original_audio_file_fullpath, original_audio_file_fullpath)
+    if File.exist?(previous_stage_original_media_file_fullpath)
+      copy_file(previous_stage_original_media_file_fullpath, original_media_file_fullpath)
     else
-      logger.info "--> downloading from #{File.join(ENV['S3_OUTBOUND_BUCKET'], @ingest.track.s3_uri)} to #{original_audio_file_fullpath}"
-      s3_download_object ENV['S3_OUTBOUND_BUCKET'], @ingest.track.s3_uri, original_audio_file_fullpath
+      logger.info "--> downloading from #{File.join(ENV['S3_OUTBOUND_BUCKET'], @ingest.track.s3_uri)} to #{original_media_file_fullpath}"
+      s3_download_object ENV['S3_OUTBOUND_BUCKET'], @ingest.track.s3_uri, original_media_file_fullpath
     end
   end
 

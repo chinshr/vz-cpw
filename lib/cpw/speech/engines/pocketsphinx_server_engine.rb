@@ -4,8 +4,8 @@ module CPW
       class PocketsphinxServerEngine < Base
         attr_accessor :service, :key
 
-        def initialize(file, options = {})
-          super file, options
+        def initialize(media_file_or_url, options = {})
+          super media_file_or_url, options
           self.key = options[:key]
         end
 

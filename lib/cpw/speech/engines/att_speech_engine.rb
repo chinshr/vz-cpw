@@ -9,8 +9,8 @@ module CPW
 
         attr_accessor :api_key, :secret_key, :oauth, :token, :service, :mode
 
-        def initialize(file, options = {})
-          super file, options
+        def initialize(media_file_or_url, options = {})
+          super media_file_or_url, options
 
           self.api_key       = options[:api_key] if options.key?(:api_key)
           self.secret_key    = options[:secret_key] if options.key?(:secret_key)

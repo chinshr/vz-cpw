@@ -1,7 +1,6 @@
 module CPW
   module Speech
     class AudioInspector
-      attr_accessor :duration
 
       class Duration
         attr_accessor :hours, :minutes, :seconds, :total_seconds
@@ -46,13 +45,19 @@ module CPW
 
       end
 
+      attr_accessor :duration, :file_type, :file_size
+
       def initialize(file)
-        out = `ffmpeg -i #{file} 2>&1`.strip
-        if out.match(/No such file or directory/)
+        if !File.exist?(file)
           raise "No such file or directory: #{file}"
         else
-          out = out.scan(/Duration: (.*),/)
-          self.duration = Duration.new(out.try(:first).try(:first))
+          self.file_type = `file -b --mime-type #{file}`.gsub(/\n/, "")
+          self.file_size = File.size(file)
+
+          ffmpeg_out = `ffmpeg -i #{file} 2>&1`.strip
+          # duration
+          duration_out = ffmpeg_out.scan(/Duration: (.*),/)
+          self.duration = Duration.new(duration_out.try(:first).try(:first))
         end
       end
 

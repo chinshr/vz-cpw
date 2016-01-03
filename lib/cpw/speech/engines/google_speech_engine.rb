@@ -3,11 +3,12 @@ module CPW
   module Speech
     module Engines
       class GoogleSpeechEngine < Base
-        attr_accessor :service, :key
+        attr_accessor :service, :key, :version
 
-        def initialize(file, options = {})
-          super file, options
-          self.key = options[:key]
+        def initialize(media_file_or_url, options = {})
+          super media_file_or_url, options
+          self.key     = options[:key]
+          self.version = options[:version] || "v1"
         end
 
         protected
