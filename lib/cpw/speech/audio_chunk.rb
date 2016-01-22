@@ -1,7 +1,70 @@
 module CPW
   module Speech
-
     class AudioChunk
+      class Word
+        attr_accessor :sequence
+        attr_accessor :start_time
+        attr_accessor :end_time
+        attr_accessor :confidence
+        attr_accessor :word
+        attr_accessor :error
+        attr_accessor :metadata
+
+        alias_method :position, :sequence
+        alias_method :position=, :sequence=
+        alias_method :p, :sequence
+        alias_method :p=, :sequence=
+        alias_method :c, :confidence
+        alias_method :c=, :confidence=
+        alias_method :s, :start_time
+        alias_method :s=, :start_time=
+        alias_method :e, :end_time
+        alias_method :e=, :end_time=
+        alias_method :w, :word
+        alias_method :w=, :word=
+        alias_method :m, :metadata
+        alias_method :m=, :metadata=
+
+        def initialize(options={})
+          options.each do |k,v|
+            self.send("#{k}=",v) if self.respond_to?("#{k}=")
+          end
+        end
+
+        def clone
+          clone = CPW::Speech::AudioChunk::Word.new
+          clone.sequence   = sequence
+          clone.start_time = start_time
+          clone.end_time   = end_time
+          clone.confidence = confidence
+          clone.error      = error
+          clone.word       = word
+          clone.metadata   = metadata
+          clone
+        end
+
+        def ==(word)
+          self.sequence   == word.sequence &&
+          self.start_time == word.start_time &&
+          self.end_time   == word.end_time &&
+          self.confidence == word.confidence &&
+          self.word       == word.word &&
+          self.metadata   == word.metadata
+        end
+
+        def empty?
+          sequence.nil? && start_time.nil? && end_time.nil? && (word.nil? || word.empty?)
+        end
+
+        def to_hash
+          {"p": sequence, "c": confidence, "s": start_time, "e": end_time, "w": word}
+        end
+
+        def to_json
+          {"p": sequence, "c": confidence, "s": start_time, "e": end_time, "w": word}.to_json
+        end
+      end
+
       STATUS_UNPROCESSED         = 0
       STATUS_BUILT               = 1
       STATUS_ENCODED             = 2
@@ -13,32 +76,50 @@ module CPW
       attr_accessor :id, :splitter, :chunk, :flac_chunk, :wav_chunk, :raw_chunk,
         :mp3_chunk, :waveform_chunk, :offset, :duration, :flac_rate, :copied,
         :captured_json, :best_text, :best_score, :status, :errors, :response
+      attr_writer :words
+
+      delegate :engine, to: :splitter, allow_nil: true
+      delegate :base_file_type, to: :splitter, allow_nil: true
+      delegate :source_file_type, to: :splitter, allow_nil: true
+
+      alias_method :position, :id
+      alias_method :start_time, :offset
+      alias_method :to_s, :best_text
+      alias_method :confidence, :best_score
 
       def initialize(splitter, offset, duration, options = {})
         self.offset        = offset
         self.splitter      = splitter
         self.duration      = duration
         self.id            = options[:id]
-        self.response      = options[:response]
         self.copied        = false
         self.captured_json = {}
         self.best_text     = nil
         self.best_score    = nil
         self.status        = STATUS_UNPROCESSED
         self.errors        = []
+        self.response      = parse_response(options[:response])
         self.chunk         = chunk_file_name(splitter)
       end
 
-      def engine
-        splitter.engine
+      class << self
+
+        def copy(splitter, id = nil)
+          chunk        = AudioChunk.new(splitter, 0, splitter.duration.to_f, {id: id})
+          chunk.status = STATUS_BUILT if chunk.status < STATUS_BUILT
+          chunk.copied = true
+          system("cp #{splitter.original_file} #{chunk.chunk}")
+          chunk
+        end
+
       end
 
-      def self.copy(splitter, id = nil)
-        chunk        = AudioChunk.new(splitter, 0, splitter.duration.to_f, {id: id})
-        chunk.status = STATUS_BUILT if chunk.status < STATUS_BUILT
-        chunk.copied = true
-        system("cp #{splitter.original_file} #{chunk.chunk}")
-        chunk
+      def end_time
+        offset + duration
+      end
+
+      def words
+        @words || []
       end
 
       # given the original file from the splitter and the chunked file name
@@ -77,7 +158,7 @@ module CPW
       # convert the audio file to flac format
       def to_flac
         chunk_outputfile = chunk.gsub(/#{File.extname(chunk)}$/, ".flac")
-        if system("ffmpeg -i #{chunk} -acodec flac #{chunk_outputfile} >/dev/null 2>&1")
+        if system("ffmpeg -y -i #{chunk} -acodec flac #{chunk_outputfile} >/dev/null 2>&1")
           self.flac_chunk = chunk.gsub(/#{File.extname(chunk)}$/, ".flac")
           # convert the audio file to 16K
           self.flac_rate = `ffmpeg -i #{self.flac_chunk} 2>&1`.strip.scan(/Audio: flac, (.*) Hz/).first.first.strip
@@ -140,7 +221,7 @@ module CPW
       # convert the audio file to RAW format
       def to_raw(options = {})
         chunk_outputfile = chunk.gsub(/#{File.extname(chunk)}$/, ".raw")
-        if system("ffmpeg -i #{chunk} -y -f s16le -acodec pcm_s16le -ar 16000 -ac 1 #{chunk_outputfile}   >/dev/null 2>&1")
+        if system("ffmpeg -y -i #{chunk} -y -f s16le -acodec pcm_s16le -ar 16000 -ac 1 #{chunk_outputfile}   >/dev/null 2>&1")
           self.raw_chunk = chunk_outputfile
           self.flac_rate = 16000
           self.status    = STATUS_ENCODED if self.status < STATUS_ENCODED
@@ -224,14 +305,12 @@ module CPW
         File.join(bf, fb + "-chunk#{id ? "-#{id}" : ""}-" + of + "-" + fo + ex)
       end
 
-      def base_file_type
-        splitter.base_file_type
+      def parse_response(response)
+        if response.try(:[], 'words')
+          engine.parse_words(self, response['words'])
+        end
+        response
       end
-
-      def source_file_type
-        splitter.source_file_type
-      end
-
     end # AudioChunk
   end
 end

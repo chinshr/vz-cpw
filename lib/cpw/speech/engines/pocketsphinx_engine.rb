@@ -4,36 +4,42 @@ module CPW
       class PocketsphinxEngine < Base
         attr_accessor :configuration
 
-        def initialize(file, configuration, options = {})
-          super file, options
+        def initialize(media_file_or_url, configuration, options = {})
+          super media_file_or_url, options
           self.base_file_type   = :raw
           self.source_file_type = options[:source_file_type]
           self.configuration    = configuration
         end
 
-        def perform(options = {})
-          reset! options
-
-          chunks.each do |chunk|
-            convert_chunk(chunk, audio_chunk_options(options))
-            yield chunk if block_given?
-          end
-
-          self.score /= self.segments
-          chunks
-        end
-
-        def split(audio_splitter)
+        def split(splitter)
           chunks   = []
           chunk_id = 1
 
           recognizer = CPW::Pocketsphinx::AudioFileSpeechRecognizer.new(configuration)
-          recognizer.recognize(audio_splitter.original_file) do |decoder|
-            chunks << AudioChunk.new(audio_splitter, decode_start_time(decoder),
+          recognizer.recognize(splitter.original_file) do |decoder|
+            chunks << AudioChunk.new(splitter, decode_start_time(decoder),
               decode_duration(decoder), {id: chunk_id, response: build_response(decoder)})
             chunk_id += 1
           end
           chunks
+        end
+
+        def parse_words(chunk, words_response)
+          result, index = [], 1
+          words_response.each do |word_response|
+            word = AudioChunk::Word.new({
+              "p" => word_response.try(:[], 'id') || index,
+              "s" => word_response.try(:[], 'start_time'),
+              "e" => word_response.try(:[], 'end_time'),
+              "c" => word_response.try(:[], 'posterior_prob'),
+              "w" => word_response.try(:[], 'word')
+            })
+            unless word.word == "<s>" || word.word == "</s>"
+              result << word
+              index += 1
+            end
+          end
+          chunk.words = result
         end
 
         protected
@@ -45,7 +51,6 @@ module CPW
             logger.info "#{segments} processed: #{result.inspect}" if self.verbose
           else
             result['status'] = chunk.status = AudioSplitter::AudioChunk::STATUS_TRANSCRIPTION_ERROR
-            # result['errors'] = (chunk.errors << ex.message.to_s.gsub(/\n|\r/, ""))
           end
         ensure
           return result

@@ -25,7 +25,7 @@ class SplitWorkerTest < Test::Unit::TestCase # Minitest::Test
   end
 
   def test_sphinx_model_with_dict
-    assert_equal "/sphinx/en/cmudict-07a.dict", build_worker('en-US').send(:sphinx_model, "dict").gsub(CPW::models_root_path, '')
+    assert_equal "/sphinx/en/cmudict-07a.dic", build_worker('en-US').send(:sphinx_model, "dict").gsub(CPW::models_root_path, '')
   end
 
   def test_sphinx_model_with_lm
@@ -43,9 +43,29 @@ class SplitWorkerTest < Test::Unit::TestCase # Minitest::Test
     end
   end
 
+  def test_chunk_type_for
+    worker = build_worker
+    chunk  = stubs("AudioChunk")
+
+    chunk.stubs(:engine).returns(CPW::Speech::Engines::GoogleSpeechEngine.new("a", {}))
+    assert_equal "Chunk::GoogleSpeechChunk", worker.send(:chunk_type_for, chunk)
+
+    chunk.stubs(:engine).returns(CPW::Speech::Engines::NuanceDragonEngine.new("a", {}))
+    assert_equal "Chunk::NuanceDragonChunk", worker.send(:chunk_type_for, chunk)
+
+    chunk.stubs(:engine).returns(CPW::Speech::Engines::PocketsphinxEngine.new("a", {}))
+    assert_equal "Chunk::PocketsphinxChunk", worker.send(:chunk_type_for, chunk)
+
+    chunk.stubs(:engine).returns(CPW::Speech::Engines::SubtitleEngine.new("a"))
+    assert_equal "Chunk::SubtitleChunk", worker.send(:chunk_type_for, chunk)
+
+    chunk.stubs(:engine).returns(CPW::Speech::Engines::VoiceBaseEngine.new("a"))
+    assert_equal "Chunk::VoiceBaseChunk", worker.send(:chunk_type_for, chunk)
+  end
+
   protected
 
-  def build_worker(locale)
+  def build_worker(locale = "en-US")
     stub_ingest({'locale' => locale})
     ingest = Ingest.find(1)
     worker = Ingest::MediaIngest::SplitWorker.new

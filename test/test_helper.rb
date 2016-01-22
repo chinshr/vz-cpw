@@ -12,6 +12,8 @@ require "webmock/test_unit"
 # Require support files
 Dir[File.expand_path('../support/**/*.rb', __FILE__)].each { |f| require f }
 
+WebMock.disable_net_connect!(:net_http_connect_on_start => true)
+
 class Test::Unit::TestCase
 
   # Add global extensions to the test case class here

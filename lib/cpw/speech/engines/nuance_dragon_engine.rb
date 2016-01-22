@@ -4,8 +4,8 @@ module CPW
       class NuanceDragonEngine < Base
         attr_accessor :service, :base_url, :app_id, :app_key, :device_id
 
-        def initialize(file, options = {})
-          super file, options
+        def initialize(media_file_or_url, options = {})
+          super media_file_or_url, options
 
           self.base_url  = options.key?(:base_url) ? options[:base_url] : "https://dictation.nuancemobility.net:443"
           self.app_id    = options[:app_id] if options.key?(:app_id)

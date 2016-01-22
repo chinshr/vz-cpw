@@ -20,15 +20,15 @@ class Ingest::MediaIngest::TranscodeWorker < CPW::Worker::Base
   end
 
   def download
-    copy_or_download :original_audio_file
+    copy_or_download :original_media_file
   end
 
   def normalize
     # Create single channel WAV file
-    ffmpeg_audio_to_wav_and_single_channel original_audio_file_fullpath, single_channel_wav_audio_file_fullpath
+    ffmpeg_audio_to_wav_and_single_channel original_media_file_fullpath, single_channel_wav_audio_file_fullpath
 
     # Create dual channel WAV file for MP3 and waveform processing
-    ffmpeg_audio_to_wav original_audio_file_fullpath, dual_channel_wav_audio_file_fullpath
+    ffmpeg_audio_to_wav original_media_file_fullpath, dual_channel_wav_audio_file_fullpath
 
     # Normalize single channel WAV
     sox_normalize_audio single_channel_wav_audio_file_fullpath, normalized_audio_file_fullpath
@@ -78,7 +78,7 @@ class Ingest::MediaIngest::TranscodeWorker < CPW::Worker::Base
   def cleanup
     if CPW::production?
       # Delete original file
-      delete_file_if_exists original_audio_file_fullpath
+      delete_file_if_exists original_media_file_fullpath
 
       # Delete normalized
       delete_file_if_exists normalized_audio_file_fullpath

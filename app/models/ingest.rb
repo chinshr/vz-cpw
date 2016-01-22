@@ -59,12 +59,13 @@ class Ingest < CPW::Client::Base
     (self[:stages] || []).map {|n| stage_trunk_name(n) }
   end
 
-  def previous_stage
-    stages[stages.index(stage) - 1] if stages.index(stage) - 1 >= 0
+  def previous_stage(from_stage = stage)
+    stages[stages.index(from_stage.to_sym) - 1] if !from_stage.blank? && stages.index(from_stage.to_sym) - 1 >= 0
   end
 
-  def previous_stage_name
-    stage_trunk_name(previous_stage)
+  def previous_stage_name(from_stage_or_stage_name = stage)
+    from_stage = from_stage_or_stage_name.to_s.match(/_stage$/i) ? from_stage_or_stage_name : "#{from_stage_or_stage_name}_stage"
+    stage_trunk_name(previous_stage(from_stage)) unless from_stage_or_stage_name.blank?
   end
 
   def next_stage
@@ -108,7 +109,9 @@ class Ingest < CPW::Client::Base
   end
 
   def track
-    tracks_including_master_track.where(any_of_types: ["document_track"]).first
+    @track ||= begin
+      tracks_including_master_track.where(any_of_types: ["document_track"]).first
+    end
   end
 
   def state
@@ -116,7 +119,7 @@ class Ingest < CPW::Client::Base
   end
 
   def s3_upload_key
-    upload['s3_key']
+    handle
   end
 
   def s3_origin_bucket_name
@@ -124,19 +127,20 @@ class Ingest < CPW::Client::Base
   end
 
   def s3_origin_key
-    if self.track && self.track.try(:s3_key)
-      # already uploaded as url
-      self.track.s3_key
+    if origin_url
+      path = URI.parse(origin_url).path.split("/").reject(&:blank?)
+      File.join(path.slice(1..-1)) if path && path.length > 0
     else
       # to be used for main track
-      File.join(uid, File.basename(s3_upload_key))
+      File.join(uid, File.basename(handle))
     end
+  rescue URI::InvalidURIError => ex
+    nil
   end
 
   def s3_origin_url
-    if self.track && self.track.try(:s3_url)
-      raise
-      self.track.s3_url
+    if origin_url
+      self[:origin_url]
     else
       File.join(ENV['S3_URL'], ENV['S3_OUTBOUND_BUCKET'], self.s3_origin_key)
     end
@@ -182,6 +186,17 @@ class Ingest < CPW::Client::Base
     end
   end
 
+  def s3_origin_srt_key
+    if self.track && self.track.s3_key
+      # when being created
+      "#{self.track.s3_key}.#{self.locale}.srt"
+    elsif self.s3_origin_key
+      "#{self.s3_origin_key}.#{self.locale}.srt"
+    else
+      raise "Could not derive 's3_origin_srt_key'"
+    end
+  end
+
   def set_progress!(percent)
     new_progress = percent
     new_progress = new_progress > 100 ? 100 : new_progress
@@ -191,6 +206,32 @@ class Ingest < CPW::Client::Base
   # E.g. "harvest_stage" -> "harvest"
   def stage_name
     stage_trunk_name(self[:stage])
+  end
+
+  def has_s3_source_url?
+    result = false
+    if has_source_url?
+      uri = URI.parse(source_url)
+      result = !!(uri.host.try(:match, /^s3.amazonaws.com$/i) &&
+        uri.path.try(:match, /#{ENV['S3_INBOUND_BUCKET']}/i))
+    end
+    result
+  end
+
+  def has_ms_source_url?
+    result = false
+    if has_source_url?
+      result = !!(metadata['target'] && metadata['target']['ms_name'])
+    end
+    result
+  end
+
+  def has_source_url?
+    source_url.present?
+  end
+
+  def use_source_annotations?
+    !!self.use_source_annotations
   end
 
   private
