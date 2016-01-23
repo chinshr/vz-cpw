@@ -58,6 +58,12 @@ Use the following [this official script](https://trac.ffmpeg.org/wiki/Compilatio
 
 Follow these [installation instructions](https://github.com/beschulz/wav2json).
 
+### Install `youtube-dl`
+
+A tool download videos from various cloud services:
+
+    sudo apt-get install youtube-dl
+
 ### Install Sphinxbase + Pocketsphinx
 
 #### Install Prerequisites
