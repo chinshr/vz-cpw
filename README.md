@@ -191,6 +191,10 @@ Start the server:
 
     CPW_ENV=production bundle exec shoryuken -v -r cpw.rb -C config/shoryuken.yml
 
+Start in development mode:
+
+    CPW_ENV=development bundle exec shoryuken -v -r cpw.rb -C config/shoryuken.yml
+
 ### Configure Monit
 
 Download and start `monit`.
