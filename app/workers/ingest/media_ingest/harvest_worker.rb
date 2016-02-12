@@ -50,6 +50,10 @@ class Ingest::MediaIngest::HarvestWorker < CPW::Worker::Base
     end
 
     ytdl = YoutubeDL.download(ingest.source_url, options)
+    unless ytdl
+      raise "YoutubeDL did not like this source '#{ingest.source_url}'"
+    end
+
     self.media_file_fullpath_name = ytdl.filename # -> E.g. "/tmp/5967f721-a799-4dec-a458-f7ff3a7fb377/harvest/2b6xguh240i5b3g13ktl.mp4"
 
     # determine file_type and update ingest
