@@ -34,12 +34,14 @@ class Ingest::MediaIngest::HarvestWorker < CPW::Worker::Base
   def download_media_from_ms_source_url(options = {})
     options = options.reverse_merge({
       output: File.join(basefolder, ingest.handle),
-      merge_output_format: "mp4"
+      # merge_output_format: "mp4"
+      recode_video: "mp4"
     })
 
     if ingest.use_source_annotations? && has_subtitle_locale_and_format?
       options.merge!({
         sub_format: "srt",
+        convert_subs: "srt",
         sub_lang: select_subtitle_locale_from_supported_formats,
         write_sub: true,
         write_auto_sub: true
