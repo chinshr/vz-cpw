@@ -38,11 +38,11 @@ class Ingest::MediaIngest::HarvestWorker < CPW::Worker::Base
       recode_video: "mp4"
     })
 
-    if ingest.use_source_annotations? && has_subtitle_locale_and_format?
+    if ingest.use_source_annotations? && has_subtitle_locale? # has_subtitle_locale_and_format?
       options.merge!({
-        sub_format: "srt",
+        # sub_format: "srt",
         convert_subs: "srt",
-        sub_lang: select_subtitle_locale_from_supported_formats,
+        sub_lang: select_subtitle_locale,
         write_sub: true,
         write_auto_sub: true
       })
@@ -52,11 +52,13 @@ class Ingest::MediaIngest::HarvestWorker < CPW::Worker::Base
     end
 
     ytdl = YoutubeDL.download(ingest.source_url, options)
-    unless ytdl
+    if !ytdl || !ytdl.filename
       raise "YoutubeDL did not like this source '#{ingest.source_url}'"
     end
 
-    self.media_file_fullpath_name = ytdl.filename # -> E.g. "/tmp/5967f721-a799-4dec-a458-f7ff3a7fb377/harvest/2b6xguh240i5b3g13ktl.mp4"
+    # -> E.g. "/tmp/5967f721-a799-4dec-a458-f7ff3a7fb377/harvest/2b6xguh240i5b3g13ktl.mp4"
+    # Note: Bug in ytdl, will return a file with weird extension, need to normalize to mp4
+    self.media_file_fullpath_name = ytdl.filename.gsub(File.extname(ytdl.filename), ".mp4")
 
     # determine file_type and update ingest
     inspector = CPW::Speech::AudioInspector.new(media_file_fullpath_name)
@@ -145,9 +147,18 @@ class Ingest::MediaIngest::HarvestWorker < CPW::Worker::Base
     formats.any? {|f| f[:formats].any? {|n| n.match(/#{format}/i) }}
   end
 
+  def has_subtitle_locale?(exact_locale_match = false)
+    locale_subtitle_formats.any? {|f| (f[:formats] || []).size > 0 }
+  end
+
   def select_subtitle_locale_from_supported_formats(format = "srt", exact_locale_match = false)
     formats = locale_subtitle_formats(format, exact_locale_match)
     formats.each {|f| return f[:locale] if f[:formats].any? {|n| n.match(/#{format}/i) }}
+  end
+
+  def select_subtitle_locale(exact_locale_match = false)
+    formats = locale_subtitle_formats
+    formats.each {|f| return f[:locale] if f[:locale]}
   end
 
   def locale_subtitle_formats(format = "srt", exact_locale_match = false)
