@@ -236,5 +236,7 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
       result = File.exist?(srt_file_fullpath)
     end
     result
+  rescue AWS::S3::Errors::NoSuchKey => ex
+    false
   end
 end
