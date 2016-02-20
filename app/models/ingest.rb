@@ -47,6 +47,10 @@ class Ingest < CPW::Client::Base
     end
   end  # class methods
 
+  def present?
+    !!self.try(:id)
+  end
+
   def stage
     self[:stage].try(&:to_sym)
   end

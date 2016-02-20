@@ -1,6 +1,7 @@
 module CPW
   module Worker
     class ResourceLockError < Exception; end
+    class ResourceLoadError < Exception; end
 
     class Base
       include ::Shoryuken::Worker
@@ -141,8 +142,8 @@ module CPW
 
       def lock_ingest!(attributes = {})
         load_ingest
-        attributes = attributes.merge({busy: true}).reject {|k,v| v.nil?}
 
+        attributes = attributes.merge({busy: true}).reject {|k,v| v.nil?}
         if workflow? && workflow_stage?
           attributes.merge!({status: Ingest::STATE_STARTED})
           attributes.merge!({event: "forward_to_#{self.class.stage}"})
@@ -158,7 +159,7 @@ module CPW
         attributes = attributes.merge({busy: false}).reject {|k,v| v.nil?}
 
         # process stored exception context
-        if @saved_exception
+        if ingest.present? && @saved_exception
           new_messages = ingest.messages || {}
           new_messages[self.class.stage_name] ||= {}
           new_messages[self.class.stage_name]["message"] = @saved_exception.message
@@ -198,7 +199,14 @@ module CPW
 
       def load_ingest
         logger.info "+++ #{self.class.name}#load_ingest #{body.inspect}"
-        @ingest = Ingest.secure_find(body['ingest_id']) if body && body['ingest_id']
+
+        ingest_id = body.try(:[], 'ingest_id')
+        raise ResourceLoadError, "Cannot find ingest_id in message body" unless ingest_id
+
+        @ingest = Ingest.secure_find(ingest_id)
+        raise ResourceLoadError, "Cannot load ingest (id=#{ingest_id}): ingest not found" unless @ingest.present?
+
+        @ingest
       end
 
       def update_ingest(attributes = {})
