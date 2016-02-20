@@ -112,10 +112,12 @@ module CPW
             @can_perform = true
             yield
             @finished_perform = true
+          rescue ResourceLoadError => ex
+            logger.info "+++ #{self.class.name}#lock load error: #{ex.message}."
           rescue ResourceLockError => ex
-            logger.info "+++ #{self.class.name}#lock cannot lock #{ex.message}."
+            logger.info "+++ #{self.class.name}#lock lock error: #{ex.message}."
           rescue => ex
-            logger.info "+++ #{self.class.name}#lock block exception caught performing ingest id=#{ingest.id}, retrying."
+            logger.info "+++ #{self.class.name}#lock worker exception caught ingest id=#{ingest.id}, retrying."
             @should_retry      = !terminate?
             @has_perform_error = true
             @saved_exception   = ex
