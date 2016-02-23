@@ -113,9 +113,9 @@ module CPW
             yield
             @finished_perform = true
           rescue ResourceLoadError => ex
-            logger.info "+++ #{self.class.name}#lock load error: #{ex.message}."
+            logger.info "+++ #{self.class.name}#lock 'load error': #{ex.message}."
           rescue ResourceLockError => ex
-            logger.info "+++ #{self.class.name}#lock lock error: #{ex.message}."
+            logger.info "+++ #{self.class.name}#lock 'lock error': #{ex.message}."
           rescue => ex
             logger.info "+++ #{self.class.name}#lock worker exception caught ingest id=#{ingest.id}, retrying."
             @should_retry      = !terminate?
@@ -144,6 +144,7 @@ module CPW
 
       def lock_ingest!(attributes = {})
         load_ingest
+        raise ResourceLockError, "Cannot lock ingest (id=#{ingest_id}): busy = #{ingest.busy.inspect}" if ingest.busy?
 
         attributes = attributes.merge({busy: true}).reject {|k,v| v.nil?}
         if workflow? && workflow_stage?
@@ -152,9 +153,9 @@ module CPW
         end
 
         logger.info "+++ #{self.class.name}#lock_ingest! id=#{ingest_id}, #{attributes.inspect}"
-
         @ingest = update_ingest(attributes)
-        raise ResourceLockError, "Cannot lock ingest (id=#{ingest_id}): #{ingest.errors.inspect}" unless ingest.errors.empty?
+        raise ResourceLockError, "Cannot lock ingest (id=#{ingest_id}): errors #{ingest.errors.inspect}" unless ingest.errors.empty?
+        @ingest
       end
 
       def unlock_ingest!(attributes = {})

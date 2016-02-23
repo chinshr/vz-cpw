@@ -75,8 +75,7 @@ class Ingest::MediaIngest::HarvestWorker < CPW::Worker::Base
     s3_upload_object(media_file_fullpath_name, ingest.s3_origin_bucket_name, ingest.s3_origin_key)
     # -> "/tmp/5967f721-a799-4dec-a458-f7ff3a7fb377/harvest/2b6xguh240i5b3g13ktl.es-ES.srt"
     if srt_file_fullpath_name.present? && File.exist?(srt_file_fullpath_name)
-      s3_upload_object(srt_file_fullpath_name,
-        ingest.s3_origin_bucket_name, ingest.s3_origin_srt_key)
+      s3_upload_object(srt_file_fullpath_name, ingest.s3_origin_bucket_name, ingest.s3_origin_srt_key)
     end
   end
 
@@ -114,23 +113,15 @@ class Ingest::MediaIngest::HarvestWorker < CPW::Worker::Base
   end
 
   def update_ingest_and_document_track
-    document_tracks = Ingest::Track.where(ingest_id: ingest.id,
-      any_of_types: "document")
+    document_tracks = Ingest::Track.where(ingest_id: ingest.id, any_of_types: "document")
 
     # Store the original file in the ingest
-    ingest.update_attributes({
-      origin_url: ingest.s3_origin_url
-    })
+    ingest.update_attributes({ origin_url: ingest.s3_origin_url })
 
     unless document_track = document_tracks.first
       # Create ingest's track and save s3 references
       # [POST] /api/ingests/:ingest_id/tracks.json?s3_url=abcd...
-      Ingest::Track.create({
-        type: "document_track",
-        ingest_id: ingest.id,
-        s3_url: ingest.s3_origin_url,
-        ingest_iteration: ingest.iteration
-      })
+      Ingest::Track.create({ type: "document_track", ingest_id: ingest.id, s3_url: ingest.s3_origin_url, ingest_iteration: ingest.iteration })
     else
       # Update ingest's document track with new iteration number
       # [PUT] /api/ingests/:ingest_id/tracks/:id.json?s3_url=abcd

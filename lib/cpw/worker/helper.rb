@@ -180,11 +180,7 @@ module CPW::Worker::Helper
 
     key = File.basename(local_file) unless key
     CPW::logger.info "-->> start s3 upload: #{local_file}, #{bucket_name}, #{key}"
-    if false
-      s3.buckets[bucket_name].objects[key].write(:file => local_file)
-    else
-      s3.buckets[bucket_name].objects[key].write(File.open(local_file), content_length: File.size(local_file))
-    end
+    s3.buckets[bucket_name].objects[key].write(File.open(local_file), content_length: File.size(local_file))
     CPW::logger.info "-->> finished s3 upload: #{local_file}, #{bucket_name}, #{key}"
   end
 
