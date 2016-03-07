@@ -51,6 +51,8 @@ class Ingest::MediaIngest::HarvestWorker < CPW::Worker::Base
       self.srt_file_fullpath_name = File.join(basefolder, "#{ingest.handle}.#{srt_locale}.srt")
     end
 
+    logger.info("+++ #{self.class.name}#perform, YoutubeDL source_url: #{ingest.source_url}, options: #{options}")
+
     ytdl = YoutubeDL.download(ingest.source_url, options)
     if !ytdl || !ytdl.filename
       raise "YoutubeDL did not like this source '#{ingest.source_url}'"
@@ -168,7 +170,7 @@ class Ingest::MediaIngest::HarvestWorker < CPW::Worker::Base
       output       = yt_video.instance_variable_get("@last_download_output")
       header_index = output.index(/Available subtitles for (.*):/i)
 
-      return nil if header_index.nil?
+      return @supported_subtitle_formats = [] if header_index.nil?
 
       formats = []
       output.slice(header_index..-1).split("\n").each do |line|
@@ -178,7 +180,7 @@ class Ingest::MediaIngest::HarvestWorker < CPW::Worker::Base
       end
       formats = formats.slice(2..-1).reject {|f| f[:locale].blank?}
 
-      return [] if formats.empty?
+      return @supported_subtitle_formats = [] if formats.empty?
 
       formats.map do |format|
         format[:locale].strip!
