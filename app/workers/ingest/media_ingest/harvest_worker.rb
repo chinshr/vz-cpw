@@ -156,19 +156,20 @@ class Ingest::MediaIngest::HarvestWorker < CPW::Worker::Base
 
   def locale_subtitle_formats(format = "srt", exact_locale_match = false)
     locale = ingest.locale
-    if exact_locale_match
+    sl = if exact_locale_match
       supported_subtitle_formats.select {|f| f[:locale].match(/#{locale}/)}
     else
       locale = locale.split(/[-_]/).first
       supported_subtitle_formats.map {|f| f[:language] = f[:locale].split(/[-_]/).first; f}.select {|f| f[:language].match(/#{locale}/)}
     end
+    sl
   end
 
   def supported_subtitle_formats
     @supported_subtitle_formats ||= begin
       yt_video     = YoutubeDL.download(ingest.source_url, {list_subs: true})
       output       = yt_video.instance_variable_get("@last_download_output")
-      header_index = output.index(/Available subtitles for (.*):/i)
+      header_index = output.index(/(Available subtitles for|Available automatic captions for) (.*):/i)
 
       return @supported_subtitle_formats = [] if header_index.nil?
 
