@@ -16,8 +16,10 @@ module CPW
           chunks   = []
           srt_file = SRT::File.parse(File.new(splitter.original_file))
           srt_file.lines.each do |line|
-            chunks << AudioChunk.new(splitter, decode_start_time(line),
-              decode_duration(line), {id: line.sequence, response: build_response(line)})
+            if line.sequence && line.sequence > 0
+              chunks << AudioChunk.new(splitter, decode_start_time(line),
+                decode_duration(line), {id: line.sequence, response: build_response(line)})
+            end
           end
           chunks
         end
@@ -70,7 +72,11 @@ module CPW
         end
 
         def decode_duration(line)
-          decode_end_time(line) - decode_start_time(line)
+          start_time = decode_start_time(line)
+          end_time   = decode_end_time(line)
+          if (start_time && end_time)
+            end_time - start_time
+          end
         end
 
         def build_response(srt_line)
