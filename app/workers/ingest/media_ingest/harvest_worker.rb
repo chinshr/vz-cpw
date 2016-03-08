@@ -4,12 +4,16 @@ require 'youtube-dl.rb'
 class Ingest::MediaIngest::HarvestWorker < CPW::Worker::Base
   include CPW::Worker::Helper
 
+  YOUTUBE_DL_RETRIES = 10
+
   attr_accessor :media_file_fullpath_name, :srt_file_fullpath_name
 
   self.finished_progress = 19
 
   shoryuken_options queue: -> { queue_name },
     auto_delete: false, body_parser: :json
+
+  class TooManyRetries < StandardError; end
 
   def perform(sqs_message, body)
     logger.info("+++ #{self.class.name}#perform, body #{body.inspect}")
@@ -35,7 +39,9 @@ class Ingest::MediaIngest::HarvestWorker < CPW::Worker::Base
     options = options.reverse_merge({
       output: File.join(basefolder, ingest.handle),
       # merge_output_format: "mp4"
-      recode_video: "mp4"
+      recode_video: "mp4",
+      # rate_limit: "1M",
+      retries: YOUTUBE_DL_RETRIES
     })
 
     if ingest.use_source_annotations? && has_subtitle_locale? # has_subtitle_locale_and_format?
@@ -51,12 +57,28 @@ class Ingest::MediaIngest::HarvestWorker < CPW::Worker::Base
       self.srt_file_fullpath_name = File.join(basefolder, "#{ingest.handle}.#{srt_locale}.srt")
     end
 
-    logger.info("+++ #{self.class.name}#perform, YoutubeDL source_url: #{ingest.source_url}, options: #{options}")
-
-    ytdl = YoutubeDL.download(ingest.source_url, options)
-    if !ytdl || !ytdl.filename
-      raise "YoutubeDL did not like this source '#{ingest.source_url}'"
+    ytdl, retries = nil, YOUTUBE_DL_RETRIES
+    while true
+      begin
+        raise TooManyRetries, "YoutubeDL too many retries, source_url: #{ingest.source_url}, options: #{options}" unless retries > 0
+        logger.info("+++ #{self.class.name}#perform, YoutubeDL (retries: #{retries}) source_url: #{ingest.source_url}, options: #{options}")
+        ytdl = YoutubeDL.download(ingest.source_url, options)
+      rescue Cocaine::ExitStatusError => ex
+        logger.info("+++ #{self.class.name}#perform, YoutubeDL error: #{ex.message}")
+        if ex.message.match(/ERROR: unable to download video data: HTTP Error 404: Not Found/i)
+          retries -= 1
+          retry # next
+        else
+          raise ex
+        end
+      rescue TooManyRetries => ex
+        raise ex
+      ensure
+        retries = 0
+        break
+      end
     end
+    raise "YoutubeDL did not like this source '#{ingest.source_url}'" if !ytdl || !ytdl.filename
 
     # -> E.g. "/tmp/5967f721-a799-4dec-a458-f7ff3a7fb377/harvest/2b6xguh240i5b3g13ktl.mp4"
     # Note: Bug in ytdl, will return a file with weird extension, need to normalize to mp4
