@@ -2,6 +2,7 @@
 set -e -x
 echo "shoryuken starting..."
 # sudo apt-get update && apt-get upgrade -y
+sudo youtube-dl -U
 cd ~/vz-cpw
 rvm gemset use vz-cpw
 bundle
