@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<tt xml:lang="en" xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:tts="http://www.w3.org/ns/ttml#styling" xmlns:ttp="http://www.w3.org/ns/ttml#parameter" ttp:profile="http://www.w3.org/TR/profile/sdp-us" >
+<head>
+<styling>
+<style xml:id="s1" tts:textAlign="center" tts:extent="90% 90%" tts:origin="5% 5%" tts:displayAlign="after"/>
+<style xml:id="s2" tts:fontSize=".72c" tts:backgroundColor="black" tts:color="white"/>
+</styling>
+<layout>
+<region xml:id="r1" style="s1"/>
+</layout>
+</head>
+<body region="r1">
+<div>
+<p begin="00:00:16.139" end="00:00:17.770" style="s2">when they hear the sound of the waves</p>
+<p begin="00:00:17.770" end="00:00:21.010" style="s2">start connecting with memory with a</p>
+<p begin="00:00:21.010" end="00:00:24.510" style="s2">enough read them my life with the<br />greatness of nature</p>
+<p begin="00:00:24.510" end="00:00:28.439" style="s2">with my tween see so deep</p>
+<p begin="00:00:28.439" end="00:00:31.880" style="s2">there are so many things out of reach to<br />us</p>
+<p begin="00:00:31.880" end="00:00:37.350" style="s2">you think of all the way the Soundwave<br />up a conversation</p>
+<p begin="00:00:38.129" end="00:00:43.360" style="s2">when reed police into a good interview<br />we know that there is a huge universe</p>
+<p begin="00:00:43.360" end="00:00:46.739" style="s2">of feelings and information that remain<br />unknown to us</p>
+<p begin="00:00:46.739" end="00:00:51.000" style="s2">reporters usually discover a little bit<br />more of that universe</p>
+<p begin="00:00:51.000" end="00:00:54.660" style="s2">what we get he said Voice frame by the<br />reporter</p>
+<p begin="00:00:54.660" end="00:00:59.250" style="s2">must earn at least just less than 30<br />percent of their recording</p>
+<p begin="00:00:59.250" end="00:01:02.530" style="s2">for stories they publish they have to<br />choose</p>
+<p begin="00:01:02.530" end="00:01:07.030" style="s2">a few parts of the interviews gettin</p>
+<p begin="00:01:07.030" end="00:01:11.479" style="s2">is journalist main storytelling tool but<br />we know</p>
+<p begin="00:01:11.479" end="00:01:14.939" style="s2">there is fallible information he departs</p>
+<p begin="00:01:14.939" end="00:01:19.159" style="s2">that remain unpublished imagined would<br />happen</p>
+<p begin="00:01:19.159" end="00:01:22.820" style="s2">with the rest of the recording usually<br />that last</p>
+<p begin="00:01:22.820" end="00:01:27.100" style="s2">channel eastern half time to store<br />organize them</p>
+<p begin="00:01:27.100" end="00:01:31.470" style="s2">I surveyed 50 journalists from North</p>
+<p begin="00:01:31.470" end="00:01:34.659" style="s2">Latin America here&#39;s what they told me</p>
+<p begin="00:01:34.659" end="00:01:39.140" style="s2">they conduct between to and gaining two<br />lbs per week</p>
+<p begin="00:01:39.140" end="00:01:43.360" style="s2">with an average of four they spent<br />between</p>
+<p begin="00:01:43.360" end="00:01:47.060" style="s2">20 Mina and sometimes two hours</p>
+<p begin="00:01:47.060" end="00:01:52.259" style="s2">of the day doing transcriptions can you<br />believe that</p>
+<p begin="00:01:52.259" end="00:01:55.700" style="s2">we need and more efficient process</p>
+<p begin="00:01:55.700" end="00:01:59.170" style="s2">that is why I created and continue to<br />work</p>
+<p begin="00:01:59.170" end="00:02:02.670" style="s2">on voices a platform to record</p>
+<p begin="00:02:02.670" end="00:02:06.820" style="s2">transcribe eighty store share</p>
+<p begin="00:02:06.820" end="00:02:12.410" style="s2">and discover conversations a place that<br />enable people to reuse</p>
+<p begin="00:02:12.410" end="00:02:16.550" style="s2">rock on think like a document cloud<br />designed for voices</p>
+<p begin="00:02:16.550" end="00:02:19.920" style="s2">by transcribing audio into text</p>
+<p begin="00:02:19.920" end="00:02:25.470" style="s2">we can make all your conversation<br />searchable to release a good listeners</p>
+<p begin="00:02:25.470" end="00:02:28.800" style="s2">who knows how many good stories we could<br />find</p>
+<p begin="00:02:28.800" end="00:02:33.069" style="s2">in someone throwing interviews with<br />voices</p>
+<p begin="00:02:33.069" end="00:02:36.450" style="s2">outta my dick transcriptions a<br />journalist&#39;s job week</p>
+<p begin="00:02:36.450" end="00:02:40.670" style="s2">Easter and more effecient this is my<br />team</p>
+<p begin="00:02:40.670" end="00:02:44.640" style="s2">and with very lucky to find great people<br />who believe in the Satya</p>
+<p begin="00:02:44.640" end="00:02:47.800" style="s2">Mariana sigh as the patient the left<br />Gomes</p>
+<p begin="00:02:47.800" end="00:02:50.980" style="s2">a journalist marbury is a UX designer</p>
+<p begin="00:02:50.980" end="00:02:55.980" style="s2">and the developer georgann help me here<br />we have been working for five</p>
+<p begin="00:02:55.980" end="00:02:59.780" style="s2">month I we&#39;re currently finishing the<br />prototype on seeking for</p>
+<p begin="00:02:59.780" end="00:03:05.420" style="s2">sponding we believe that Moyes is would<br />reinvent the way we find information</p>
+<p begin="00:03:05.420" end="00:03:09.510" style="s2">reporters week ECU axis sources</p>
+<p begin="00:03:09.510" end="00:03:14.650" style="s2">on many that sources from many countries<br />more regional stories with the possible</p>
+<p begin="00:03:14.650" end="00:03:19.030" style="s2">there will be more public information<br />and more transparency</p>
+<p begin="00:03:19.030" end="00:03:23.620" style="s2">still record and share your life</p>
+<p begin="00:03:23.620" end="00:03:28.310" style="s2">a conference a public meeting and you<br />seem to be you</p>
+<p begin="00:03:28.310" end="00:03:32.280" style="s2">your conversations the third a place to<br />be found</p>
+</div>
+</body>
+</tt>

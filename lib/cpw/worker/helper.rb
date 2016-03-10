@@ -93,12 +93,12 @@ module CPW::Worker::Helper
     File.join(basefolder(uid, stage), pcm_audio_file) if pcm_audio_file
   end
 
-  def srt_file
-    ingest.s3_origin_srt_key.split("/").last if ingest && ingest.s3_origin_srt_key
+  def subtitle_file
+    ingest.s3_origin_subtitle_key.split("/").last if ingest && ingest.s3_origin_subtitle_key
   end
 
-  def srt_file_fullpath(uid = nil, stage = nil)
-    File.join(basefolder(uid, stage), srt_file) if srt_file
+  def subtitle_file_fullpath(uid = nil, stage = nil)
+    File.join(basefolder(uid, stage), subtitle_file) if subtitle_file
   end
 
   # -------------------------------------------------------------

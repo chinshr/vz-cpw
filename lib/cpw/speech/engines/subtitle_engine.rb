@@ -4,7 +4,8 @@ module CPW
   module Speech
     module Engines
       class SubtitleEngine < Base
-        attr_accessor :format, :default_chunk_score
+        attr_accessor :format
+        attr_accessor :default_chunk_score
 
         def initialize(media_file_or_url, options = {})
           super media_file_or_url, options
@@ -14,8 +15,8 @@ module CPW
 
         def split(splitter)
           chunks   = []
-          srt_file = SRT::File.parse(File.new(splitter.original_file))
-          srt_file.lines.each do |line|
+          subtitle_file = SRT::File.parse(File.new(splitter.original_file))
+          subtitle_file.lines.each do |line|
             if line.sequence && line.sequence > 0
               chunks << AudioChunk.new(splitter, decode_start_time(line),
                 decode_duration(line), {id: line.sequence, response: build_response(line)})
@@ -79,14 +80,14 @@ module CPW
           end
         end
 
-        def build_response(srt_line)
+        def build_response(subtitle_line)
           response = {}
-          response['text']       = srt_line.text.join(" ")
-          response['start_time'] = srt_line.start_time
-          response['end_time']   = srt_line.end_time
-          response['sequence']   = srt_line.sequence
-          response['error']      = srt_line.error if srt_line.error
-          response['display_coordinates'] = srt_line.display_coordinates if srt_line.try(:display_coordinates)
+          response['text']       = subtitle_line.text.join(" ")
+          response['start_time'] = subtitle_line.start_time
+          response['end_time']   = subtitle_line.end_time
+          response['sequence']   = subtitle_line.sequence
+          response['error']      = subtitle_line.error if subtitle_line.error
+          response['display_coordinates'] = subtitle_line.display_coordinates if subtitle_line.try(:display_coordinates)
           response
         end
 
