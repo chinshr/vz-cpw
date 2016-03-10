@@ -6,7 +6,8 @@ class Ingest::MediaIngest::HarvestWorker < CPW::Worker::Base
 
   YOUTUBE_DL_RETRIES = 10
 
-  attr_accessor :media_file_fullpath_name, :srt_file_fullpath_name
+  attr_accessor :media_file_fullpath_name
+  attr_accessor :subtitle_file_fullpath_name
 
   self.finished_progress = 19
 
@@ -45,16 +46,17 @@ class Ingest::MediaIngest::HarvestWorker < CPW::Worker::Base
     })
 
     if ingest.use_source_annotations? && has_subtitle_locale? # has_subtitle_locale_and_format?
+      # youtube-dl https://www.youtube.com/watch?v=w2oLFpcMPlo --sub-format "srt/ttml/vtt" --write-auto-sub --convert-subs srt
       options.merge!({
-        # sub_format: "srt",
+        sub_format: "srt/ttml/vtt",
         convert_subs: "srt",
         sub_lang: select_subtitle_locale,
         write_sub: true,
         write_auto_sub: true
       })
       # -> "/tmp/5967f721-a799-4dec-a458-f7ff3a7fb377/harvest/2b6xguh240i5b3g13ktl.es-ES.srt"
-      srt_locale = locale_subtitle_formats.first.try(:[], :locale)
-      self.srt_file_fullpath_name = File.join(basefolder, "#{ingest.handle}.#{srt_locale}.srt")
+      subtitle_locale = locale_subtitle_formats.first.try(:[], :locale)
+      self.subtitle_file_fullpath_name = File.join(basefolder, "#{ingest.handle}.#{subtitle_locale}.srt")
     end
 
     ytdl, retries = nil, YOUTUBE_DL_RETRIES
@@ -98,8 +100,8 @@ class Ingest::MediaIngest::HarvestWorker < CPW::Worker::Base
     # -> "/tmp/5967f721-a799-4dec-a458-f7ff3a7fb377/harvest/2b6xguh240i5b3g13ktl.mp4"
     s3_upload_object(media_file_fullpath_name, ingest.s3_origin_bucket_name, ingest.s3_origin_key)
     # -> "/tmp/5967f721-a799-4dec-a458-f7ff3a7fb377/harvest/2b6xguh240i5b3g13ktl.es-ES.srt"
-    if srt_file_fullpath_name.present? && File.exist?(srt_file_fullpath_name)
-      s3_upload_object(srt_file_fullpath_name, ingest.s3_origin_bucket_name, ingest.s3_origin_srt_key)
+    if subtitle_file_fullpath_name.present? && File.exist?(subtitle_file_fullpath_name)
+      s3_upload_object(subtitle_file_fullpath_name, ingest.s3_origin_bucket_name, ingest.s3_origin_subtitle_key)
     end
   end
 

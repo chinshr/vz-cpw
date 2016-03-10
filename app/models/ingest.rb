@@ -190,14 +190,14 @@ class Ingest < CPW::Client::Base
     end
   end
 
-  def s3_origin_srt_key
+  def s3_origin_subtitle_key
     if self.track && self.track.s3_key
       # when being created
       "#{self.track.s3_key}.#{self.locale}.srt"
     elsif self.s3_origin_key
       "#{self.s3_origin_key}.#{self.locale}.srt"
     else
-      raise "Could not derive 's3_origin_srt_key'"
+      raise "Could not derive 's3_origin_subtitle_key'"
     end
   end
 

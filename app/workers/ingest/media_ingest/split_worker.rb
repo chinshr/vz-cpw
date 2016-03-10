@@ -20,7 +20,7 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
   def perform(sqs_message, body)
     logger.info("+++ #{self.class.name}#perform, body #{body.inspect}")
 
-    if ingest.use_source_annotations? && download_srt_file_if_exists
+    if ingest.use_source_annotations? && download_subtitle_file_if_exists
       process_with_srt
     else
       if ingest.metadata['te_name'] == "voicebase" || ingest.locale.match(/es/)
@@ -36,9 +36,9 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
   protected
 
   def process_with_srt
-    self.engine = CPW::Speech::Engines::SubtitleEngine.new(srt_file_fullpath,
+    self.engine = CPW::Speech::Engines::SubtitleEngine.new(subtitle_file_fullpath,
       {format: :srt, default_chunk_score: 0.5})
-    puts "****** process SRT: #{srt_file_fullpath}"
+    puts "****** process SRT: #{subtitle_file_fullpath}"
     engine.perform(basefolder: basefolder).each do |chunk|
       process_speech_chunk(chunk)
     end
@@ -141,7 +141,7 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
       engine.clean if engine
       delete_file_if_exists pcm_audio_file_fullpath
       delete_file_if_exists single_channel_wav_audio_file_fullpath
-      delete_file_if_exists srt_file_fullpath
+      delete_file_if_exists subtitle_file_fullpath
     end
   end
 
@@ -229,11 +229,11 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
     end
   end
 
-  def download_srt_file_if_exists
+  def download_subtitle_file_if_exists
     result = false
-    if ingest.s3_origin_srt_key.present?
-      copy_or_download :srt_file
-      result = File.exist?(srt_file_fullpath)
+    if ingest.s3_origin_subtitle_key.present?
+      copy_or_download :subtitle_file
+      result = File.exist?(subtitle_file_fullpath)
     end
     result
   rescue AWS::S3::Errors::NoSuchKey => ex
