@@ -423,12 +423,36 @@ module CPW::Worker::Helper
   # waveform
   # -------------------------------------------------------------
 
+  def waveform_sampling_rate(duration_in_secs, options = {})
+    sampling_rate = 60
+    max_samples   = 1000000
+    result        = 1
+
+    if options[:sampling_rate]
+      result = options[:sampling_rate]
+    else
+      # determine sample rate
+      while sampling_rate > 0
+        total_samples = duration_in_secs.to_i * sampling_rate
+        if total_samples < max_samples
+          result = sampling_rate
+          break
+        end
+        sampling_rate -= 1
+      end
+    end
+    result
+  end
+
   def wav2json(input_wav_file, output_json_file, options = {})
-    options = {channels: ['left', 'right'],
-      sampling_rate: 30, precision: 2}.merge(options)
-    inspector     = CPW::Speech::AudioInspector.new(input_wav_file)
+    options       = {channels: ['left', 'right'], precision: 2}.merge(options)
     channels      = [options[:channels]].flatten.map(&:split).flatten.join(' ')
-    total_samples = (inspector.duration.to_f * options[:sampling_rate]).to_i
+
+    inspector     = CPW::Speech::AudioInspector.new(input_wav_file)
+    duration      = inspector.duration.to_f
+    sampling_rate = waveform_sampling_rate(duration_in_secs, options)
+    total_samples = duration.to_i * sampling_rate
+
     cmd = "wav2json #{input_wav_file} --channels #{channels} --no-header --precision #{options[:precision]} --samples #{total_samples} -o #{output_json_file}"
     CPW::logger.info "-> $ #{cmd}"
     if system(cmd)
