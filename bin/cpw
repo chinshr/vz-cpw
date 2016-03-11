@@ -25,11 +25,7 @@ command [:c, :console] do |console|
     require 'irb'
 
     ARGV.clear
-    begin
-      IRB.start
-    rescue ArgumentError => e
-      puts "Goodbye."
-    end
+    IRB.start
   end
 end
 
@@ -94,4 +90,8 @@ on_error do |exception|
   true
 end
 
-exit run(ARGV)
+begin
+  exit run(ARGV)
+rescue
+  $stdout.puts "Bye."
+end
