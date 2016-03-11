@@ -425,7 +425,7 @@ module CPW::Worker::Helper
 
   def waveform_sampling_rate(duration_in_secs, options = {})
     sampling_rate = 60
-    max_samples   = 1000000
+    max_samples   = 36635
     result        = 1
 
     if options[:sampling_rate]
@@ -450,7 +450,7 @@ module CPW::Worker::Helper
 
     inspector     = CPW::Speech::AudioInspector.new(input_wav_file)
     duration      = inspector.duration.to_f
-    sampling_rate = waveform_sampling_rate(duration_in_secs, options)
+    sampling_rate = waveform_sampling_rate(duration, options)
     total_samples = duration.to_i * sampling_rate
 
     cmd = "wav2json #{input_wav_file} --channels #{channels} --no-header --precision #{options[:precision]} --samples #{total_samples} -o #{output_json_file}"
