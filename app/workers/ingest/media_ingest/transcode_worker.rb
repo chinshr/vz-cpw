@@ -66,13 +66,15 @@ class Ingest::MediaIngest::TranscodeWorker < CPW::Worker::Base
     end_at   = start_at + audio.duration.to_f.ceil if start_at
 
     # Update s3 references
-    @ingest.track.update_attributes({
-      s3_mp3_url: @ingest.s3_origin_mp3_url,
-      s3_waveform_json_url: @ingest.s3_origin_waveform_json_url,
-      duration: audio.duration.to_f,
-      start_at: start_at,
-      end_at: end_at
-    })
+    Client::Base.try_request do
+      @ingest.track.update_attributes({
+        s3_mp3_url: @ingest.s3_origin_mp3_url,
+        s3_waveform_json_url: @ingest.s3_origin_waveform_json_url,
+        duration: audio.duration.to_f,
+        start_at: start_at,
+        end_at: end_at
+      })
+    end
   end
 
   def cleanup

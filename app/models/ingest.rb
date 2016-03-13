@@ -33,16 +33,20 @@ class Ingest < CPW::Client::Base
 
     def secure_find(id)
       @@semaphore.synchronize do
-        Ingest.find(id)
+        Client::Base.try_request do
+          Ingest.find(id)
+        end
       end
     end
 
     def secure_update(id, attributes)
       @@semaphore.synchronize do
-        if (ingest = Ingest.find(id)) && ingest.try(:id)
-          ingest.update_attributes(attributes)
+        Client::Base.try_request do
+          if (ingest = Ingest.find(id)) && ingest.try(:id)
+            ingest.update_attributes(attributes)
+          end
+          ingest
         end
-        ingest
       end
     end
   end  # class methods

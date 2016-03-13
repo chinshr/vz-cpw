@@ -48,6 +48,10 @@ module CPW
     attr_accessor :user_email
     attr_accessor :user_password
     attr_accessor :logger
+    attr_accessor :request_retries
+    attr_accessor :connection_timeout
+    attr_accessor :connection_open_timeout
+    attr_accessor :request_delay_before_retry
 
     def test?
       env == 'test'
@@ -112,12 +116,17 @@ module CPW
   self.base_url         = ENV['BASE_URL']
   self.client_key       = ENV['CLIENT_KEY']
   self.device_uid       = ENV['DEVICE_UID']
-  self.user_email       = ENV['USER_EMAIL']
-  self.user_password    = ENV['USER_PASSWORD']
-  self.store            = CPW::Store.new("cpw.#{self.env}.pstore")
-  self.access_token     = store[:access_token]
-  self.access_secret    = store[:access_secret]
-  self.logger           = MonoLogger.new(STDOUT)
+  self.user_email         = ENV['USER_EMAIL']
+  self.user_password      = ENV['USER_PASSWORD']
+  self.store              = CPW::Store.new("cpw.#{self.env}.pstore")
+  self.access_token       = store[:access_token]
+  self.access_secret      = store[:access_secret]
+  self.logger             = MonoLogger.new(STDOUT)
+
+  self.request_retries            = ENV.fetch('REQUEST_RETRIES', 5).to_i
+  self.request_delay_before_retry = ENV.fetch('REQUEST_DELAY_BEFORE_RETRY', 3).to_i
+  self.connection_timeout         = ENV.fetch('CONNECTION_TIMEOUT', 5).to_i
+  self.connection_open_timeout    = ENV.fetch('CONNECTION_OPEN_TIMEOUT', 2).to_i
 
   register_workers
 
@@ -128,10 +137,12 @@ module CPW
   authorize
 
   Spyke::Base.connection = Faraday.new(url: ENV['BASE_URL']) do |c|
-   c.request :json
-   c.use CPW::JsonParser
-   c.adapter Faraday.default_adapter  # CPW::Client::Adapter
-   c.authorization "Token", :token => CPW::store[:access_token]
+    c.request :json
+    c.use CPW::JsonParser
+    c.adapter Faraday.default_adapter  # CPW::Client::Adapter
+    c.authorization "Token", :token => CPW::store[:access_token]
+    c.options.timeout      = CPW::connection_timeout
+    c.options.open_timeout = CPW::connection_open_timeout
   end
 
   AWS.config({
