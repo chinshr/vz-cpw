@@ -181,11 +181,15 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
       h[:words] = chunk.words.to_json unless chunk.words.blank?
     end
 
-    if ingest_chunk.try(:id)
+    result = if ingest_chunk.try(:id)
       ingest_chunk.update_attributes(chunk_attributes)
     else
       Ingest::Chunk.create(chunk_attributes)
     end
+
+    sleep 2 # be nice to my self :-)
+
+    result
   end
 
   private
