@@ -142,20 +142,20 @@ class Ingest::MediaIngest::HarvestWorker < CPW::Worker::Base
     document_tracks = Ingest::Track.where(ingest_id: ingest.id, any_of_types: "document")
 
     # Store the original file in the ingest
-    Client::Base.try_request do
+    CPW::Client::Base.try_request do
       ingest.update_attributes({ origin_url: ingest.s3_origin_url })
     end
 
     unless document_track = document_tracks.first
       # Create ingest's track and save s3 references
       # [POST] /api/ingests/:ingest_id/tracks.json?s3_url=abcd...
-      Client::Base.try_request do
+      CPW::Client::Base.try_request do
         Ingest::Track.create({ type: "document_track", ingest_id: ingest.id, s3_url: ingest.s3_origin_url, ingest_iteration: ingest.iteration })
       end
     else
       # Update ingest's document track with new iteration number
       # [PUT] /api/ingests/:ingest_id/tracks/:id.json?s3_url=abcd
-      Client::Base.try_request do
+      CPW::Client::Base.try_request do
         document_track.update_attributes({
           ingest_iteration: ingest.iteration
         })

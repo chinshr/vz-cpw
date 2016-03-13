@@ -182,11 +182,11 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
     end
 
     result = if ingest_chunk.try(:id)
-      Client::Base.try_request do
+      CPW::Client::Base.try_request do
         ingest_chunk.update_attributes(chunk_attributes)
       end
     else
-      Client::Base.try_request do
+      CPW::Client::Base.try_request do
         Ingest::Chunk.create(chunk_attributes)
       end
     end
