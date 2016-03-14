@@ -14,6 +14,7 @@ module CPW
           rescue Faraday::ClientError,
               Faraday::TimeoutError,
               Errno::ETIMEDOUT,
+              Net::OpenTimeout,
               Faraday::ConnectionFailed => ex
             if (tries -= 1) > 0
               CPW::logger.debug "#{caller[1][/`.*'/][1..-2]} #{ex.message}, retries left #{tries}"

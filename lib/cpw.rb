@@ -126,7 +126,7 @@ module CPW
   self.request_retries            = ENV.fetch('REQUEST_RETRIES', 10).to_i
   self.request_delay_before_retry = ENV.fetch('REQUEST_DELAY_BEFORE_RETRY', 3).to_i
   self.connection_timeout         = ENV.fetch('CONNECTION_TIMEOUT', 5).to_i
-  self.connection_open_timeout    = ENV.fetch('CONNECTION_OPEN_TIMEOUT', 4).to_i
+  self.connection_open_timeout    = ENV.fetch('CONNECTION_OPEN_TIMEOUT', 5).to_i
 
   register_workers
 
@@ -142,7 +142,7 @@ module CPW
     c.adapter Faraday.default_adapter  # CPW::Client::Adapter
     c.authorization "Token", :token => CPW::store[:access_token]
     c.options.timeout      = CPW::connection_timeout
-    # c.options.open_timeout = CPW::connection_open_timeout
+    c.options.open_timeout = CPW::connection_open_timeout
   end
 
   AWS.config({

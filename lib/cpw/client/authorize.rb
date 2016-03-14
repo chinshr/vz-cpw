@@ -100,7 +100,7 @@ module CPW
             c.response :logger
             c.adapter Faraday.default_adapter
             c.options.timeout      = CPW::connection_timeout
-            # c.options.open_timeout = CPW::connection_open_timeout
+            c.options.open_timeout = CPW::connection_open_timeout
           end
         end
 
