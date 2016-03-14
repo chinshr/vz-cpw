@@ -5,6 +5,8 @@ require "mkmf"
 Rake::TestTask.new do |t|
   # t.libs << "lib"
   t.libs << "test"
+  t.verbose = true
+  t.warning = false
   t.test_files = FileList['test/**/*_test.rb']
 end
 

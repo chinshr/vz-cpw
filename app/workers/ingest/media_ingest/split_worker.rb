@@ -191,7 +191,7 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
       end
     end
 
-    sleep 2 # be nice :-)
+    sleep 1 # be nice :-)
 
     result
   end
