@@ -11,9 +11,16 @@ module CPW
           begin
             tries ||= (request_retries || CPW::request_retries)
             yield
-          rescue Faraday::TimeoutError, Faraday::ConnectionFailed => ex
+          rescue Net::ReadTimeout, Faraday::TimeoutError => ex
             if (tries -= 1) > 0
-              CPW::logger.debug "#{caller[1][/`.*'/][1..-2]} #{ex.message} failed, retries left #{tries}"
+              CPW::logger.debug "#{caller[1][/`.*'/][1..-2]} #{ex.message} timeout, retries left #{tries}"
+              retry
+            else
+              raise ex
+            end
+          rescue Faraday::ConnectionFailed => ex
+            if (tries -= 1) > 0
+              CPW::logger.debug "#{caller[1][/`.*'/][1..-2]} #{ex.message} connection failed, retries left #{tries}"
               sleep CPW::request_delay_before_retry
               retry
             else
