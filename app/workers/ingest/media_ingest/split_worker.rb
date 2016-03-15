@@ -146,6 +146,7 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
   end
 
   def create_or_update_ingest_with(chunk)
+    ingest_chunk = nil
     CPW::Client::Base.try_request do
       ingest_chunk = Ingest::Chunk.where(ingest_id: @ingest.id,
         any_of_types: "pocketsphinx", any_of_positions: chunk.id,

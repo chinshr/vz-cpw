@@ -12,6 +12,7 @@ class Ingest::MediaIngest::CrowdoutWorker < CPW::Worker::Base
     logger.info("+++ #{self.class.name}#perform, body #{body.inspect}")
 
     # Chunks to be crowd sourced
+    source_chunks = nil
     CPW::Client::Base.try_request do
       source_chunks = Ingest::Chunk.where({
         ingest_id: @ingest.id,
@@ -28,6 +29,7 @@ class Ingest::MediaIngest::CrowdoutWorker < CPW::Worker::Base
     source_chunks.each do |source_chunk|
       logger.info "-> source_chunk = #{source_chunk.id}"
 
+      reference_chunks = nil
       CPW::Client::Base.try_request do
         reference_chunks = Ingest::Chunk.where({
           none_of_ingest_ids: [@ingest.id],
@@ -53,6 +55,7 @@ class Ingest::MediaIngest::CrowdoutWorker < CPW::Worker::Base
     logger.info("Source chunk: #{source_chunk.inspect}")
     logger.info("Reference chunks: #{reference_chunks.to_a.inspect}")
 
+    result         = 0
     chunks         = [source_chunk, reference_chunks].flatten.shuffle
     chunk_ids      = chunks.map(&:id)
     chunk_text     = chunks.map(&:text).join("|")
@@ -104,8 +107,9 @@ class Ingest::MediaIngest::CrowdoutWorker < CPW::Worker::Base
     }
 
     CPW::Client::Base.try_request do
-      Ingest::Chunk.create(chunk_attributes)
+      result = Ingest::Chunk.create(chunk_attributes)
     end
+    result
   ensure
     delete_file_if_exists(merged_wav_fullpath)
   end
