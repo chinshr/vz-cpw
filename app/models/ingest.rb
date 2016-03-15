@@ -42,11 +42,14 @@ class Ingest < CPW::Client::Base
     def secure_update(id, attributes)
       @@semaphore.synchronize do
         CPW::Client::Base.try_request do
-          if (ingest = Ingest.find(id)) && ingest.try(:id)
+          ingest = Ingest.find(id)
+        end
+        if ingest.try(:id)
+          CPW::Client::Base.try_request do
             ingest.update_attributes(attributes)
           end
-          ingest
         end
+        ingest
       end
     end
   end  # class methods
@@ -118,7 +121,9 @@ class Ingest < CPW::Client::Base
 
   def track
     @track ||= begin
-      tracks_including_master_track.where(any_of_types: ["document_track"]).first
+      CPW::Client::Base.try_request do
+        tracks_including_master_track.where(any_of_types: ["document_track"]).first
+      end
     end
   end
 

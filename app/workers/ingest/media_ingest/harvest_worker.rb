@@ -139,7 +139,9 @@ class Ingest::MediaIngest::HarvestWorker < CPW::Worker::Base
   end
 
   def update_ingest_and_document_track
-    document_tracks = Ingest::Track.where(ingest_id: ingest.id, any_of_types: "document")
+    CPW::Client::Base.try_request do
+      document_tracks = Ingest::Track.where(ingest_id: ingest.id, any_of_types: "document")
+    end
 
     # Store the original file in the ingest
     CPW::Client::Base.try_request do

@@ -12,13 +12,15 @@ class Ingest::MediaIngest::CrowdoutWorker < CPW::Worker::Base
     logger.info("+++ #{self.class.name}#perform, body #{body.inspect}")
 
     # Chunks to be crowd sourced
-    source_chunks = Ingest::Chunk.where({
-      ingest_id: @ingest.id,
-      any_of_ingest_iterations: @ingest.iteration,
-      score_lt: SOURCE_CHUNK_SCORE_THRESHOLD,
-      any_of_types: "pocketsphinx_chunk",
-      any_of_processing_status: [Ingest::Chunk::STATUS_ENCODED, Ingest::Chunk::STATUS_TRANSCRIBED]
-    })
+    CPW::Client::Base.try_request do
+      source_chunks = Ingest::Chunk.where({
+        ingest_id: @ingest.id,
+        any_of_ingest_iterations: @ingest.iteration,
+        score_lt: SOURCE_CHUNK_SCORE_THRESHOLD,
+        any_of_types: "pocketsphinx_chunk",
+        any_of_processing_status: [Ingest::Chunk::STATUS_ENCODED, Ingest::Chunk::STATUS_TRANSCRIBED]
+      })
+    end
 
     # Go through each source chunk, select those with low score
     # find a qualified high-confidence reference chunk and
@@ -26,15 +28,17 @@ class Ingest::MediaIngest::CrowdoutWorker < CPW::Worker::Base
     source_chunks.each do |source_chunk|
       logger.info "-> source_chunk = #{source_chunk.id}"
 
-      reference_chunks = Ingest::Chunk.where({
-        none_of_ingest_ids: [@ingest.id],
-        none_of_types: ["mechanical_turk_chunk", "captcha_chunk"],
-        score_gteq: REFERENCE_CHUNK_SCORE_THRESHOLD,
-        duration_lteq: source_chunk.duration.to_f + 3.0,
-        any_of_locales: locale_language(source_chunk.locale),
-        any_of_processing_status: [Ingest::Chunk::STATUS_ENCODED, Ingest::Chunk::STATUS_TRANSCRIBED],
-        sort_order: [:random], limit: 1
-      })
+      CPW::Client::Base.try_request do
+        reference_chunks = Ingest::Chunk.where({
+          none_of_ingest_ids: [@ingest.id],
+          none_of_types: ["mechanical_turk_chunk", "captcha_chunk"],
+          score_gteq: REFERENCE_CHUNK_SCORE_THRESHOLD,
+          duration_lteq: source_chunk.duration.to_f + 3.0,
+          any_of_locales: locale_language(source_chunk.locale),
+          any_of_processing_status: [Ingest::Chunk::STATUS_ENCODED, Ingest::Chunk::STATUS_TRANSCRIBED],
+          sort_order: [:random], limit: 1
+        })
+      end
 
       logger.info "-> reference_chunks(#{reference_chunks.size}) = #{reference_chunks.map(&:id)}"
       if reference_chunks.size > 0
@@ -99,7 +103,9 @@ class Ingest::MediaIngest::CrowdoutWorker < CPW::Worker::Base
       track_attributes: track_attributes
     }
 
-    Ingest::Chunk.create(chunk_attributes)
+    CPW::Client::Base.try_request do
+      Ingest::Chunk.create(chunk_attributes)
+    end
   ensure
     delete_file_if_exists(merged_wav_fullpath)
   end

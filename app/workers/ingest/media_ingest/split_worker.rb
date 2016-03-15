@@ -146,9 +146,11 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
   end
 
   def create_or_update_ingest_with(chunk)
-    ingest_chunk = Ingest::Chunk.where(ingest_id: @ingest.id,
-      any_of_types: "pocketsphinx", any_of_positions: chunk.id,
-      any_of_ingest_iterations: @ingest.iteration).first
+    CPW::Client::Base.try_request do
+      ingest_chunk = Ingest::Chunk.where(ingest_id: @ingest.id,
+        any_of_types: "pocketsphinx", any_of_positions: chunk.id,
+        any_of_ingest_iterations: @ingest.iteration).first
+    end
 
     start_at = Chronic.parse(@ingest.upload['recorded_at']) + chunk.offset.to_f rescue nil
     end_at   = start_at + chunk.duration.ceil if start_at
