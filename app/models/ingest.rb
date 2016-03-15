@@ -41,6 +41,7 @@ class Ingest < CPW::Client::Base
 
     def secure_update(id, attributes)
       @@semaphore.synchronize do
+        ingest = nil
         CPW::Client::Base.try_request do
           ingest = Ingest.find(id)
         end
