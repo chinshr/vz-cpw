@@ -2,6 +2,13 @@ module CPW
   module Client
     class Base < Spyke::Base
 
+        REQUEST_EXCEPTIONS = [
+          Faraday::ClientError,
+          Faraday::TimeoutError, Faraday::ConnectionFailed,
+          Errno::ETIMEDOUT,
+          Net::OpenTimeout, Net::ReadTimeout
+        ]
+
         # Wrapper to retry requests N times before failing
         #
         # Client::Base::try_request do
@@ -11,11 +18,7 @@ module CPW
           begin
             tries ||= (request_retries || CPW::request_retries)
             yield
-          rescue Faraday::ClientError,
-              Faraday::TimeoutError,
-              Errno::ETIMEDOUT,
-              Net::OpenTimeout,
-              Faraday::ConnectionFailed => ex
+          rescue *REQUEST_EXCEPTIONS => ex
             if (tries -= 1) > 0
               CPW::logger.debug "#{caller[1][/`.*'/][1..-2]} #{ex.message}, retries left #{tries}"
               sleep CPW::request_delay_before_retry
