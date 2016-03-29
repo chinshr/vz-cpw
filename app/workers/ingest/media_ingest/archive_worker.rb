@@ -4,7 +4,7 @@ class Ingest::MediaIngest::ArchiveWorker < CPW::Worker::Base
   self.finished_progress = 99
 
   shoryuken_options queue: -> { queue_name },
-    auto_delete: false, body_parser: :json
+    auto_delete: true, body_parser: :json
 
   def perform(sqs_message, body)
     logger.info("+++ #{self.class.name}#perform, body #{body.inspect}")

@@ -8,7 +8,7 @@ class Ingest::MediaIngest::TranscodeWorker < CPW::Worker::Base
     :create_mp3, :create_waveform, :upload, :cleanup]
 
   shoryuken_options queue: -> { queue_name },
-    auto_delete: false, body_parser: :json
+    auto_delete: true, body_parser: :json
 
   def perform(sqs_message, body)
     logger.info("+++ #{self.class.name}#perform, body #{body.inspect}")

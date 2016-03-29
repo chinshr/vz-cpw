@@ -12,7 +12,7 @@ class Ingest::MediaIngest::HarvestWorker < CPW::Worker::Base
   self.finished_progress = 19
 
   shoryuken_options queue: -> { queue_name },
-    auto_delete: false, body_parser: :json
+    auto_delete: true, body_parser: :json
 
   class TooManyRetries < StandardError; end
 

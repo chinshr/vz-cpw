@@ -87,7 +87,7 @@ module CPW
       def after_perform(sqs_message, body)
         logger.info "+++ #{self.class.name}#after_perform: #{body.inspect}\n"
 
-        sqs_message.delete if should_not_retry? || terminate?
+        # sqs_message.delete if should_not_retry? || terminate?
 
         logger.info("+++ #{self.class.name}#workflow? -> #{workflow?}")
         logger.info("+++ #{self.class.name}#has_next_stage? -> #{has_next_stage?}")
