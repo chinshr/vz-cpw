@@ -84,7 +84,11 @@ class Ingest::MediaIngest::HarvestWorker < CPW::Worker::Base
 
     # -> E.g. "/tmp/5967f721-a799-4dec-a458-f7ff3a7fb377/harvest/2b6xguh240i5b3g13ktl.mp4"
     # Note: Bug in ytdl, will return a file with weird extension, need to normalize to mp4
-    self.media_file_fullpath_name = ytdl.filename.gsub(File.extname(ytdl.filename), ".mp4")
+    self.media_file_fullpath_name = if File.extname(ytdl.filename).present?
+      ytdl.filename.gsub(File.extname(ytdl.filename), ".mp4")
+    else
+      ytdl.filename
+    end
 
     # determine file_type and update ingest
     inspector = CPW::Speech::AudioInspector.new(media_file_fullpath_name)
