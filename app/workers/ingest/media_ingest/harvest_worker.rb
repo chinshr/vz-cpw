@@ -36,18 +36,22 @@ class Ingest::MediaIngest::HarvestWorker < CPW::Worker::Base
 
   protected
 
-  def download_media_from_ms_source_url(options = {})
-    options = options.reverse_merge({
-      output: File.join(basefolder, ingest.handle),
-      # merge_output_format: "mp4"
-      recode_video: "mp4",
-      # rate_limit: "1M",
-      retries: YOUTUBE_DL_RETRIES
-    })
+  def ms_name
+    @ms_name ||= ingest.metadata.try(:[], 'target').try(:[], "ms_name")
+  end
 
+  def youtube_dl_options(options = {})
+    result = case ms_name
+    # recode video to mp4
+    when /youtube/, /vimeo/, /facebook/
+      { recode_video: "mp4" }
+    else
+      {}
+    end
+    # subtitles
     if ingest.use_source_annotations? && has_subtitle_locale? # has_subtitle_locale_and_format?
       # youtube-dl https://www.youtube.com/watch?v=w2oLFpcMPlo --sub-format "srt/ttml/vtt" --write-auto-sub --convert-subs srt
-      options.merge!({
+      result.merge!({
         sub_format: "srt/ttml/vtt",
         convert_subs: "srt",
         sub_lang: select_subtitle_locale,
@@ -58,6 +62,18 @@ class Ingest::MediaIngest::HarvestWorker < CPW::Worker::Base
       subtitle_locale = locale_subtitle_formats.first.try(:[], :locale)
       self.subtitle_file_fullpath_name = File.join(basefolder, "#{ingest.handle}.#{subtitle_locale}.srt")
     end
+
+    result.merge(options)
+  end
+
+  def download_media_from_ms_source_url(options = {})
+    options = youtube_dl_options({
+      output: File.join(basefolder, ingest.handle),
+      # merge_output_format: "mp4"
+      # recode_video: "mp4",
+      # rate_limit: "1M",
+      retries: YOUTUBE_DL_RETRIES
+    })
 
     ytdl, retries = nil, YOUTUBE_DL_RETRIES
     while true
