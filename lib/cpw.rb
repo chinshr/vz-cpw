@@ -1,3 +1,4 @@
+require "openssl"
 require "fileutils"
 require "faraday"
 require "spyke"
@@ -8,7 +9,7 @@ require "mono_logger"
 require "chronic"
 require "dotenv"
 Dotenv.load(*[".env.#{ENV.fetch("CPW_ENV", 'development')}", ".env"])
-require 'byebug'
+require "byebug"
 
 require "shoryuken"
 
@@ -19,10 +20,6 @@ require "cpw/client/json_parser"
 require "cpw/client/adapter"
 require "cpw/client/authorize"
 require "cpw/client/base"
-
-# No SSL verify for now
-require "openssl"
-OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
 
 # Load app models
 Dir[File.dirname(__FILE__) + "/../app/models/*.rb"].each {|file| require file}
@@ -113,6 +110,17 @@ module CPW
 
   end
 
+  def with_warnings(flag)
+    old_verbose, $VERBOSE = $VERBOSE, flag
+    yield
+  ensure
+    $VERBOSE = old_verbose
+  end
+
+  def silence_warnings
+    with_warnings(nil) { yield }
+  end
+
   self.env              = ENV.fetch("CPW_ENV", 'development')
   self.root_path        = File.expand_path "../..", __FILE__
   self.models_root_path = File.join(File.expand_path("../../..", __FILE__), "vz-models")
@@ -138,10 +146,16 @@ module CPW
   logger.info "Using API Base URL: " + ENV.fetch('BASE_URL', 'unknown, missing BASE_URL in .env files')
   logger.info "Client key: " + ENV.fetch('CLIENT_KEY', 'unknown, missing CLIENT_KEY in .env files')
 
+  silence_warnings do
+    OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
+  end
+
   authorize
 
   Spyke::Base.connection = Faraday.new(url: ENV['BASE_URL']) do |c|
+    c.headers['Content-Type'] = 'application/json'
     c.request :json
+    c.response :logger
     c.use CPW::JsonParser
     c.adapter Faraday.default_adapter  # CPW::Client::Adapter
     c.authorization "Token", :token => CPW::store[:access_token]

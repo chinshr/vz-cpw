@@ -34,25 +34,12 @@ class WorkerTest < Test::Unit::TestCase
   end
 
   #--- instance methods
-  def test_is_workflow?
-    worker = Ingest::MediaIngest::HarvestWorker.new
-    assert_equal false, worker.workflow?
-    worker.body = {"workflow" => 1}
-    assert_equal true, worker.workflow?
-  end
 
   def test_is_force?
     worker = Ingest::MediaIngest::HarvestWorker.new
     assert_equal false, worker.force?
     worker.body = {"force" => 1}
     assert_equal true, worker.force?
-  end
-
-  def test_is_workflow_stage?
-    stub_ingest
-    worker = Ingest::MediaIngest::HarvestWorker.new
-    worker.ingest = Ingest.find(1)
-    assert_equal true, worker.workflow_stage?
   end
 
   def test_has_ingest_id
@@ -124,16 +111,6 @@ class WorkerTest < Test::Unit::TestCase
   def test_can_perform?
     worker = Ingest::MediaIngest::HarvestWorker.new
     assert_equal false, worker.send(:can_perform?)
-  end
-
-  def test_should_retry?
-    worker = Ingest::MediaIngest::HarvestWorker.new
-    assert_equal false, worker.send(:should_retry?)
-  end
-
-  def test_should_not_retry?
-    worker = Ingest::MediaIngest::HarvestWorker.new
-    assert_equal true, worker.send(:should_not_retry?)
   end
 
   def test_has_perform_error?

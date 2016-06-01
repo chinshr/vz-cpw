@@ -38,7 +38,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "dotenv"
   spec.add_dependency "aws-sdk-v1"
   spec.add_dependency "mono_logger"
-  spec.add_dependency "shoryuken", "~> 2.0.1"
+  spec.add_dependency "shoryuken", "~> 2.0.10"
   spec.add_dependency "chronic"
   spec.add_dependency "uuid"
   spec.add_dependency "curb"

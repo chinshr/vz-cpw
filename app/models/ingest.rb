@@ -39,25 +39,16 @@ class Ingest < CPW::Client::Base
       end
     end
 
-    def secure_update(id, attributes)
+    def secure_update(id, attributes = {})
+      ingest = nil
       @@semaphore.synchronize do
-        ingest = nil
         CPW::Client::Base.try_request do
-          ingest = Ingest.find(id)
+          ingest = Ingest.new(Ingest.new(id: id).update_attributes(attributes))
         end
-        if ingest.try(:id)
-          CPW::Client::Base.try_request do
-            ingest.update_attributes(attributes)
-          end
-        end
-        ingest
       end
+      ingest
     end
   end  # class methods
-
-  def present?
-    !!self.try(:id)
-  end
 
   def stage
     self[:stage].try(&:to_sym)
