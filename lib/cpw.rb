@@ -20,6 +20,10 @@ require "cpw/client/adapter"
 require "cpw/client/authorize"
 require "cpw/client/base"
 
+# No SSL verify for now
+require "openssl"
+OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
+
 # Load app models
 Dir[File.dirname(__FILE__) + "/../app/models/*.rb"].each {|file| require file}
 Dir[File.dirname(__FILE__) + "/../app/models/**/*.rb"].each {|file| require file}
