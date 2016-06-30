@@ -96,6 +96,7 @@ module CPW
 
         def connection
           Faraday.new(url: CPW::base_url) do |c|
+            c.headers['Content-Type'] = 'application/json'
             c.request :json
             c.response :logger
             c.adapter Faraday.default_adapter

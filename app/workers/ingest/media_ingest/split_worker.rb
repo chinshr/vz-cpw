@@ -40,8 +40,10 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
       {format: :srt, default_chunk_score: 0.5})
     puts "****** process SRT: #{subtitle_file_fullpath}"
     engine.perform(basefolder: basefolder).each do |chunk|
-      process_speech_chunk(chunk)
+      !terminate? ? process_speech_chunk(chunk) : return
     end
+  ensure
+    cleanup_files
   end
 
   def process_with_voicebase
@@ -51,9 +53,9 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
       {external_id: ingest.uid, transcription_type: "machine-best"})
     puts "****** process VoiceBase: #{single_channel_wav_audio_file_fullpath}"
     engine.perform(locale: ingest.locale, basefolder: basefolder).each do |chunk|
-      process_speech_chunk(chunk, {build_mp3: false, build_waveform: true})
+      !terminate? ? process_speech_chunk(chunk, {build_mp3: false, build_waveform: true}) : return
     end
-
+  ensure
     cleanup_files
   end
 
@@ -85,9 +87,9 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
     puts "****** basefolder: #{basefolder}"
     puts "****** process pocketsphinx: #{single_channel_wav_audio_file_fullpath}"
     engine.perform(locale: ingest.locale, basefolder: basefolder).each do |chunk|
-      process_speech_chunk(chunk, {build_mp3: true, build_waveform: true})
+      !terminate? ? process_speech_chunk(chunk, {build_mp3: true, build_waveform: true}) : return
     end
-
+  ensure
     cleanup_files
   end
 

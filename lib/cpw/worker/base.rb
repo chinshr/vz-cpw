@@ -6,7 +6,8 @@ module CPW
     class Base
       include ::Shoryuken::Worker
 
-      attr_accessor :logger, :ingest, :body, :sqs_message, :test
+      attr_accessor :logger, :ingest, :worker, :body, :sqs_message, :test,
+        :saved_exception
 
       class << self
         attr_accessor :finished_progress
@@ -45,7 +46,7 @@ module CPW
           worker_instance.test = true
 
           worker_instance.before_perform(sqs_message, body)
-          worker_instance.lock do
+          worker_instance.do_perform do
             worker_instance.perform(sqs_message, body)
           end
           worker_instance.after_perform(sqs_message, body)
@@ -63,20 +64,16 @@ module CPW
         !!@test
       end
 
-      def workflow?
-        !!(body && body['workflow'])
-      end
-
-      def workflow_stage?
-        !!(ingest && ingest.stages.include?(self.class.stage))
-      end
-
       def force?
         !!(body && body['force'])
       end
 
       def ingest_id
         body.try(:[], 'ingest_id')
+      end
+
+      def worker_id
+        body.try(:[], 'worker_id')
       end
 
       def before_perform(sqs_message, body)
@@ -87,46 +84,30 @@ module CPW
       def after_perform(sqs_message, body)
         logger.info "+++ #{self.class.name}#after_perform: #{body.inspect}\n"
 
-        # sqs_message.delete if should_not_retry? || terminate?
-
-        logger.info("+++ #{self.class.name}#workflow? -> #{workflow?}")
-        logger.info("+++ #{self.class.name}#has_next_stage? -> #{has_next_stage?}")
-        logger.info("+++ #{self.class.name}#should_retry? -> #{should_retry?}")
-
         # Sprinkle a bit of joy...
         GC.start
 
-        # Launch next stage, if part of a workflow
-        if workflow? && has_next_stage? && finished_perform? && !terminate?
-          attributes = {trigger: "#{self.class.stage}"}
-          logger.info "+++ #{self.class.name}: trigger next stage for Ingest id=#{ingest.id} update_attributes(#{attributes.inspect})\n"
-          update_ingest(attributes)
-        end
+        unlock_worker!
       end
 
-      def lock
-        logger.info "+++ #{self.class.name}#lock #{body.inspect}"
+      def do_perform
+        logger.info "+++ #{self.class.name}#do_perform 'before lock_worker!' #{body.inspect}"
         if block_given?
           begin
-            lock_ingest!
-            @can_perform = true
-            yield
-            @finished_perform = true
+            if lock_worker!
+              @can_perform = true
+              yield
+              logger.info "+++ #{self.class.name}#do_perform 'finished perform' #{body.inspect}"
+              @finished_perform = true
+            end
           rescue ResourceLoadError => ex
-            logger.info "+++ #{self.class.name}#lock 'load error': #{ex.message}."
+            logger.info "+++ #{self.class.name}#do_perform 'load error': #{ex.message}."
           rescue ResourceLockError => ex
-            logger.info "+++ #{self.class.name}#lock 'lock error': #{ex.message}."
+            logger.info "+++ #{self.class.name}#do_perform 'lock error': #{ex.message}."
           rescue => ex
-            logger.info "+++ #{self.class.name}#lock worker exception caught ingest id=#{ingest.id}, retrying."
-            @should_retry      = !terminate?
-            @has_perform_error = true
-            @saved_exception   = ex
-            raise ex
-          ensure
-            unlock_ingest!
+            logger.info "+++ #{self.class.name}#do_perform worker exception caught ingest_id=#{ingest_id}, worker_id=#{worker_id}."
+            @saved_exception = ex
           end
-        else
-          raise "no block given"
         end
       end
 
@@ -135,81 +116,99 @@ module CPW
       end
 
       def increment_progress!(increment = 1, max_progress = finished_progress)
-        progress = ingest.progress
-        progress += increment
-        @ingest = Ingest.secure_update(ingest.id, progress: progress) if progress < max_progress
+        if worker && worker.present?
+          progress = worker.progress
+          progress += increment
+          update_worker({progress: progress}) if progress < max_progress
+        end
       end
 
       protected
 
-      def lock_ingest!(attributes = {})
-        load_ingest
-        raise ResourceLockError, "Cannot lock ingest (id=#{ingest_id}): busy = #{ingest.busy.inspect}" if ingest.busy?
-
-        attributes = attributes.merge({busy: true}).reject {|k,v| v.nil?}
-        if workflow? && workflow_stage?
-          attributes.merge!({status: Ingest::STATE_STARTED})
-          attributes.merge!({event: "forward_to_#{self.class.stage}"})
+      def lock_worker!(attributes = {})
+        logger.info "+++ #{self.class.name}#lock_worker! 'entry point' #{body.inspect}"
+        raise ResourceLoadError, "Cannot find ingest_id in message body" unless ingest_id
+        if worker_id
+          update_worker({
+            event: "start",
+            instance_id: ec2_instance.try(:instance_id)
+          })
+        else
+          create_worker({
+            worker_name: self.class.name.underscore,
+            event: "start",
+            instance_id: ec2_instance.try(:instance_id)
+          })
         end
 
-        logger.info "+++ #{self.class.name}#lock_ingest! id=#{ingest_id}, #{attributes.inspect}"
-        @ingest = update_ingest(attributes)
-        raise ResourceLockError, "Cannot lock ingest (id=#{ingest_id}): errors #{ingest.errors.inspect}" unless ingest.errors.empty?
-        @ingest
+        raise ResourceLoadError, "Cannot load worker (ingest_id=#{ingest_id}, worker_id=#{worker_id}): ingest/worker not found" unless @worker.present?
+        raise ResourceLockError, "Cannot lock worker (ingest_id=#{ingest_id}, worker_id=#{worker_id}): errors #{@worker.errors.inspect}" unless @worker.errors.empty?
+        raise ResourceLockError, "Cannot lock worker (ingest_id=#{ingest_id}, worker_id=#{worker_id}): errors #{@worker.state}" unless @worker.state == :running
+
+        true
       end
 
-      def unlock_ingest!(attributes = {})
-        attributes = attributes.merge({busy: false}).reject {|k,v| v.nil?}
+      def unlock_worker!(attributes = {})
+        logger.info "+++ #{self.class.name}#unlock_worker! ingest_id=#{ingest_id}, worker_id=#{worker_id} entry point"
+        attributes = attributes.reject {|k,v| v.nil?}
+        attributes.merge!({event: "finish"}) if has_finished_perform?
 
         # process stored exception context
-        if ingest.present? && @saved_exception
-          new_messages = ingest.messages || {}
+        if has_perform_error?
+          new_messages = {}
           new_messages[self.class.stage_name] ||= {}
-          new_messages[self.class.stage_name]["message"] = @saved_exception.message
-          if @saved_exception.backtrace
-            new_messages[self.class.stage_name]["backtrace"] = @saved_exception.backtrace
-          end
-          attributes.merge!({messages: new_messages})
-        end
-
-        # stop workflow when exception was raised in perform block
-        if workflow? && has_perform_error?
-          attributes.merge!({status: Ingest::STATE_STOPPING})
+          new_messages[self.class.stage_name]["message"] = "#{saved_exception.class.name} #{saved_exception.message}"
+          new_messages[self.class.stage_name]["backtrace"] = saved_exception.backtrace if saved_exception.backtrace
+          attributes.merge!({event: "stop", messages: new_messages})
         end
 
         # update ingest
-        logger.info "+++ #{self.class.name}#unlock_ingest! #{attributes.inspect}"
-        update_ingest(attributes)
-      end
+        if !attributes.empty?
+          logger.info "+++ #{self.class.name}#unlock_worker! ingest_id=#{ingest_id}, worker_id=#{worker_id} calling update_worker(#{attributes.inspect})"
+          update_worker(attributes)
+        end
 
-      def has_next_stage?
-        !!(workflow_stage? && ingest && !!ingest.next_stage)
+        # raise saved_exception if has_perform_error?
+        worker
       end
 
       def queue_name
         self.class.queue_name
       end
 
-      private
+      def ec2_instance
+        @ec2_instance ||= begin
+          instance = nil
+          unless CPW.development?
+            metadata_endpoint = "http://169.254.169.254/latest/meta-data/"
+            uri = URI.parse(metadata_endpoint + "instance-id")
+            http = Net::HTTP.new(uri.host, uri.port)
+            http.open_timeout = 0.2
+            http.read_timeout = 0.2
+            request = Net::HTTP::Get.new(uri.request_uri)
+            response = http.request(request)
+            instance_id = response.body
+            ec2 = AWS::EC2.new
+            instance = ec2.instances[instance_id]
+          end
+          instance
+        rescue Net::OpenTimeout, Errno::EHOSTDOWN, Errno::ETIMEDOUT, Net::HTTPGatewayTimeOut, Net::HTTPRequestTimeOut
+          nil
+        end
+      end
 
       def busy?
-        @ingest.try(:id) && !!@ingest.busy
+        @ingest.present? && !!@ingest.busy
       end
+
+      def terminate?
+        @terminate || (ingest.present? && !!ingest.terminate)
+      end
+
+      private
 
       def finished_progress
         self.class.finished_progress.to_i
-      end
-
-      def load_ingest
-        logger.info "+++ #{self.class.name}#load_ingest #{body.inspect}"
-
-        ingest_id = body.try(:[], 'ingest_id')
-        raise ResourceLoadError, "Cannot find ingest_id in message body" unless ingest_id
-
-        @ingest = Ingest.secure_find(ingest_id)
-        raise ResourceLoadError, "Cannot load ingest (id=#{ingest_id}): ingest not found" unless @ingest.present?
-
-        @ingest
       end
 
       def update_ingest(attributes = {})
@@ -217,28 +216,26 @@ module CPW
         @ingest = Ingest.secure_update(ingest_id, attributes)
       end
 
-      def terminate?
-        @terminate || (ingest.try(:id) && ingest.terminate)
+      def create_worker(attributes = {})
+        logger.info "+++ #{self.class.name}#create_worker ingest_id=#{ingest_id}, worker_id=#{worker_id}, #{attributes.inspect}"
+        @worker, @ingest = Ingest::Worker.secure_create(ingest_id, attributes)
+      end
+
+      def update_worker(attributes = {})
+        logger.info "+++ #{self.class.name}#update_worker ingest_id=#{ingest_id}, worker_id=#{worker_id}, #{attributes.inspect}"
+        @worker, @ingest = Ingest::Worker.secure_update(ingest_id, worker_id, attributes)
       end
 
       def can_perform?
         !!@can_perform
       end
 
-      def finished_perform?
-        !!@finished_perform
-      end
-
-      def should_retry?
-        !!@should_retry
-      end
-
-      def should_not_retry?
-        !should_retry?
-      end
-
       def has_perform_error?
-        !!@has_perform_error
+        !!@saved_exception
+      end
+
+      def has_finished_perform?
+        !!@finished_perform
       end
 
     end  # Base
