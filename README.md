@@ -16,6 +16,22 @@ Or install it yourself as:
 
     $ gem install cpw
 
+## Launch CPW
+
+Install all pre-requisites described above or below this section. Type `cpw help` for more launch options.
+
+### Server
+
+    foreman start
+
+Note: If you start CPW with `cpw s` it will not launch Shoryuken correctly with middleware and workers crash due to lack propagated ingest info.
+
+### Client
+
+    cpw c
+    # or
+    cpw console
+
 ## Server Installation
 
 The following instructions describe all necessary steps to install CPW and its dependencies on 3rd party tools on a freshly created AWS instance of Ubuntu 64-bit server (ami-d05e75b8).

@@ -25,8 +25,8 @@ require "cpw/client/base"
 Dir[File.dirname(__FILE__) + "/../app/models/*.rb"].each {|file| require file}
 Dir[File.dirname(__FILE__) + "/../app/models/**/*.rb"].each {|file| require file}
 
+require "cpw/logger"
 require "cpw/speech"
-
 require "cpw/worker/base"
 require "cpw/worker/helper"
 require "cpw/middleware/lock_ingest"
@@ -100,8 +100,8 @@ module CPW
 
     def sign_in_with_token
       if access_token && access_secret
-        logger.info "Signing in with access token: #{access_token || "<empty>"}"
-        logger.info "And access secret: #{access_secret || "empty"}" if access_secret
+        logger.info "Access token: #{access_token || "<empty>"}"
+        logger.info "Access secret: #{access_secret || "empty"}" if access_secret
         CPW::Client::Authorize.status
       end
     rescue Client::AuthorizationError
@@ -128,12 +128,12 @@ module CPW
   self.base_url         = ENV['BASE_URL']
   self.client_key       = ENV['CLIENT_KEY']
   self.device_uid       = ENV['DEVICE_UID']
-  self.user_email         = ENV['USER_EMAIL']
-  self.user_password      = ENV['USER_PASSWORD']
-  self.store              = CPW::Store.new("cpw.#{self.env}.pstore")
-  self.access_token       = store[:access_token]
-  self.access_secret      = store[:access_secret]
-  self.logger             = MonoLogger.new(STDOUT)
+  self.user_email       = ENV['USER_EMAIL']
+  self.user_password    = ENV['USER_PASSWORD']
+  self.store            = CPW::Store.new("cpw.#{self.env}.pstore")
+  self.access_token     = store[:access_token]
+  self.access_secret    = store[:access_secret]
+  self.logger           = MonoLogger.new(STDOUT)
 
   self.request_retries            = ENV.fetch('REQUEST_RETRIES', 10).to_i
   self.request_delay_before_retry = ENV.fetch('REQUEST_DELAY_BEFORE_RETRY', 3).to_i

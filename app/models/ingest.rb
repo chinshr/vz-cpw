@@ -31,18 +31,18 @@ class Ingest < CPW::Client::Base
   class << self
     @@semaphore = Mutex.new
 
-    def secure_find(id)
+    def secure_find(id, options = {})
       @@semaphore.synchronize do
-        CPW::Client::Base.try_request do
+        CPW::Client::Base.try_request(options) do
           Ingest.find(id)
         end
       end
     end
 
-    def secure_update(id, attributes = {})
+    def secure_update(id, attributes = {}, options = {})
       ingest = nil
       @@semaphore.synchronize do
-        CPW::Client::Base.try_request do
+        CPW::Client::Base.try_request(options) do
           ingest = Ingest.new(Ingest.new(id: id).update_attributes(attributes))
         end
       end

@@ -13,7 +13,7 @@ class Ingest::MediaIngest::CrowdoutWorker < CPW::Worker::Base
 
     # Chunks to be crowd sourced
     source_chunks = nil
-    CPW::Client::Base.try_request do
+    CPW::Client::Base.try_request({logger: logger}) do
       source_chunks = Ingest::Chunk.where({
         ingest_id: @ingest.id,
         any_of_ingest_iterations: @ingest.iteration,
@@ -30,7 +30,7 @@ class Ingest::MediaIngest::CrowdoutWorker < CPW::Worker::Base
       logger.info "-> source_chunk = #{source_chunk.id}"
 
       reference_chunks = nil
-      CPW::Client::Base.try_request do
+      CPW::Client::Base.try_request({logger: logger}) do
         reference_chunks = Ingest::Chunk.where({
           none_of_ingest_ids: [@ingest.id],
           none_of_types: ["mechanical_turk_chunk", "captcha_chunk"],
@@ -106,7 +106,7 @@ class Ingest::MediaIngest::CrowdoutWorker < CPW::Worker::Base
       track_attributes: track_attributes
     }
 
-    CPW::Client::Base.try_request do
+    CPW::Client::Base.try_request({logger: logger}) do
       result = Ingest::Chunk.create(chunk_attributes)
     end
     result

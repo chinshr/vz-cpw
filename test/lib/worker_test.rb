@@ -55,20 +55,6 @@ class WorkerTest < Test::Unit::TestCase
     assert_equal "INGEST_MEDIA_INGEST_HARVEST_TEST_QUEUE", worker.send(:queue_name)
   end
 
-  def test_should_have_next_stage?
-    stub_ingest({'stage' => 'harvest_stage'})
-    worker = Ingest::MediaIngest::HarvestWorker.new
-    worker.ingest = Ingest.find(1)
-    assert_equal true, worker.send(:has_next_stage?)
-  end
-
-  def test_should_not_have_next_stage?
-    stub_ingest({'stage' => 'end_stage'})
-    worker = Ingest::MediaIngest::HarvestWorker.new
-    worker.ingest = Ingest.find(1)
-    assert_equal false, worker.send(:has_next_stage?)
-  end
-
   #--- private methods
 
   def test_should_be_busy?
@@ -83,13 +69,6 @@ class WorkerTest < Test::Unit::TestCase
     worker = Ingest::MediaIngest::HarvestWorker.new
     worker.ingest = Ingest.find(1)
     assert_equal false, worker.send(:busy?)
-  end
-
-  def test_should_load_ingest
-    stub_ingest
-    worker = Ingest::MediaIngest::HarvestWorker.new
-    worker.body = {"ingest_id" => 1}
-    assert_equal Ingest.find(1), worker.send(:load_ingest)
   end
 
   def test_should_terminate?

@@ -14,14 +14,25 @@ module CPW
       # Client::Base::try_request do
       #   connection.get("foo/bar.json")
       # end
-      def self.try_request(request_retries = nil)
+      #
+      # Options:
+      #
+      #   `request_retries`: Number of retries
+      #   `logger`: Logger instance
+      #
+      def self.try_request(options = {})
+        request_retries = options[:request_retries] || CPW::request_retries
+        request_delay_before_retry = options[:request_delay_before_retry] || CPW::request_delay_before_retry
+        logger = options[:logger] || CPW::logger
+        tried = 0
         begin
-          tries ||= (request_retries || CPW::request_retries)
+          tries_left ||= request_retries
           yield
         rescue *REQUEST_EXCEPTIONS => ex
-          if (tries -= 1) > 0
-            CPW::logger.debug "#{caller[1][/`.*'/][1..-2]} #{ex.message}, retries left #{tries}"
-            sleep CPW::request_delay_before_retry
+          tried += 1
+          if (tries_left -= 1) > 0
+            logger.debug "#{caller[1][/`.*'/][1..-2]} #{ex.message}, #{tried.ordinalize} try, #{tries_left} tries left"
+            sleep (CPW::request_delay_before_retry || 3.0) + (rand(tried * 100) / 100.0)
             retry
           else
             raise ex
