@@ -18,7 +18,6 @@ class Ingest::MediaIngest::HarvestWorker < CPW::Worker::Base
 
   def perform(sqs_message, body)
     logger.info("+++ #{self.class.name}#perform, body #{body.inspect}")
-
     if ingest.has_s3_source_url?
       copy_media_from_s3_inbound_to_outbound_bucket
       # Delete inbound (uploaded) object
@@ -160,25 +159,25 @@ class Ingest::MediaIngest::HarvestWorker < CPW::Worker::Base
 
   def update_ingest_and_document_track
     document_tracks = nil
-    CPW::Client::Base.try_request do
+    CPW::Client::Base.try_request({logger: logger}) do
       document_tracks = Ingest::Track.where(ingest_id: ingest.id, any_of_types: "document")
     end
 
     # Store the original file in the ingest
-    CPW::Client::Base.try_request do
+    CPW::Client::Base.try_request({logger: logger}) do
       ingest.update_attributes({ origin_url: ingest.s3_origin_url })
     end
 
     unless document_track = document_tracks.first
       # Create ingest's track and save s3 references
       # [POST] /api/ingests/:ingest_id/tracks.json?s3_url=abcd...
-      CPW::Client::Base.try_request do
+      CPW::Client::Base.try_request({logger: logger}) do
         Ingest::Track.create({ type: "document_track", ingest_id: ingest.id, s3_url: ingest.s3_origin_url, ingest_iteration: ingest.iteration })
       end
     else
       # Update ingest's document track with new iteration number
       # [PUT] /api/ingests/:ingest_id/tracks/:id.json?s3_url=abcd
-      CPW::Client::Base.try_request do
+      CPW::Client::Base.try_request({logger: logger}) do
         document_track.update_attributes({
           ingest_iteration: ingest.iteration
         })

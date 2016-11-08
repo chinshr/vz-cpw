@@ -149,7 +149,7 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
 
   def create_or_update_ingest_with(chunk)
     ingest_chunk = nil
-    CPW::Client::Base.try_request do
+    CPW::Client::Base.try_request({logger: logger}) do
       ingest_chunk = Ingest::Chunk.where(ingest_id: @ingest.id,
         any_of_types: "pocketsphinx", any_of_positions: chunk.id,
         any_of_ingest_iterations: @ingest.iteration).first
@@ -187,11 +187,11 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
     end
 
     result = if ingest_chunk.try(:id)
-      CPW::Client::Base.try_request do
+      CPW::Client::Base.try_request({logger: logger}) do
         ingest_chunk.update_attributes(chunk_attributes)
       end
     else
-      CPW::Client::Base.try_request do
+      CPW::Client::Base.try_request({logger: logger}) do
         Ingest::Chunk.create(chunk_attributes)
       end
     end
