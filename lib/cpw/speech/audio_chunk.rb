@@ -1,70 +1,6 @@
 module CPW
   module Speech
     class AudioChunk
-      class Word
-        attr_accessor :sequence
-        attr_accessor :start_time
-        attr_accessor :end_time
-        attr_accessor :confidence
-        attr_accessor :word
-        attr_accessor :error
-        attr_accessor :metadata
-
-        alias_method :position, :sequence
-        alias_method :position=, :sequence=
-        alias_method :p, :sequence
-        alias_method :p=, :sequence=
-        alias_method :c, :confidence
-        alias_method :c=, :confidence=
-        alias_method :s, :start_time
-        alias_method :s=, :start_time=
-        alias_method :e, :end_time
-        alias_method :e=, :end_time=
-        alias_method :w, :word
-        alias_method :w=, :word=
-        alias_method :m, :metadata
-        alias_method :m=, :metadata=
-
-        def initialize(options={})
-          options.each do |k,v|
-            self.send("#{k}=",v) if self.respond_to?("#{k}=")
-          end
-        end
-
-        def clone
-          clone = CPW::Speech::AudioChunk::Word.new
-          clone.sequence   = sequence
-          clone.start_time = start_time
-          clone.end_time   = end_time
-          clone.confidence = confidence
-          clone.error      = error
-          clone.word       = word
-          clone.metadata   = metadata
-          clone
-        end
-
-        def ==(word)
-          self.sequence   == word.sequence &&
-          self.start_time == word.start_time &&
-          self.end_time   == word.end_time &&
-          self.confidence == word.confidence &&
-          self.word       == word.word &&
-          self.metadata   == word.metadata
-        end
-
-        def empty?
-          sequence.nil? && start_time.nil? && end_time.nil? && (word.nil? || word.empty?)
-        end
-
-        def to_hash
-          {"p": sequence, "c": confidence, "s": start_time, "e": end_time, "w": word}
-        end
-
-        def to_json
-          {"p": sequence, "c": confidence, "s": start_time, "e": end_time, "w": word}.to_json
-        end
-      end
-
       STATUS_UNPROCESSED         = 0
       STATUS_BUILT               = 1
       STATUS_ENCODED             = 2
@@ -75,7 +11,8 @@ module CPW
 
       attr_accessor :id, :splitter, :chunk, :flac_chunk, :wav_chunk, :raw_chunk,
         :mp3_chunk, :waveform_chunk, :offset, :duration, :flac_rate, :copied,
-        :captured_json, :best_text, :best_score, :status, :errors, :response
+        :captured_json, :best_text, :best_score, :status, :errors, :response,
+        :speaker, :bandwidth
       attr_writer :words
 
       delegate :engine, to: :splitter, allow_nil: true
@@ -98,8 +35,10 @@ module CPW
         self.best_score    = nil
         self.status        = STATUS_UNPROCESSED
         self.errors        = []
-        self.response      = parse_response(options[:response])
-        self.chunk         = chunk_file_name(splitter)
+        self.response      = options[:response]
+        self.chunk         = chunk_file_name(splitter)  # file_name?
+        self.speaker       = options[:speaker]
+        self.bandwidth     = options[:bandwidth]
       end
 
       class << self
@@ -122,8 +61,10 @@ module CPW
         @words || []
       end
 
-      # given the original file from the splitter and the chunked file name
-      # with duration and offset run the ffmpeg command
+      # Build source file into source file type chunk.
+      # Given the original file from the splitter and the chunked file name
+      # with duration and offset run the ffmpeg command to build the source
+      # file types chunk.
       def build(options = {})
         options = options.reverse_merge({source_file_type: source_file_type,
           base_file_type: base_file_type, source_file: splitter.original_file})
@@ -131,18 +72,20 @@ module CPW
 
         offset_ts   = AudioInspector::Duration.from_seconds(self.offset).to_s
         duration_ts = AudioInspector::Duration.from_seconds(self.duration).to_s
-        cmd         = nil
+        # cmd         = nil
+        # if options[:base_file_type] == :raw &&
+        #   options[:base_file_type] != options[:source_file_type]
+        #   # source file wav
+        #   cmd = "ffmpeg -y -i #{options[:source_file]} -f s16le -acodec pcm_s16le -vcodec copy -ss #{offset_ts} -t #{duration_ts} -ar 16000 -ac 1 #{self.chunk}   >/dev/null 2>&1"
+        # elsif options[:base_file_type] == :flac &&
+        #   options[:base_file_type] != options[:source_file_type]
+        #   cmd = "ffmpeg -y -i #{options[:source_file]} -acodec flac -vcodec copy -ss #{offset_ts} -t #{duration_ts} -f flac #{self.chunk}   >/dev/null 2>&1"
+        # elsif options[:base_file_type] == :wav &&
+        #   options[:base_file_type] != options[:source_file_type]
+        #   cmd = "ffmpeg -y -i #{options[:source_file]} -f wav -vcodec copy -ss #{offset_ts} -t #{duration_ts} #{self.chunk}   >/dev/null 2>&1"
+        # end
+        cmd = "ffmpeg -y -i #{options[:source_file]} -acodec copy -vcodec copy -ss #{offset_ts} -t #{duration_ts} #{self.chunk}   >/dev/null 2>&1"
 
-        if options[:base_file_type] == :raw &&
-          options[:base_file_type] != options[:source_file_type]
-          cmd = "ffmpeg -y -i #{options[:source_file]} -f s16le -acodec pcm_s16le -vcodec copy -ss #{offset_ts} -t #{duration_ts} -ar 16000 -ac 1 #{self.chunk}   >/dev/null 2>&1"
-        elsif options[:base_file_type] == :flac &&
-          options[:base_file_type] != options[:source_file_type]
-          cmd = "ffmpeg -y -i #{options[:source_file]} -acodec flac -vcodec copy -ss #{offset_ts} -t #{duration_ts} -f flac #{self.chunk}   >/dev/null 2>&1"
-        elsif options[:base_file_type] == :wav &&
-          options[:base_file_type] != options[:source_file_type]
-          cmd = "ffmpeg -y -i #{options[:source_file]} -f wav -vcodec copy -ss #{offset_ts} -t #{duration_ts} #{self.chunk}   >/dev/null 2>&1"
-        end
         # only build base audio file if needed
         if cmd
           if system(cmd)
@@ -150,7 +93,7 @@ module CPW
             self
           else
             self.status = STATUS_BUILD_ERROR
-            raise "Failed to generate chunk at offset: #{offset_ts}, duration: #{duration_ts}\n#{cmd}"
+            raise "Failed to build audio chunk at offset: #{offset_ts}, duration: #{duration_ts}\n#{cmd}"
           end
         end
       end
@@ -170,11 +113,11 @@ module CPW
             self
           else
             self.status = STATUS_ENCODING_ERROR
-            raise "failed to convert to lower audio rate"
+            raise "failed to audio encode to lower audio rate"
           end
         else
           self.status = STATUS_ENCODING_ERROR
-          raise "failed to convert chunk: #{chunk} with flac #{chunk}"
+          raise "failed to audio encode chunk: #{chunk} with flac #{chunk}"
         end
         self
       end
@@ -201,11 +144,11 @@ module CPW
             self.status    = STATUS_ENCODED if self.status < STATUS_ENCODED
           else
             self.status    = STATUS_ENCODING_ERROR
-            raise "failed to convert WAV to lower audio rate"
+            raise "failed to audio encode WAV to lower audio rate"
           end
         else
           self.status = STATUS_ENCODING_ERROR
-          raise "failed to convert chunk: #{chunk} with WAV #{chunk}"
+          raise "failed to audio encode chunk: #{chunk} with WAV #{chunk}"
         end
         self
       end
@@ -227,7 +170,7 @@ module CPW
           self.status    = STATUS_ENCODED if self.status < STATUS_ENCODED
         else
           self.status = STATUS_ENCODING_ERROR
-          raise "failed to convert chunk: #{chunk} with RAW #{chunk}"
+          raise "failed to audio encode chunk: #{chunk} with RAW #{chunk}"
         end
         self
       end
@@ -303,13 +246,6 @@ module CPW
         of = AudioInspector::Duration.from_seconds(self.offset).to_s(:file)
         fo = AudioInspector::Duration.from_seconds(self.offset + self.duration).to_s(:file)
         File.join(bf, fb + "-chunk#{id ? "-#{id}" : ""}-" + of + "-" + fo + ex)
-      end
-
-      def parse_response(response)
-        if response.try(:[], 'words')
-          engine.parse_words(self, response['words'])
-        end
-        response
       end
     end # AudioChunk
   end

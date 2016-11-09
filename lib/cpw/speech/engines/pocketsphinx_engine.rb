@@ -11,17 +11,12 @@ module CPW
           self.configuration    = configuration
         end
 
-        def split(splitter)
-          chunks   = []
-          chunk_id = 1
-
-          recognizer = CPW::Pocketsphinx::AudioFileSpeechRecognizer.new(configuration)
-          recognizer.recognize(splitter.original_file) do |decoder|
-            chunks << AudioChunk.new(splitter, decode_start_time(decoder),
-              decode_duration(decoder), {id: chunk_id, response: build_response(decoder)})
-            chunk_id += 1
+        def split(audio_splitter)
+          case audio_splitter.split_method
+          when :auto then split_with_native_splitter_and_transcribe
+          else
+            splitter.split({:split_method => :diarize})
           end
-          chunks
         end
 
         def parse_words(chunk, words_response)
@@ -44,13 +39,32 @@ module CPW
 
         protected
 
+        def build(chunk)
+          if audio_splitter.split_method == :diarize
+            chunk.build.to_raw
+          end
+        end
+
         def convert_chunk(chunk, options = {})
           result = {'status' => chunk.status}
-          if chunk.response  # from splitter
+          if chunk.response
+            # already transcribed, e.g. using auto pocketsphinx recognizer
             parse(chunk, chunk.response, result)
             logger.info "#{segments} processed: #{result.inspect}" if self.verbose
+          elsif chunk.status == CPW::Speech::AudioChunk::STATUS_ENCODED
+            # still needs to be transcribed using decoder
+            begin
+              decoder = ::Pocketsphinx::Decoder.new(self.configuration)
+              decoder.decode chunk.raw_chunk
+              chunk.response = build_response(decoder)
+              parse(chunk, chunk.response, result)
+              logger.info "#{segments} processed: #{result.inspect}" if self.verbose
+            rescue ::Pocketsphinx::API::Error => ex
+              chunk.errors.push(ex)
+              result['status'] = chunk.status = CPW::Speech::AudioChunk::STATUS_TRANSCRIPTION_ERROR
+            end
           else
-            result['status'] = chunk.status = AudioSplitter::AudioChunk::STATUS_TRANSCRIPTION_ERROR
+            result['status'] = chunk.status = CPW::Speech::AudioChunk::STATUS_TRANSCRIPTION_ERROR
           end
         ensure
           return result
@@ -70,11 +84,24 @@ module CPW
             chunk.best_score        = data['posterior_prob']
             self.score              += data['posterior_prob']
             self.segments           += 1
+            parse_words(chunk, data['words']) if data.key?('words')
+
             logger.info "hypothesis: #{result['hypotheses']}" if self.verbose
           else
             chunk.status = AudioChunk::STATUS_TRANSCRIPTION_ERROR
           end
           result
+        end
+
+        def split_with_native_splitter_and_transcribe
+          chunks, chunk_id = [], 1
+          recognizer = CPW::Pocketsphinx::AudioFileSpeechRecognizer.new(configuration)
+          recognizer.recognize(audio_splitter.original_file) do |decoder|
+            chunks << AudioChunk.new(audio_splitter, decode_start_time(decoder),
+              decode_duration(decoder), {id: chunk_id, response: build_response(decoder)})
+            chunk_id += 1
+          end
+          chunks
         end
 
         private

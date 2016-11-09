@@ -32,7 +32,7 @@ module CPW
         end
 
         def convert_chunk(chunk, options = {})
-          puts "sending chunk of size #{chunk.duration}, locale: #{locale}..." if self.verbose
+          logger.info "sending chunk of size #{chunk.duration}, locale: #{locale}..." if self.verbose
           retrying    = true
           retry_count = 0
           result      = {'status' => chunk.status}
@@ -50,7 +50,7 @@ module CPW
             service.http_post
 
             if service.response_code == 500
-              puts "500 from google retry after 0.5 seconds" if self.verbose
+              logger.info "500 from google retry after 0.5 seconds" if self.verbose
               retrying    = true
               retry_count += 1
               sleep 0.5 # wait longer on error?, google??
@@ -68,7 +68,7 @@ module CPW
             sleep 0.1 # not too fast there tiger
           end
 
-          puts "#{segments} processed: #{result.inspect} from: #{service.body_str.inspect}" if self.verbose
+          logger.info "#{segments} processed: #{result.inspect} from: #{service.body_str.inspect}" if self.verbose
         rescue Exception => ex
           result['status'] = chunk.status = AudioChunk::STATUS_TRANSCRIPTION_ERROR
           result['errors'] = (chunk.errors << ex.message.to_s.gsub(/\n|\r/, ""))
@@ -106,7 +106,7 @@ module CPW
             chunk.best_score        = result['hypotheses'].first['confidence']
             self.score              += result['hypotheses'].first['confidence']
             self.segments           += 1
-            puts result['hypotheses'].first['utterance'] if self.verbose
+            logger.info result['hypotheses'].first['utterance'] if self.verbose
           end
           result
         end
@@ -151,7 +151,7 @@ module CPW
             chunk.best_score        = result['hypotheses'].first['confidence']
             self.score              += result['hypotheses'].first['confidence']
             self.segments           += 1
-            puts result['hypotheses'].first['utterance'] if self.verbose
+            logger.info result['hypotheses'].first['utterance'] if self.verbose
           end
           result
         end
