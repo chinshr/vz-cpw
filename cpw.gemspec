@@ -48,6 +48,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "voicebase-client-ruby"
   spec.add_dependency "webvtt-ruby"
   spec.add_dependency "ttml-ruby"
+  spec.add_dependency "diarize-ruby"
 
   spec.add_runtime_dependency('gli', '2.13.0')
 end
