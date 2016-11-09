@@ -63,7 +63,7 @@ module CPW
         @can_perform       = false
         @finished_perform  = false
         @logger_messages   = []
-        @logger            = CPW::Logger::MultiLogger.new(CPW::logger, ::Logger.new(CPW::Logger::WorkerLogDevice.new(self)))
+        @logger            = CPW::Logger::MultiLogger.new(CPW::logger, MonoLogger.new(CPW::Logger::WorkerLogDevice.new(self)))
       end
 
       def test?

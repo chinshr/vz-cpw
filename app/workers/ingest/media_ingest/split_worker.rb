@@ -38,7 +38,7 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
   def process_with_srt
     self.engine = CPW::Speech::Engines::SubtitleEngine.new(subtitle_file_fullpath,
       {format: :srt, default_chunk_score: 0.5})
-    puts "****** process SRT: #{subtitle_file_fullpath}"
+    logger.info "****** process SRT: #{subtitle_file_fullpath}"
     engine.perform(basefolder: basefolder).each do |chunk|
       !terminate? ? process_speech_chunk(chunk) : return
     end
@@ -51,7 +51,7 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
 
     self.engine = CPW::Speech::Engines::VoiceBaseEngine.new(single_channel_wav_audio_file_fullpath,
       {external_id: ingest.uid, transcription_type: "machine-best"})
-    puts "****** process VoiceBase: #{single_channel_wav_audio_file_fullpath}"
+    logger.info "****** process VoiceBase: #{single_channel_wav_audio_file_fullpath}"
     engine.perform(locale: ingest.locale, basefolder: basefolder).each do |chunk|
       !terminate? ? process_speech_chunk(chunk, {build_mp3: false, build_waveform: true}) : return
     end
@@ -84,8 +84,8 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
     self.engine = CPW::Speech::Engines::PocketsphinxEngine.new(pcm_audio_file_fullpath,
       configuration, {source_file_type: :raw})
 
-    puts "****** basefolder: #{basefolder}"
-    puts "****** process pocketsphinx: #{single_channel_wav_audio_file_fullpath}"
+    logger.info "****** basefolder: #{basefolder}"
+    logger.info "****** process pocketsphinx: #{single_channel_wav_audio_file_fullpath}"
     engine.perform(locale: ingest.locale, basefolder: basefolder).each do |chunk|
       !terminate? ? process_speech_chunk(chunk, {build_mp3: true, build_waveform: true}) : return
     end
@@ -100,8 +100,8 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
         chunk.build({source_file: single_channel_wav_audio_file_fullpath,
           base_file_type: :wav}).to_mp3
 
-        puts "****** mp3_chunk: #{chunk.mp3_chunk}"
-        puts "****** mp3_key: #{s3_key_for(File.basename(chunk.mp3_chunk))}"
+        logger.info "****** mp3_chunk: #{chunk.mp3_chunk}"
+        logger.info "****** mp3_key: #{s3_key_for(File.basename(chunk.mp3_chunk))}"
         s3_upload_object(chunk.mp3_chunk, s3_origin_bucket_name, s3_key_for(File.basename(chunk.mp3_chunk)))
       end
 
@@ -110,19 +110,19 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
         chunk.build({source_file: single_channel_wav_audio_file_fullpath,
           base_file_type: :wav}).to_waveform({channels: ['left', 'right']})
 
-        puts "****** waveform_chunk: #{chunk.waveform_chunk}"
-        puts "****** waveform_key: #{s3_key_for(File.basename(chunk.waveform_chunk))}"
+        logger.info "****** waveform_chunk: #{chunk.waveform_chunk}"
+        logger.info "****** waveform_key: #{s3_key_for(File.basename(chunk.waveform_chunk))}"
         s3_upload_object(chunk.waveform_chunk, s3_origin_bucket_name, s3_key_for(File.basename(chunk.waveform_chunk)))
       end
     end
 
-    puts "****** chunk.id: #{chunk.id}"
-    puts "****** chunk.status: #{chunk.status}"
-    puts "****** chunk.best_text: #{chunk.best_text}"
-    puts "****** chunk.best_score: #{chunk.best_score}"
-    puts "****** chunk.offset: #{chunk.offset}"
-    puts "****** chunk.duration: #{chunk.duration}"
-    puts "****** chunk.response: #{chunk.response}"
+    logger.info "****** chunk.id: #{chunk.id}"
+    logger.info "****** chunk.status: #{chunk.status}"
+    logger.info "****** chunk.best_text: #{chunk.best_text}"
+    logger.info "****** chunk.best_score: #{chunk.best_score}"
+    logger.info "****** chunk.offset: #{chunk.offset}"
+    logger.info "****** chunk.duration: #{chunk.duration}"
+    logger.info "****** chunk.response: #{chunk.response}"
 
     create_or_update_ingest_with chunk
     chunk.clean if CPW::production?

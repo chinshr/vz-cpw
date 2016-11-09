@@ -6,6 +6,7 @@ require "multi_json"
 require "pstore"
 require "aws-sdk-v1"
 require "mono_logger"
+require "null_logger"
 require "chronic"
 require "dotenv"
 Dotenv.load(*[".env.#{ENV.fetch("CPW_ENV", 'development')}", ".env"])
@@ -48,6 +49,7 @@ module CPW
     attr_accessor :access_secret
     attr_accessor :user_email
     attr_accessor :user_password
+    attr_accessor :log_file
     attr_accessor :logger
     attr_accessor :request_retries
     attr_accessor :connection_timeout
@@ -133,7 +135,12 @@ module CPW
   self.store            = CPW::Store.new("cpw.#{self.env}.pstore")
   self.access_token     = store[:access_token]
   self.access_secret    = store[:access_secret]
-  self.logger           = MonoLogger.new(STDOUT)
+  self.log_file         = File.join(File.expand_path('..', File.dirname(__FILE__)), 'log', "#{env}.log")
+  self.logger = $logger = if test?
+    NullLogger.new
+  else
+    CPW::Logger::MultiLogger.new(MonoLogger.new(STDOUT), MonoLogger.new(log_file))
+  end
 
   self.request_retries            = ENV.fetch('REQUEST_RETRIES', 10).to_i
   self.request_delay_before_retry = ENV.fetch('REQUEST_DELAY_BEFORE_RETRY', 3).to_i
