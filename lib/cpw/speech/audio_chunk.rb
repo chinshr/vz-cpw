@@ -106,7 +106,7 @@ module CPW
           # convert the audio file to 16K
           self.flac_rate = `ffmpeg -i #{self.flac_chunk} 2>&1`.strip.scan(/Audio: flac, (.*) Hz/).first.first.strip
           down_sampled = self.flac_chunk.gsub(/\.flac$/, '-sampled.flac')
-          if system("ffmpeg -i #{self.flac_chunk} -ar 16000 -y #{down_sampled} >/dev/null 2>&1")
+          if system("ffmpeg -i #{self.flac_chunk} -ar 16000 -ac 1 -y #{down_sampled} >/dev/null 2>&1")
             system("mv #{down_sampled} #{self.flac_chunk} 2>&1 >/dev/null")
             self.flac_rate = 16000
             self.status    = STATUS_ENCODED if self.status < STATUS_ENCODED

@@ -47,8 +47,8 @@ class SplitWorkerTest < Test::Unit::TestCase # Minitest::Test
     worker = build_worker
     chunk  = stubs("AudioChunk")
 
-    chunk.stubs(:engine).returns(CPW::Speech::Engines::GoogleSpeechEngine.new("a", {}))
-    assert_equal "Chunk::GoogleSpeechChunk", worker.send(:chunk_type_for, chunk)
+    chunk.stubs(:engine).returns(CPW::Speech::Engines::GoogleCloudSpeechEngine.new("a", {}))
+    assert_equal "Chunk::GoogleCloudSpeechChunk", worker.send(:chunk_type_for, chunk)
 
     chunk.stubs(:engine).returns(CPW::Speech::Engines::NuanceDragonEngine.new("a", {}))
     assert_equal "Chunk::NuanceDragonChunk", worker.send(:chunk_type_for, chunk)
