@@ -2,18 +2,14 @@ module CPW
   module Speech
 
     class AudioSplitter
-      attr_accessor :original_file, :size, :duration, :chunks, :verbose,
-        :engine, :logger, :basefolder
+      attr_accessor :original_file, :chunk_duration, :duration, :chunks, :verbose,
+        :engine, :logger, :basefolder, :split_method, :diarized_audio
 
-      def initialize(file, options = {})
-        self.original_file = file
-        self.duration      = AudioInspector.new(file).duration
-        self.size          = options.key?(:chunk_size) ? options[:chunk_size].to_i : 5
-        self.chunks        = []
-        self.verbose       = !!options[:verbose] if options.key?(:verbose)
-        self.engine        = options[:engine]
-        self.basefolder    = options[:basefolder]
-        self.logger        = CPW::logger
+      def initialize(file_name, options = {})
+        self.original_file  = file_name
+        self.duration       = AudioInspector.new(file_name).duration
+        self.chunks         = []
+        assign_options(options)
       end
 
       def base_file_type
@@ -24,38 +20,70 @@ module CPW
         engine ? engine.source_file_type : nil
       end
 
-      def split
-        result = []
-        if engine && engine.respond_to?(:split)
-          result = engine.split(self)
+      def split(options = {})
+        assign_options(options)
+        if engine && engine.respond_to?(:split) && split_method == :auto
+          engine.split(self)
         else
-          # compute the total number of chunks
-          chunk_id    = 1
-          full_chunks = (self.duration.to_f / size).to_i
-          last_chunk  = ((self.duration.to_f % size) * 100).round / 100.0
-          logger.info "generate: #{full_chunks} chunks of #{size} seconds, last: #{last_chunk} seconds" if self.verbose
-
-          (full_chunks - 1).times do |index|
-            if index > 0
-              result << AudioChunk.new(self, index * self.size, self.size, {id: chunk_id})
-            else
-              off = (index * self.size) - (self.size / 2)
-              off = 0 if off < 0
-              result << AudioChunk.new(self, off, self.size, {id: chunk_id})
-            end
-            chunk_id += 1
-          end
-
-          if result.empty?
-            result << AudioChunk.copy(self, chunk_id)
+          case split_method
+          when :diarize then split_with_diarize
           else
-            result << AudioChunk.new(self, chunks.last.offset.to_i + chunks.last.duration.to_i, self.size + last_chunk, {id: chunk_id})
+            split_with_basic
           end
-          logger.info "Chunk (id=#{chunk_id}) count: #{result.size}" if self.verbose
+        end
+      end
+
+      protected
+
+      def split_with_basic
+        result      = []
+        chunk_id    = 1
+        full_chunks = (self.duration.to_f / self.chunk_duration).to_i
+        last_chunk  = ((self.duration.to_f % self.chunk_duration) * 100).round / 100.0
+        logger.info "generate: #{full_chunks} chunks of #{chunk_duration} seconds, last: #{last_chunk} seconds" if self.verbose
+
+        (full_chunks - 1).times do |index|
+          if index > 0
+            result << AudioChunk.new(self, index * self.chunk_duration, self.chunk_duration, {id: chunk_id})
+          else
+            off = (index * self.chunk_duration) - (self.chunk_duration / 2)
+            off = 0 if off < 0
+            result << AudioChunk.new(self, off, self.chunk_duration, {id: chunk_id})
+          end
+          chunk_id += 1
+        end
+
+        if result.empty?
+          result << AudioChunk.copy(self, chunk_id)
+        else
+          result << AudioChunk.new(self, result.last.offset.to_i + result.last.duration.to_i, self.chunk_duration + last_chunk, {id: chunk_id})
+        end
+        logger.info "Chunk (id=#{chunk_id}) count: #{result.size}" if self.verbose
+        result
+      end
+
+      def split_with_diarize
+        result = []
+        file_uri = URI.join('file:///', original_file)
+        self.diarized_audio = Diarize::Audio.new(file_uri)
+        diarized_audio.analyze!
+        diarized_audio.segments.each_with_index do |segment, index|
+          result << AudioChunk.new(self, segment.start, segment.duration,
+            {id: index + 1, bandwidth: segment.bandwidth, speaker: segment.speaker})
         end
         result
       end
-    end
 
+      private
+
+      def assign_options(options = {})
+        self.chunk_duration = options[:chunk_duration] || chunk_duration || 5
+        self.verbose        = options.key?(:verbose) ? !!options[:verbose] : !!verbose
+        self.engine         = options[:engine] || engine
+        self.basefolder     = options[:basefolder] || basefolder
+        self.split_method   = options[:split_method] || split_method || :auto
+        self.logger         = options[:logger] || logger || CPW::logger
+      end
+    end
   end
 end

@@ -1,6 +1,3 @@
-require "voicebase"
-require "srt"
-
 module CPW
   module Speech
     module Engines
@@ -114,6 +111,8 @@ module CPW
             chunk.status            = AudioChunk::STATUS_TRANSCRIBED
             chunk.best_text         = result['text']
             self.segments           += 1
+            parse_words(chunk, data['words']) if data['words']
+
             logger.info "text: #{result['text']}" if self.verbose
           else
             chunk.status = AudioChunk::STATUS_TRANSCRIPTION_ERROR

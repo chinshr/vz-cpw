@@ -8,22 +8,21 @@ class CPW::Speech::Engines::SubtitleEngineTest < Test::Unit::TestCase
 
     chunks = []
     engine.perform(basefolder: "/tmp").each do |chunk|
-      chunks << chunk
+      chunks.push(chunk)
     end
 
     assert_equal 108, chunks.size
     assert_equal 1, chunks.first.id
     assert_not_nil chunks.first.best_text
-    assert_equal 0.5, chunks.first.best_score
+    assert_in_delta 0.5, chunks.first.best_score, 0.1
     assert_equal CPW::Speech::AudioChunk::STATUS_TRANSCRIBED, chunks.first.status
 
     assert_equal chunks.first.best_text, chunks.first.response['text']
     assert_equal "Host: Estela de Carlotto! (Applause)", chunks.first.best_text
-    #assert_equal chunks.first.best_score, chunks.first.response['posterior_prob']
-    assert_equal 15.884, chunks.first.offset
+    assert_in_delta 15.8, chunks.first.offset, 0.1
     assert_equal chunks.first.offset, chunks.first.start_time
-    assert_equal 3.132999999999999, chunks.first.duration
-    assert_equal 19.017, chunks.first.end_time
+    assert_in_delta 3.13, chunks.first.duration, 0.1
+    assert_in_delta 19.02, chunks.first.end_time, 0.1
   end
 
   def test_to_json
