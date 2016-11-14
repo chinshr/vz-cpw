@@ -56,7 +56,7 @@ class CPW::Speech::AudioSplitterTest < Test::Unit::TestCase
       chunk.to_flac
       assert_equal CPW::Speech::AudioChunk::STATUS_ENCODED, chunk.status
       assert chunk.to_flac_bytes
-      assert_equal 46540, chunk.flac_size
+      assert_equal 46385, chunk.flac_size
 
       assert_equal [], chunk.errors
       assert File.exist? chunk.chunk

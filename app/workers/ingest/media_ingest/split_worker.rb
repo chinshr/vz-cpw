@@ -205,7 +205,7 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
 
   def chunk_type_for(chunk)
     case chunk.engine.class.name
-    when /GoogleSpeechEngine/ then "Chunk::GoogleSpeechChunk"
+    when /GoogleCloudSpeechEngine/ then "Chunk::GoogleCloudSpeechChunk"
     when /NuanceDragonEngine/ then "Chunk::NuanceDragonChunk"
     when /PocketsphinxEngine/ then "Chunk::PocketsphinxChunk"
     when /SubtitleEngine/ then "Chunk::SubtitleChunk"
