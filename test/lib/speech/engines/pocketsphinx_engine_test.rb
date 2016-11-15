@@ -8,9 +8,16 @@ class CPW::Speech::Engines::PocketsphinxEngineTest < Test::Unit::TestCase
     @configuration['vad_threshold']  = 2
   end
 
+  def test_default_options
+    engine = CPW::Speech::Engines::PocketsphinxEngine.new("foo.wav")
+    assert_not_nil engine.configuration
+    assert_equal :raw, engine.base_file_type
+    assert_equal nil, engine.source_file_type
+  end
+
   def test_native_split_and_recognize
     engine = CPW::Speech::Engines::PocketsphinxEngine.new(File.join(fixtures_root, "goforward.raw"),
-      @configuration, {:source_file_type => :raw})
+      {:configuration => @configuration, :source_file_type => :raw})
 
     engine.perform(locale: "en-US", basefolder: "/tmp").each do |chunk|
       assert_equal 1, chunk.id
@@ -79,7 +86,7 @@ class CPW::Speech::Engines::PocketsphinxEngineTest < Test::Unit::TestCase
   def test_diarize_split_and_decode
     engine = CPW::Speech::Engines::PocketsphinxEngine.new(
       File.join(fixtures_root, "will-and-juergen.wav"),
-      @configuration, {:source_file_type => :wav, :split_method => :diarize}
+      {:configuration => @configuration, :source_file_type => :wav, :split_method => :diarize}
     )
     chunks = []
     engine.perform(locale: "en-US", basefolder: "/tmp").each do |chunk|

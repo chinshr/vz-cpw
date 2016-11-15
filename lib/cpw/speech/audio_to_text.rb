@@ -4,7 +4,7 @@ module CPW
       attr_accessor :engine
 
       def initialize(file, options = {})
-        engine_class = options.key?(:engine) ? "CPW::Speech::Engines::#{options[:engine].to_s.classify}".constantize : Engines::GoogleSpeechEngine
+        engine_class = options.key?(:engine) ? "CPW::Speech::Engines::#{options[:engine].to_s.classify}".constantize : Engines::GoogleCloudSpeechEngine
         self.engine  = engine_class.new(file, options)
       end
 
