@@ -4,8 +4,7 @@ module CPW
   module Speech
     module Engines
       class SubtitleEngine < Base
-        attr_accessor :format
-        attr_accessor :default_chunk_score
+        attr_accessor :format, :default_chunk_score, :response
 
         def initialize(media_file_or_url, options = {})
           super media_file_or_url, options
@@ -81,7 +80,7 @@ module CPW
         end
 
         def build_response(subtitle_line)
-          response = {}
+          self.response = {}
           response['text']       = subtitle_line.text.join(" ")
           response['start_time'] = subtitle_line.start_time
           response['end_time']   = subtitle_line.end_time

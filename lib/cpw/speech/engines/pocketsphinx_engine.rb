@@ -4,11 +4,11 @@ module CPW
       class PocketsphinxEngine < Base
         attr_accessor :configuration
 
-        def initialize(media_file_or_url, configuration, options = {})
+        def initialize(media_file_or_url, options = {})
           super media_file_or_url, options
           self.base_file_type   = :raw
           self.source_file_type = options[:source_file_type]
-          self.configuration    = configuration
+          self.configuration    = options[:configuration] || ::Pocketsphinx::Configuration.default
         end
 
         def split(audio_splitter)
@@ -17,24 +17,6 @@ module CPW
           else
             splitter.split({:split_method => :diarize})
           end
-        end
-
-        def parse_words(chunk, words_response)
-          result, index = [], 1
-          words_response.each do |word_response|
-            word = AudioChunk::Word.new({
-              "p" => word_response.try(:[], 'id') || index,
-              "s" => word_response.try(:[], 'start_time'),
-              "e" => word_response.try(:[], 'end_time'),
-              "c" => word_response.try(:[], 'posterior_prob'),
-              "w" => word_response.try(:[], 'word')
-            })
-            unless word.word == "<s>" || word.word == "</s>"
-              result << word
-              index += 1
-            end
-          end
-          chunk.words = result
         end
 
         protected
@@ -67,11 +49,12 @@ module CPW
             result['status'] = chunk.status = CPW::Speech::AudioChunk::STATUS_TRANSCRIPTION_ERROR
           end
         ensure
+          chunk.clean
+          chunk.captured_json = result.to_json
           return result
         end
 
-        def parse(chunk, raw_data, result = {})
-          data                      = raw_data  # JSON.parse(service.body_str)
+        def parse(chunk, data, result = {})
           result['id']              = chunk.id
           result['external_id']     = data['id']
           result['external_status'] = data['status']
@@ -91,6 +74,24 @@ module CPW
             chunk.status = AudioChunk::STATUS_TRANSCRIPTION_ERROR
           end
           result
+        end
+
+        def parse_words(chunk, words_response)
+          result, index = [], 1
+          words_response.each do |word_response|
+            word = AudioChunk::Word.new({
+              "p" => word_response.try(:[], 'id') || index,
+              "s" => word_response.try(:[], 'start_time'),
+              "e" => word_response.try(:[], 'end_time'),
+              "c" => word_response.try(:[], 'posterior_prob'),
+              "w" => word_response.try(:[], 'word')
+            })
+            unless word.word == "<s>" || word.word == "</s>"
+              result << word
+              index += 1
+            end
+          end
+          chunk.words = result
         end
 
         def split_with_native_splitter_and_transcribe

@@ -18,14 +18,14 @@ module CPW
           end
           self.captured_json    = {}
           self.score            = 0.0
-          self.segments         = 0
+          self.segments         = 0  # chunk_count
           self.chunks           = []
           self.chunk_duration   = options[:chunk_duration].to_i if options.key?(:chunk_duration)
           self.verbose          = !!options[:verbose]
           self.max_results      = 2
           self.max_retries      = 3
           self.locale           = "en-US"
-          self.logger           = CPW::logger
+          self.logger           = options[:logger] || CPW::logger
           self.base_file_type   = :flac
           self.source_file_type = nil
           self.split_method     = options[:split_method] || :auto

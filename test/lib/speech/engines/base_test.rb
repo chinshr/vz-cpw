@@ -19,6 +19,12 @@ class CPW::Speech::Engines::BaseTest < Test::Unit::TestCase
     assert_equal :auto, engine.split_method
   end
 
+  def test_logger
+    logger = ::Logger.new(STDOUT)
+    engine = CPW::Speech::Engines::Base.new("foo.wav", {:logger => logger})
+    assert_equal logger, engine.logger
+  end
+
   def test_chunk_duration
     engine = CPW::Speech::Engines::Base.new("foo.wav", {:chunk_duration => 10})
     assert_equal 10, engine.chunk_duration

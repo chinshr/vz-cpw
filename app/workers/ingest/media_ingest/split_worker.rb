@@ -21,51 +21,51 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
     logger.info("+++ #{self.class.name}#perform, body #{body.inspect}")
 
     if ingest.use_source_annotations? && download_subtitle_file_if_exists
-      process_with_srt
+      process_with_subtitle_engine
     else
-      if ingest.metadata['te_name'] == "voicebase" || ingest.locale.match(/es/)
-        process_with_voicebase
-      elsif ingest.metadata['te_name'] == "kaldi"
-        process_with_kaldi
+      if ingest.metadata['te_name'] == "voicebase"
+        process_with_voicebase_engine
+      elsif ingest.metadata['te_name'] == "pocketsphinx"
+        process_with_pocketsphinx_engine
       else
-        process_with_pocketsphinx
+        process_with_google_cloud_speech_engine
       end
     end
   end
 
   protected
 
-  def process_with_srt
+  def process_with_subtitle_engine
     self.engine = CPW::Speech::Engines::SubtitleEngine.new(subtitle_file_fullpath,
       {format: :srt, default_chunk_score: 0.5})
-    logger.info "****** process SRT: #{subtitle_file_fullpath}"
+    logger.info "****** processing with subtitle_engine: #{subtitle_file_fullpath}"
     engine.perform(basefolder: basefolder).each do |chunk|
-      !terminate? ? process_speech_chunk(chunk) : return
+      process_speech_chunk(chunk)
     end
   ensure
     cleanup_files
   end
 
-  def process_with_voicebase
+  def process_with_voicebase_engine
     download_single_channel_wav_audio_file
 
-    self.engine = CPW::Speech::Engines::VoiceBaseEngine.new(single_channel_wav_audio_file_fullpath,
-      {external_id: ingest.uid, transcription_type: "machine-best"})
-    logger.info "****** process VoiceBase: #{single_channel_wav_audio_file_fullpath}"
+    self.engine = CPW::Speech::Engines::VoiceBaseEngine.new(single_channel_wav_audio_file_fullpath, {
+      external_id: ingest.uid,
+      transcription_type: "machine-best",
+      logger: logger
+    })
+    logger.info "****** processing with voicebase_engine: #{single_channel_wav_audio_file_fullpath}"
+    logger.info "****** basefolder: #{basefolder}"
+    logger.info "****** ingest locale: #{ingest.locale}"
     engine.perform(locale: ingest.locale, basefolder: basefolder).each do |chunk|
-      !terminate? ? process_speech_chunk(chunk, {build_mp3: false, build_waveform: true}) : return
+      process_speech_chunk(chunk, {build_mp3: false, build_waveform: true})
     end
   ensure
     cleanup_files
   end
 
-  def process_with_kaldi
-    raise "Need to implement kaldi"
-  end
-
-  def process_with_pocketsphinx
+  def process_with_pocketsphinx_engine
     download_single_channel_wav_audio_file
-    create_raw_audio_from_wav
 
     # pocketsphinx_split
     configuration = ::Pocketsphinx::Configuration.default
@@ -81,13 +81,38 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
     configuration['hmm']            = sphinx_model("hmm")  # path + "/voxforge_en_sphinx.cd_cont_5000/"
     configuration['lm']             = sphinx_model("lm")   # path + "/lm_giga_64k_nvp_3gram.lm.dmp"
 
-    self.engine = CPW::Speech::Engines::PocketsphinxEngine.new(pcm_audio_file_fullpath,
-      configuration, {source_file_type: :raw})
+    self.engine = CPW::Speech::Engines::PocketsphinxEngine.new(single_channel_wav_audio_file_fullpath, {
+      configuration: configuration,
+      source_file_type: :wav,
+      split_method: :diarize,
+      logger: logger
+    })
 
+    logger.info "****** processing with pocketsphinx_engine: #{single_channel_wav_audio_file_fullpath}"
     logger.info "****** basefolder: #{basefolder}"
-    logger.info "****** process pocketsphinx: #{single_channel_wav_audio_file_fullpath}"
+    logger.info "****** ingest locale: #{ingest.locale}"
     engine.perform(locale: ingest.locale, basefolder: basefolder).each do |chunk|
       !terminate? ? process_speech_chunk(chunk, {build_mp3: true, build_waveform: true}) : return
+    end
+  ensure
+    cleanup_files
+  end
+
+  def process_with_google_cloud_speech_engine
+    download_single_channel_wav_audio_file
+
+    self.engine = CPW::Speech::Engines::GoogleCloudSpeechEngine.new(single_channel_wav_audio_file_fullpath, {
+      key: ENV['GOOGLE_CLOUD_API_KEY'],
+      source_file_type: :wav,
+      split_method: :diarize,
+      logger: logger
+    })
+
+    logger.info "****** processing with google_cloud_speech_engine: #{single_channel_wav_audio_file_fullpath}"
+    logger.info "****** basefolder: #{basefolder}"
+    logger.info "****** ingest locale: #{ingest.locale}"
+    engine.perform(locale: ingest.locale, basefolder: basefolder).each do |chunk|
+      process_speech_chunk(chunk, {build_mp3: false, build_waveform: true})
     end
   ensure
     cleanup_files
@@ -97,8 +122,10 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
     if chunk.status > 0
       # build mp3 file
       if options[:build_mp3]
-        chunk.build({source_file: single_channel_wav_audio_file_fullpath,
-          base_file_type: :wav}).to_mp3
+        chunk.build({
+          source_file: single_channel_wav_audio_file_fullpath,
+          base_file_type: :wav
+        }).to_mp3
 
         logger.info "****** mp3_chunk: #{chunk.mp3_chunk}"
         logger.info "****** mp3_key: #{s3_key_for(File.basename(chunk.mp3_chunk))}"
@@ -150,9 +177,12 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
   def create_or_update_ingest_with(chunk)
     ingest_chunk = nil
     CPW::Client::Base.try_request({logger: logger}) do
-      ingest_chunk = Ingest::Chunk.where(ingest_id: @ingest.id,
-        any_of_types: "pocketsphinx", any_of_positions: chunk.id,
-        any_of_ingest_iterations: @ingest.iteration).first
+      ingest_chunk = Ingest::Chunk.where({
+        ingest_id: @ingest.id,
+        any_of_types: chunk_type_for(chunk),
+        any_of_positions: chunk.id,
+        any_of_ingest_iterations: @ingest.iteration
+      }).first
     end
 
     start_at = Chronic.parse(@ingest.upload['recorded_at']) + chunk.offset.to_f rescue nil
@@ -177,7 +207,7 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
       position: chunk.id,
       offset: chunk.offset,
       text: chunk.best_text,
-      processing_errors: chunk.response['errors'],
+      # processing_errors: chunk.response['errors'],
       processing_status: chunk.status,
       response: chunk.response,
       track_attributes: track_attributes
