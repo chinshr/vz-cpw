@@ -241,11 +241,13 @@ Edit `sudo vi /etc/monit/conf.d/shoryuken.monitrc`:
 
 2. New `shoryuken.monitrc` with pulling new repo, bundling:
 
+```monitrc
     check process shoryuken
       with pidfile /home/ubuntu/shared/pids/shoryuken.pid
       start program = "/bin/su - ubuntu -c 'cd /home/ubuntu/vz-cpw/ && git pull && rvm gemset use vz-cpw && bundle && CPW_ENV=production bundle exec shoryuken -r cpw.rb -L /home/ubuntu/shared/log/shoryuken.log -C /home/ubuntu/vz-cpw/config/shoryuken.yml -P /home/ubuntu/shared/pids/shoryuken.pid  2>&1 | logger -t shoryuken'" with timeout 90 seconds
       stop program = "/bin/su - ubuntu -c 'kill -s TERM `cat /home/ubuntu/shared/pids/shoryuken.pid`'" with timeout 90 seconds
       group shoryuken_cpw_group
+```
 
 Next, you should check the syntax of your monit file using:
 

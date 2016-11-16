@@ -29,9 +29,9 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "mocha"
   spec.add_development_dependency "webmock"
   spec.add_development_dependency "byebug"
+  spec.add_development_dependency "foreman-monit", "~> 1.0.4"
 
   spec.add_dependency "pocketsphinx-ruby", ["~> 0.3.0", '< 1']
-  # spec.add_dependency "att-codekit"
   spec.add_dependency "multi_json"
   spec.add_dependency "spyke", "~> 4.0.1"
   spec.add_dependency "faraday"
@@ -45,11 +45,11 @@ Gem::Specification.new do |spec|
   spec.add_dependency "curb"
   spec.add_dependency "json"
   spec.add_dependency "youtube-dl.rb", "~>0.2.5"
-  spec.add_dependency "srt"
+  spec.add_dependency "srt", "~> 0.1.3"
   spec.add_dependency "voicebase-client-ruby"
-  spec.add_dependency "webvtt-ruby"
+  spec.add_dependency "webvtt-ruby", "~> 0.3.2"
   spec.add_dependency "ttml-ruby"
   spec.add_dependency "diarize-ruby", "~> 0"
 
-  spec.add_runtime_dependency('gli', '2.13.0')
+  spec.add_runtime_dependency('gli', '~> 2.13.0')
 end

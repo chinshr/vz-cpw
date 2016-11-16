@@ -17,6 +17,7 @@ class CPW::Speech::Engines::BaseTest < Test::Unit::TestCase
     assert_equal nil, engine.chunk_duration
     assert_equal false, engine.verbose
     assert_equal :auto, engine.split_method
+    assert_equal({}, engine.split_options)
   end
 
   def test_logger
@@ -45,5 +46,24 @@ class CPW::Speech::Engines::BaseTest < Test::Unit::TestCase
     assert_equal 10, options[:chunk_duration]
     assert_equal engine, options[:engine]
     assert_equal :auto, options[:split_method]
+  end
+
+  def test_audio_splitter_options
+    engine = CPW::Speech::Engines::Base.new("foo.wav")
+    options = engine.send(:audio_splitter_options, {
+      engine: engine,
+      chunk_duration: 99,
+      verbose: true,
+      locale: "es-AR",
+      split_method: :diarize,
+      split_options: {:mode => :foo}
+    })
+    assert_equal 6, options.keys.size
+    assert_equal engine, options[:engine]
+    assert_equal 99, options[:chunk_duration]
+    assert_equal true, options[:verbose]
+    assert_equal "es-AR", options[:locale]
+    assert_equal :diarize, options[:split_method]
+    assert_equal({:mode => :foo}, options[:split_options])
   end
 end

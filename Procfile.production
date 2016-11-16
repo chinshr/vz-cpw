@@ -1,0 +1,3 @@
+shoryuken: bundle exec shoryuken -r cpw.rb -L /home/ubuntu/shared/log/shoryuken.log -C /home/ubuntu/vz-cpw/config/shoryuken.yml -P
+ /home/ubuntu/shared/pids/shoryuken.pid
+diarize: bundle exec diarize -v server --port 9999 --host localhost --pidfile /home/ubuntu/shared/pids/diarize.pid
