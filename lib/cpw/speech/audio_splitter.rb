@@ -3,7 +3,7 @@ module CPW
 
     class AudioSplitter
       attr_accessor :original_file, :chunk_duration, :duration, :chunks, :verbose,
-        :engine, :logger, :basefolder, :split_method, :diarized_audio
+        :engine, :logger, :basefolder, :split_method, :split_options, :diarize_audio
 
       def initialize(file_name, options = {})
         self.original_file  = file_name
@@ -63,26 +63,38 @@ module CPW
       end
 
       def split_with_diarize
-        result = []
+        chunks = []
         file_uri = URI.join('file:///', original_file)
-        self.diarized_audio = Diarize::Audio.new(file_uri)
-        diarized_audio.analyze!
-        diarized_audio.segments.each_with_index do |segment, index|
-          result << AudioChunk.new(self, segment.start, segment.duration,
+
+        if split_options[:mode] == :druby
+          host = split_options[:host] || "localhost"
+          port = split_options[:port] || 9999
+          server_uri = "druby://#{host}:#{port}"
+          DRb.start_service
+          server = DRbObject.new_with_uri(server_uri)
+          self.diarize_audio = server.build_audio(file_uri)
+        else
+          self.diarize_audio = Diarize::Audio.new(file_uri)
+        end
+
+        diarize_audio.analyze!
+        diarize_audio.segments.each_with_index do |segment, index|
+          chunks << AudioChunk.new(self, segment.start, segment.duration,
             {id: index + 1, bandwidth: segment.bandwidth, speaker: segment.speaker})
         end
-        result
+        chunks
       end
 
       private
 
       def assign_options(options = {})
-        self.chunk_duration = options[:chunk_duration] || chunk_duration || 5
-        self.verbose        = options.key?(:verbose) ? !!options[:verbose] : !!verbose
-        self.engine         = options[:engine] || engine
-        self.basefolder     = options[:basefolder] || basefolder
-        self.split_method   = options[:split_method] || split_method || :auto
-        self.logger         = options[:logger] || logger || CPW::logger
+        self.chunk_duration  = options[:chunk_duration] || chunk_duration || 5
+        self.verbose         = options.key?(:verbose) ? !!options[:verbose] : !!verbose
+        self.engine          = options[:engine] || engine
+        self.basefolder      = options[:basefolder] || basefolder
+        self.split_method    = options[:split_method] || split_method || :auto
+        self.split_options   = options[:split_options] || split_options || {}
+        self.logger          = options[:logger] || logger || CPW::logger
       end
     end
   end

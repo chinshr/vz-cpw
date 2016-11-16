@@ -85,6 +85,11 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
       configuration: configuration,
       source_file_type: :wav,
       split_method: :diarize,
+      split_options: {
+        mode: :druby,
+        host: "localhost",
+        port: 9999
+      },
       logger: logger
     })
 
@@ -105,6 +110,11 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
       key: ENV['GOOGLE_CLOUD_API_KEY'],
       source_file_type: :wav,
       split_method: :diarize,
+      split_options: {
+        mode: :druby,
+        host: "localhost",
+        port: 9999
+      },
       logger: logger
     })
 

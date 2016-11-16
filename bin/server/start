@@ -1,12 +1,13 @@
 #!/bin/bash
 set -e -x
-echo "shoryuken starting..."
+echo "services starting..."
 # sudo apt-get update && apt-get upgrade -y
 sudo youtube-dl -U
 cd ~/vz-cpw
 rvm gemset use vz-cpw
-bundle
-cd
+git pull
+bundle install
+cd ~
 sudo /etc/init.d/monit start
 sudo monit start shoryuken
-echo "shoryuken started."
+echo "services stopped."

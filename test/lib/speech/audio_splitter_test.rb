@@ -13,6 +13,8 @@ class CPW::Speech::AudioSplitterTest < Test::Unit::TestCase
     assert_equal nil, splitter.engine
     assert_equal false, splitter.verbose
     assert_equal CPW::logger, splitter.logger
+    assert_equal :auto, splitter.split_method
+    assert_equal({}, splitter.split_options)
   end
 
   def test_basefolder
@@ -39,6 +41,14 @@ class CPW::Speech::AudioSplitterTest < Test::Unit::TestCase
 
     splitter = CPW::Speech::AudioSplitter.new(@short_wav_file, {:split_method => :basic})
     assert_equal :basic, splitter.split_method
+  end
+
+  def test_split_options
+    splitter = CPW::Speech::AudioSplitter.new(@short_wav_file,
+        {:split_options => {:mode => :druby, :host => "drb.example.com", :port => 1234}})
+    assert_equal :druby, splitter.split_options[:mode]
+    assert_equal "drb.example.com", splitter.split_options[:host]
+    assert_equal 1234, splitter.split_options[:port]
   end
 
   def test_should_split_audio_into_flac_chunks
@@ -132,9 +142,9 @@ class CPW::Speech::AudioSplitterTest < Test::Unit::TestCase
     assert_equal 9.1, chunks.last.duration
   end
 
-  # LIUM
+  # diarize
 
-  def test_should_use_lium_splitter_with_long_file
+  def test_should_diarize_locally
     splitter = CPW::Speech::AudioSplitter.new(@long_wav_file, {:split_method => :diarize})
     assert_equal :diarize, splitter.split_method
     assert_equal '00:00:54.10', splitter.duration.to_s
@@ -178,5 +188,28 @@ class CPW::Speech::AudioSplitterTest < Test::Unit::TestCase
     assert_equal "U", chunks[4].bandwidth
     assert chunks[4].speaker
     assert_equal "M", chunks[4].speaker.gender
+  end
+
+  def xtest_should_diarize_remote
+    splitter = CPW::Speech::AudioSplitter.new(@long_wav_file,
+      {:split_method => :diarize, :split_options => {:mode => :druby, :port => 9998, :host => "localhost"}})
+    assert_equal :diarize, splitter.split_method
+
+    omit "fork process in test not working."
+
+    # start server
+    pid = Process.fork do
+      Signal.trap("QUIT") { DRb.stop_service; exit }
+      uri = "druby://#{'localhost'}:#{9998}"
+      server = Diarize::Server.new
+      DRb.start_service(uri, server)
+      DRb.thread.join
+    end
+
+    chunks = splitter.split
+    assert_equal 5, chunks.size
+
+    Process.kill("QUIT", pid)
+    Process.wait
   end
 end

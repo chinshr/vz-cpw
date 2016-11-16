@@ -7,7 +7,7 @@ module CPW
         attr_accessor :media_file, :media_url, :rate, :captured_json,
           :score, :verbose, :segments, :chunks, :chunk_duration,
           :max_results, :max_retries, :locale, :logger, :base_file_type,
-          :source_file_type, :split_method, :audio_splitter
+          :source_file_type, :split_method, :split_options, :audio_splitter
 
         def initialize(media_file_or_url, options = {})
           options.symbolize_keys!
@@ -29,6 +29,7 @@ module CPW
           self.base_file_type   = :flac
           self.source_file_type = nil
           self.split_method     = options[:split_method] || :auto
+          self.split_options    = options[:split_options] || {}
         end
 
         def to_text(options = {})
@@ -102,7 +103,8 @@ module CPW
             chunk_duration: chunk_duration,
             verbose: verbose,
             locale: locale,
-            split_method: split_method
+            split_method: split_method,
+            split_options: split_options
           }.merge(options).reject {|k,v| v.blank?}
         end
 

@@ -13,10 +13,10 @@ Dotenv.load(*[".env.#{ENV.fetch("CPW_ENV", 'development')}", ".env"])
 require "byebug"
 
 require "shoryuken"
+require "drb/drb"
 
 require "cpw/version"
 require "cpw/store"
-
 require "cpw/client/json_parser"
 require "cpw/client/adapter"
 require "cpw/client/authorize"
