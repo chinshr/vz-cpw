@@ -1,12 +1,19 @@
 #!/bin/bash
-set -e -x
-echo "services starting..."
+set -e -x;
 
-sudo youtube-dl -U
-cd ~/vz-cpw
-rvm gemset use vz-cpw
-git pull
-bundle install
-foreman start &
-echo $! > ~/shared/pids/launch.pid
-echo "services started."
+case $1 in
+  start)
+    echo $$ > ~/shared/pids/launch.pid;
+    youtube-dl -U;
+    cd ~/work/vzo/vz-cpw;
+    ~/.rvm/scripts/rvm gemset use vz-cpw;
+    git pull;
+    bundle install;
+    exec 2>&1 foreman start 1>~/shared/log/launch.log
+    ;;
+   stop)
+     kill `cat ~/shared/pids/launch.pid` ;;
+   *)
+     echo "usage: launch {start|stop}" ;;
+ esac
+ exit 0
