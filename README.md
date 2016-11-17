@@ -257,7 +257,7 @@ If everything is OK, start CPW with:
 
     sudo /etc/init.d/monit start
     sudo /etc/init.d/monit stop
-    sudo /etc/init.d/monit start
+    sudo /etc/init.d/monit restart
 
     sudo monit start shoryuken
 
