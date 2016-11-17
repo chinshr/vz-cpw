@@ -2,6 +2,7 @@
 
 # rvm
 # http://stackoverflow.com/questions/5792707/cannot-change-rvm-gemset-from-shell-script-via-rvm-gemset-use
+[ -f "$HOME/.bashrc" ] && . "$HOME/.bashrc"
 [ -s "$HOME/.rvm/scripts/rvm" ] && . "$HOME/.rvm/scripts/rvm"
 
 # enable shell debugging
