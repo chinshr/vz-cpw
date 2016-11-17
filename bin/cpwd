@@ -7,7 +7,7 @@
 # enable shell debugging
 set -x
 
-${CPW_ENV:=development}
+CPW_ENV=${CPW_ENV:=development}
 if [ "production" == "$CPW_ENV" ]; then
   CPW_HOME=/home/ubuntu/vz-cpw
   CPW_SHARED=/home/ubuntu/shared
