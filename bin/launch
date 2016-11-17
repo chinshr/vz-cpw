@@ -1,0 +1,12 @@
+#!/bin/bash
+set -e -x
+echo "services starting..."
+echo $! > ~/shared/pids/launch.pid
+
+sudo youtube-dl -U
+cd ~/vz-cpw
+rvm gemset use vz-cpw
+git pull
+bundle install
+foreman start
+echo "services started."

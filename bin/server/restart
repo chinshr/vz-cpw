@@ -1,3 +1,0 @@
-#!/bin/bash
-cd && ./vz-cpw/bin/server/stop
-cd && ./vz-cpw/bin/server/start
