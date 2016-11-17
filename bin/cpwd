@@ -40,6 +40,7 @@ case $1 in
     echo $$ > $CPW_SHARED/pids/cpwd.pid
     sudo youtube-dl -U
     rvm gemset use vz-cpw
+    echo `rvm gemset list`
     exec 2>&1 bundle exec shoryuken -r $CPW_HOME/lib/cpw.rb -C $CPW_HOME/config/shoryuken.yml -P $CPW_SHARED/pids/shoryuken.pid 1>$CPW_SHARED/log/cpwd.log
     ;;
   stop)
