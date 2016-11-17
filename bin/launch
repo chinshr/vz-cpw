@@ -5,7 +5,7 @@ case $1 in
   start)
     echo $$ > ~/shared/pids/launch.pid;
     youtube-dl -U;
-    cd ~/work/vzo/vz-cpw;
+    cd ~/vz-cpw;
     ~/.rvm/scripts/rvm gemset use vz-cpw;
     git pull;
     bundle install;
