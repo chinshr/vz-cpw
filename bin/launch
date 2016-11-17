@@ -4,11 +4,11 @@ set -e -x;
 case $1 in
   start)
     echo $$ > ~/shared/pids/launch.pid;
-    youtube-dl -U;
-    cd ~/vz-cpw;
-    ~/.rvm/scripts/rvm gemset use vz-cpw;
-    git pull;
-    bundle install;
+    # youtube-dl -U;
+    # cd ~/vz-cpw;
+    # ~/.rvm/scripts/rvm gemset use vz-cpw;
+    # git pull;
+    # bundle install;
     exec 2>&1 echo "started" 1>~/shared/log/launch.log
     ;;
    stop)
