@@ -8,7 +8,6 @@
 set -x
 
 ${CPW_ENV:=development}
-# CPW_ENV=production
 if [ "production" == "$CPW_ENV" ]; then
   CPW_HOME=/home/ubuntu/vz-cpw
   CPW_SHARED=/home/ubuntu/shared
@@ -22,18 +21,15 @@ case $1 in
     echo $$ > ~/shared/pids/cpwd.pid
     youtube-dl -U
     rvm gemset use vz-cpw
-    # git pull
-    # bundle install
     exec 2>&1 bundle exec shoryuken -r $CPW_HOME/lib/cpw.rb -C $CPW_HOME/config/shoryuken.yml -P $CPW_SHARED/pids/shoryuken.pid 1>$CPW_SHARED/log/cpwd.log
     ;;
   stop)
-    #
     kill -s USR1 `cat $CPW_SHARED/pids/shoryuken.pid`
+    rm $CPW_SHARED/pids/shoryuken.pid
     kill -s USR1 `cat $CPW_SHARED/pids/diarize.pid`
+    rm $CPW_SHARED/pids/diarize.pid
     sleep 5
     kill -s SIGTERM `cat $CPW_SHARED/pids/cpwd.pid`
-    rm $CPW_SHARED/pids/shoryuken.pid
-    rm $CPW_SHARED/pids/diarize.pid
     rm $CPW_SHARED/pids/launch.pid
     ;;
   *)
