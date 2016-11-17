@@ -17,6 +17,7 @@ else
   CPW_SHARED=~/work/vzo/vz-cpw/tmp
 fi
 
+echo HOME=$HOME
 echo CPW_ENV=$CPW_ENV
 echo JAVA_HOME=$JAVA_HOME
 echo CPW_HOME=$CPW_HOME
