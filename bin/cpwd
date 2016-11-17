@@ -16,6 +16,18 @@ else
   CPW_SHARED=~/shared
 fi
 
+pswait() {
+  if [ -z "$1" ]
+  then
+    echo "-Parameter #1 must be pid file.-"
+  else
+    PID=`cat $1/pids/diarize.pid`
+  fi
+  while s=`ps -p $PID -o s=` && [[ "$s" && "$s" != 'Z' ]]; do
+    sleep 1
+  done
+}
+
 case $1 in
   start)
     echo $$ > ~/shared/pids/cpwd.pid
@@ -24,13 +36,25 @@ case $1 in
     exec 2>&1 bundle exec shoryuken -r $CPW_HOME/lib/cpw.rb -C $CPW_HOME/config/shoryuken.yml -P $CPW_SHARED/pids/shoryuken.pid 1>$CPW_SHARED/log/cpwd.log
     ;;
   stop)
-    kill -s USR1 `cat $CPW_SHARED/pids/shoryuken.pid`
-    rm $CPW_SHARED/pids/shoryuken.pid
-    kill -s USR1 `cat $CPW_SHARED/pids/diarize.pid`
-    rm $CPW_SHARED/pids/diarize.pid
-    sleep 5
-    kill -s SIGTERM `cat $CPW_SHARED/pids/cpwd.pid`
-    rm $CPW_SHARED/pids/launch.pid
+    if [ ! -z `cat $CPW_SHARED/pids/shoryuken.pid` ]
+    then
+      kill -s USR1 `cat $CPW_SHARED/pids/shoryuken.pid`
+      pswait $CPW_SHARED/pids/shoryuken.pid
+      rm $CPW_SHARED/pids/shoryuken.pid
+    fi
+
+    if [ ! -z `cat $CPW_SHARED/pids/diarize.pid` ]
+    then
+      kill -s USR1 `cat $CPW_SHARED/pids/diarize.pid`
+      pswait $CPW_SHARED/pids/diarize.pid
+      rm $CPW_SHARED/pids/diarize.pid
+    fi
+
+    if [ ! -z `cat $CPW_SHARED/pids/cpwd.pid` ]
+    then
+      kill -s SIGTERM `cat $CPW_SHARED/pids/cpwd.pid`
+      rm $CPW_SHARED/pids/cpwd.pid
+    fi
     ;;
   *)
     echo "USAGE: cpwd {start|stop}" ;;

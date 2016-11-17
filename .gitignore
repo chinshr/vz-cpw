@@ -23,4 +23,4 @@ test/version_tmp
 *.a
 mkmf.log
 *.pstore
-log/*.log
+*.log
