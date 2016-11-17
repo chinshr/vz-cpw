@@ -1,0 +1,42 @@
+#!/bin/bash
+
+# rvm
+# http://stackoverflow.com/questions/5792707/cannot-change-rvm-gemset-from-shell-script-via-rvm-gemset-use
+[ -s "$HOME/.rvm/scripts/rvm" ] && . "$HOME/.rvm/scripts/rvm"
+
+# enable shell debugging
+set -x
+
+${CPW_ENV:=development}
+# CPW_ENV=production
+if [ "production" == "$CPW_ENV" ]; then
+  CPW_HOME=/home/ubuntu/vz-cpw
+  CPW_SHARED=/home/ubuntu/shared
+else
+  CPW_HOME=~/work/vzo/vz-cpw
+  CPW_SHARED=~/shared
+fi
+
+case $1 in
+  start)
+    echo $$ > ~/shared/pids/cpwd.pid
+    youtube-dl -U
+    rvm gemset use vz-cpw
+    # git pull
+    # bundle install
+    exec 2>&1 bundle exec shoryuken -r $CPW_HOME/lib/cpw.rb -C $CPW_HOME/config/shoryuken.yml -P $CPW_SHARED/pids/shoryuken.pid 1>$CPW_SHARED/log/cpwd.log
+    ;;
+  stop)
+    #
+    kill -s USR1 `cat $CPW_SHARED/pids/shoryuken.pid`
+    kill -s USR1 `cat $CPW_SHARED/pids/diarize.pid`
+    sleep 5
+    kill -s SIGTERM `cat $CPW_SHARED/pids/cpwd.pid`
+    rm $CPW_SHARED/pids/shoryuken.pid
+    rm $CPW_SHARED/pids/diarize.pid
+    rm $CPW_SHARED/pids/launch.pid
+    ;;
+  *)
+    echo "USAGE: cpwd {start|stop}" ;;
+ esac
+ exit 0
