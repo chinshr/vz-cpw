@@ -13,7 +13,7 @@ if [ "production" == "$CPW_ENV" ]; then
   CPW_SHARED=/home/ubuntu/shared
 else
   CPW_HOME=~/work/vzo/vz-cpw
-  CPW_SHARED=~/shared
+  CPW_SHARED=~/work/vzo/vz-cpw/tmp
 fi
 
 pswait() {
@@ -30,7 +30,7 @@ pswait() {
 
 case $1 in
   start)
-    echo $$ > ~/shared/pids/cpwd.pid
+    echo $$ > $CPW_SHARED/pids/cpwd.pid
     youtube-dl -U
     rvm gemset use vz-cpw
     exec 2>&1 bundle exec shoryuken -r $CPW_HOME/lib/cpw.rb -C $CPW_HOME/config/shoryuken.yml -P $CPW_SHARED/pids/shoryuken.pid 1>$CPW_SHARED/log/cpwd.log
