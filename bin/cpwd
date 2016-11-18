@@ -17,11 +17,11 @@ else
   CPW_SHARED=~/work/vzo/vz-cpw/tmp
 fi
 
-echo HOME=$HOME
-echo CPW_ENV=$CPW_ENV
-echo JAVA_HOME=$JAVA_HOME
-echo CPW_HOME=$CPW_HOME
-echo CPW_SHARED=$CPW_SHARED
+echo "HOME=$HOME"
+echo "CPW_ENV=$CPW_ENV"
+echo "JAVA_HOME=$JAVA_HOME"
+echo "CPW_HOME=$CPW_HOME"
+echo "CPW_SHARED=$CPW_SHARED"
 
 pswait() {
   if [ -z "$1" ]
@@ -41,8 +41,11 @@ case $1 in
     sudo youtube-dl -U
     rvm gemset use vz-cpw
     echo `rvm gemset list`
+    PWD = `pwd`
+    cd $CPW_HOME && git pull && bundle install
+    cd $PWD
     bundle exec diarize -v server --port 9999 --host localhost -P $CPW_SHARED/pids/diarize.pid &
-    exec 2>&1 bundle exec shoryuken -r $CPW_HOME/lib/cpw.rb -C $CPW_HOME/config/shoryuken.yml -P $CPW_SHARED/pids/shoryuken.pid 1>$CPW_SHARED/log/cpwd.log
+    exec 2>&1 bundle exec shoryuken -r $CPW_HOME/lib/cpw.rb -C $CPW_HOME/config/shoryuken.yml -L $CPW_SHARED/log/shoryuken.log -P $CPW_SHARED/pids/shoryuken.pid 1>$CPW_SHARED/log/cpwd.log
     ;;
   stop)
     if [ ! -z `cat $CPW_SHARED/pids/shoryuken.pid` ]
