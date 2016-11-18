@@ -78,7 +78,7 @@ module CPW
         end
 
         diarize_audio.analyze!
-        diarize_audio.segments.each_with_index do |segment, index|
+        diarize_audio.segments.sort_by(&:start).each_with_index do |segment, index|
           chunks << AudioChunk.new(self, segment.start, segment.duration,
             {id: index + 1, bandwidth: segment.bandwidth, speaker: segment.speaker})
         end
