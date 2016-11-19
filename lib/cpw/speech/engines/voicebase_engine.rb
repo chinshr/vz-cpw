@@ -1,7 +1,7 @@
 module CPW
   module Speech
     module Engines
-      class VoiceBaseEngine < Base
+      class VoicebaseEngine < Base
         attr_accessor :api_version, :auth_key, :auth_secret,
           :client, :response, :transcription_type,
           :media_url, :media_id, :srt_transcript, :json_transcript,
@@ -27,7 +27,7 @@ module CPW
 
         def split(splitter)
           result = []
-          prepare_media
+          upload_media_when_ready
 
           if fetch_transcripts_or_retry
             srt_file = SRT::File.parse(srt_transcript)
@@ -57,16 +57,12 @@ module CPW
 
         def parse_words(chunk, words_response)
           words = []
-          # normalize words
-          words_response.each do |word_response|
-            word_response['s'] = word_response['s'] / 1000.to_f
-            word_response['e'] = word_response['e'] / 1000.to_f
-            words << AudioChunk::Word.new(word_response)
-          end
+          # Caution: don't normalize words again
+          words = AudioChunk::Words.parse(words_response)
           # calculate confidence score
-          word_set = words.select {|w| w.c >= 0 && w.c <= 1.0}
+          word_set = words.reject {|w| w.confidence.to_f == 0.0}.select {|w| w.c > 0 && w.c <= 1.0}
           if word_set.size > 0
-            sum = word_set.sum {|w| w.c}
+            sum = word_set.sum {|w| w.confidence}
             chunk.best_score = sum / word_set.size.to_f
           end
           chunk.words = words
@@ -80,7 +76,7 @@ module CPW
             api_version: api_version,
             auth_key: auth_key,
             auth_secret: auth_secret,
-            locale: supported_locale
+            locale: prepare_locale(locale)
           })
 
           super options
@@ -122,7 +118,7 @@ module CPW
 
         private
 
-        def prepare_media
+        def upload_media_when_ready
           if external_id && !transcript_ready?(0)
             upload_media
           elsif !external_id && !media_id
@@ -239,32 +235,32 @@ module CPW
         end
 
         def build_words_response(srt_line)
-          json       = VoiceBase::JSON.parse(json_transcript)
-          start_time = (srt_line.start_time * 1000) - 5
-          end_time   = (srt_line.end_time * 1000) + 5
-          json.from(start_time).to(end_time).map {|w| w.to_hash}
+          all_words  = CPW::Speech::Engines::VoicebaseEngine::Words.parse(json_transcript)
+          start_time = srt_line.start_time - 0.005
+          end_time   = srt_line.end_time + 0.005
+          all_words.from(start_time).to(end_time).map {|w| w.to_hash}
         end
 
-        def supported_locale
-          case locale
+        def prepare_locale(input_locale = self.locale)
+          case input_locale
           # English
           when /en-UK/ then "en-UK"
+          when /en-GB/ then "en-UK"
           when /en/ then "en"
-          # Spanish
           when /es-MX/ then "es-MEX"
           when /es-ES/ then "es"
           when /es/ then "es"
-          # German
           when /de/ then "de"
-          # French
           when /fr/ then "fr"
-          # Italian
           when /it/ then "it"
-          # Dutch
           when /nl/ then "nl"
           else
-            raise UnsupportedLocale, "Unsupported language"
+            raise UnsupportedLocale, "Unsupported language."
           end
+        end
+
+        def supported_locales
+          ["en-US", "en-GB", "es-ES", "es-ES", "es-MX", "de-DE", "fr-FR", "it-IT", "nl-NL"]
         end
       end
     end

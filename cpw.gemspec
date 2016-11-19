@@ -50,6 +50,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "webvtt-ruby", "~> 0.3.2"
   spec.add_dependency "ttml-ruby"
   spec.add_dependency "diarize-ruby", "~> 0"
+  spec.add_dependency "mimemagic", "~> 0.3.2"
 
   spec.add_runtime_dependency('gli', '~> 2.13.0')
 end

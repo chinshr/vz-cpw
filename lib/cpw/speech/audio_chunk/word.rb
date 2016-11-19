@@ -8,6 +8,7 @@ module CPW
       attr_accessor :word
       attr_accessor :error
       attr_accessor :metadata
+      attr_accessor :duration
 
       alias_method :position, :sequence
       alias_method :position=, :sequence=
@@ -23,9 +24,16 @@ module CPW
       alias_method :w=, :word=
       alias_method :m, :metadata
       alias_method :m=, :metadata=
+      # speechmatics
+      alias_method :name, :word
+      alias_method :name=, :word=
+      alias_method :time, :start_time
+      alias_method :time=, :start_time=
+      alias_method :d, :duration
+      alias_method :d=, :duration=
 
-      def initialize(options={})
-        options.each do |k,v|
+      def initialize(attributes = {})
+        attributes.each do |k,v|
           self.send("#{k}=",v) if self.respond_to?("#{k}=")
         end
       end
@@ -62,6 +70,15 @@ module CPW
       def to_json
         {"p": sequence, "c": confidence, "s": start_time, "e": end_time, "w": word}.to_json
       end
+
+      def duration=(value)
+        @duration = value if value
+      end
+
+      def duration
+        @duration ? @duration : (end_time - start_time)
+      end
+
     end
   end
 end

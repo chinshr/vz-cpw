@@ -12,7 +12,7 @@ module CPW
       attr_accessor :id, :splitter, :chunk, :flac_chunk, :wav_chunk, :raw_chunk,
         :mp3_chunk, :waveform_chunk, :offset, :duration, :flac_rate, :copied,
         :captured_json, :best_text, :best_score, :status, :errors, :response,
-        :speaker, :bandwidth
+        :speaker, :bandwidth, :external_id, :poll_at
       attr_writer :words
 
       delegate :engine, to: :splitter, allow_nil: true
@@ -39,6 +39,8 @@ module CPW
         self.chunk         = chunk_file_name(splitter)  # file_name?
         self.speaker       = options[:speaker]
         self.bandwidth     = options[:bandwidth]
+        self.external_id   = options[:external_id]
+        self.poll_at       = nil
       end
 
       class << self

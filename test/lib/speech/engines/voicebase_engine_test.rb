@@ -1,9 +1,9 @@
 require 'test_helper.rb'
 
-class CPW::Speech::Engines::VoiceBaseEngineTest < Test::Unit::TestCase
+class CPW::Speech::Engines::VoicebaseEngineTest < Test::Unit::TestCase
 
   def test_should_initialize_with_media_url
-    engine = CPW::Speech::Engines::VoiceBaseEngine.new(
+    engine = CPW::Speech::Engines::VoicebaseEngine.new(
       "http://www.example.com/test.mp3")
     assert_equal "http://www.example.com/test.mp3", engine.media_url
     assert_equal nil, engine.media_id
@@ -11,12 +11,12 @@ class CPW::Speech::Engines::VoiceBaseEngineTest < Test::Unit::TestCase
 
   def test_should_initialize_with_media_file
     media_file = File.join(fixtures_root, "i-like-pickles.wav")
-    engine = CPW::Speech::Engines::VoiceBaseEngine.new(media_file)
+    engine = CPW::Speech::Engines::VoicebaseEngine.new(media_file)
     assert_equal media_file, engine.media_file
   end
 
   def test_should_external_id
-    engine = CPW::Speech::Engines::VoiceBaseEngine.new(
+    engine = CPW::Speech::Engines::VoicebaseEngine.new(
       "http://www.example.com/test.mp3", {external_id: "abcd1234"})
     assert_equal "abcd1234", engine.external_id
   end
@@ -46,7 +46,7 @@ class CPW::Speech::Engines::VoiceBaseEngineTest < Test::Unit::TestCase
     engine.perform(locale: "es-MX")
     assert_equal "es-MEX", engine.client.locale
 
-    assert_raise CPW::Speech::Engines::VoiceBaseEngine::UnsupportedLocale do
+    assert_raise CPW::Speech::Engines::VoicebaseEngine::UnsupportedLocale do
       engine.perform(locale: "ru")
     end
   end
@@ -166,7 +166,6 @@ class CPW::Speech::Engines::VoiceBaseEngineTest < Test::Unit::TestCase
 
     # get_transcript (json)
     stub_request(:post, "https://api.voicebase.com/services").
-      # with(:body => "version=1.1&apiKey=opqrst&password=uvwxyz&lang=en&mediaID=569e7fe9092a6&format=json&action=getTranscript",
       with(:body => "version=1.1&apiKey=opqrst&password=uvwxyz&lang=en&format=json&externalID=abcd1234&action=getTranscript",
         :headers => {'Accept'=>'application/json'}).
       to_return(:status => 200,
@@ -175,7 +174,7 @@ class CPW::Speech::Engines::VoiceBaseEngineTest < Test::Unit::TestCase
           "content-type"=>["application/json; charset=utf-8"]
         })
 
-    CPW::Speech::Engines::VoiceBaseEngine.new(media_file, {
+    CPW::Speech::Engines::VoicebaseEngine.new(media_file, {
       api_version: "1.1",
       transcription_type: "machine",
       auth_key: "opqrst",
