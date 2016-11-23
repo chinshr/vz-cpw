@@ -116,6 +116,21 @@ class CPW::Speech::AudioChunk::WordsTest < Test::Unit::TestCase
     assert_equal 45, rejected_words.size
   end
 
+  def test_empty
+    assert_equal true, CPW::Speech::AudioChunk::Words.new.empty?
+    assert_equal false, CPW::Speech::AudioChunk::Words.parse(@words_json).empty?
+  end
+
+  def test_present
+    assert_equal false, CPW::Speech::AudioChunk::Words.new.present?
+    assert_equal true, CPW::Speech::AudioChunk::Words.parse(@words_json).present?
+  end
+
+  def test_confidence
+    assert_equal 0.0, CPW::Speech::AudioChunk::Words.new.confidence
+    assert_in_delta 0.63, CPW::Speech::AudioChunk::Words.parse(@words_array_of_hashes).confidence, 0.01
+  end
+
   # scopes
 
   def test_from

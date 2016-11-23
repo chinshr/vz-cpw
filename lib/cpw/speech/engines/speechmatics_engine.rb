@@ -76,7 +76,7 @@ module CPW
           result['errors'] = (chunk.errors << ex.message.to_s.gsub(/\n|\r/, ""))
         ensure
           chunk.clean
-          chunk.captured_json = result.to_json
+          chunk.normalized_response = result
           return result
         end
 
@@ -140,17 +140,21 @@ module CPW
         end
 
         def parse_response_v1_0(chunk, data, result = {})
-          result['id']       = chunk.id
+          chunk.raw_response     = data
+          result['position']     = chunk.position
+          result['id']           = chunk.id
           if data.key?('words')
             parse_words_v1_0(chunk, data['words'], result)
-            result['text']   = chunk.best_text = chunk.words.to_s
-            result['words']  = chunk.words.as_json
-            result['status'] = chunk.status = AudioChunk::STATUS_TRANSCRIBED
-            self.segments    += 1
+            chunk.best_text      = chunk.words.to_s
+            chunk.best_score     = chunk.words.confidence
+            result['hypotheses'] = [{'utterance' => chunk.best_text, 'confidence' => chunk.best_score}]
+            result['words']      = chunk.words.as_json
+            result['status']     = chunk.status = AudioChunk::STATUS_TRANSCRIBED
+            self.segments        += 1
 
-            logger.info "text: #{result['text']}" if self.verbose
+            logger.info "result #{result.inspect}" if self.verbose
           else
-            chunk.status = AudioChunk::STATUS_TRANSCRIPTION_ERROR
+            chunk.status         = AudioChunk::STATUS_TRANSCRIPTION_ERROR
           end
           result
         end

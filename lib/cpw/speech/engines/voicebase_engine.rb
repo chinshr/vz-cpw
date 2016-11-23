@@ -3,9 +3,9 @@ module CPW
     module Engines
       class VoicebaseEngine < Base
         attr_accessor :api_version, :auth_key, :auth_secret,
-          :client, :response, :transcription_type,
-          :media_url, :media_id, :srt_transcript, :json_transcript,
-          :external_id
+          :client, :transcription_type, :media_url, :media_id,
+          :srt_transcript, :json_transcript, :external_id,
+          :voicebase_response
 
         DEFAULT_UPLOAD_MEDIA_RETRIES     = 5
         DEFAULT_FETCH_TRANSCRIPT_RETRIES = 360
@@ -33,7 +33,7 @@ module CPW
             srt_file = SRT::File.parse(srt_transcript)
             srt_file.lines.each do |line|
               result << AudioChunk.new(splitter, decode_start_time(line),
-                decode_duration(line), {id: line.sequence, response: build_response(line)})
+                decode_duration(line), {position: line.sequence, raw_response: build_raw_response(line)})
             end
           end
 
@@ -55,24 +55,11 @@ module CPW
           delete_file
         end
 
-        def parse_words(chunk, words_response)
-          words = []
-          # Caution: don't normalize words again
-          words = AudioChunk::Words.parse(words_response)
-          # calculate confidence score
-          word_set = words.reject {|w| w.confidence.to_f == 0.0}.select {|w| w.c > 0 && w.c <= 1.0}
-          if word_set.size > 0
-            sum = word_set.sum {|w| w.confidence}
-            chunk.best_score = sum / word_set.size.to_f
-          end
-          chunk.words = words
-        end
-
         protected
 
         def reset!(options = {})
           self.locale = options[:locale] || "en-US"
-          self.client = VoiceBase::Client.new({
+          self.client = ::VoiceBase::Client.new({
             api_version: api_version,
             auth_key: auth_key,
             auth_secret: auth_secret,
@@ -87,33 +74,51 @@ module CPW
 
         def convert_chunk(chunk, options = {})
           result = {'status' => chunk.status}
-          if chunk.response  # from splitter
-            parse(chunk, chunk.response, result)
+          if chunk.raw_response.present?  # from splitter
+            parse(chunk, chunk.raw_response, result)
             logger.info "#{segments} processed: #{result.inspect}" if self.verbose
           else
             result['status'] = chunk.status = AudioSplitter::AudioChunk::STATUS_TRANSCRIPTION_ERROR
           end
         ensure
+          chunk.normalized_response = result
           return result
         end
 
         def parse(chunk, raw_data, result = {})
-          data                      = raw_data  # JSON.parse(service.body_str)
-          result['id']              = chunk.id
+          data                 = raw_data
+          result['position']   = chunk.position
+          result['id']         = chunk.id
 
           if data.key?('text')
-            result['text']          = data['text']
-            result['status']        = AudioChunk::STATUS_TRANSCRIBED
-            chunk.status            = AudioChunk::STATUS_TRANSCRIBED
-            chunk.best_text         = result['text']
-            self.segments           += 1
-            parse_words(chunk, data['words']) if data['words']
+            parse_words(chunk, data['words'], result)
 
-            logger.info "text: #{result['text']}" if self.verbose
+            result['hypotheses'] = [{'utterance' => data['text'], 'confidence' => chunk.best_score}]
+            result['status']     = AudioChunk::STATUS_TRANSCRIBED
+            chunk.status         = AudioChunk::STATUS_TRANSCRIBED
+            chunk.best_text      = data['text']
+            self.segments        += 1
+
+            logger.info "result #{result.inspect}" if self.verbose
           else
-            chunk.status = AudioChunk::STATUS_TRANSCRIPTION_ERROR
+            chunk.status         = AudioChunk::STATUS_TRANSCRIPTION_ERROR
           end
           result
+        end
+
+        def parse_words(chunk, words_response, result = {})
+          words = []
+          # Caution: don't normalize words again
+          words = AudioChunk::Words.parse(words_response)
+          # calculate confidence score
+          word_set = words.reject {|w| w.confidence.to_f == 0.0}.select {|w| w.c > 0 && w.c <= 1.0}
+          if word_set.size > 0
+            sum = word_set.sum {|w| w.confidence}
+            chunk.best_score = sum / word_set.size.to_f
+          end
+          chunk.words = words
+          result['words'] = words.as_json
+          words
         end
 
         private
@@ -127,7 +132,7 @@ module CPW
         end
 
         def upload_media(retries = DEFAULT_UPLOAD_MEDIA_RETRIES)
-          self.response = client.upload_media({
+          self.voicebase_response = client.upload_media({
             transcription_type: transcription_type
           }.tap {|o|
             if media_url
@@ -138,31 +143,31 @@ module CPW
             o[:external_id] = external_id if external_id
           })
 
-          if response.success?
-            self.media_id = response.media_id
+          if voicebase_response.success?
+            self.media_id = voicebase_response.media_id
           else
             if retries > 0
               sleep RETRY_DELAY_IN_SECONDS
               upload_media(retries - 1)
             else
-              raise TimeoutError, "too many upload_media retries, response #{response.inspect}"
+              raise TimeoutError, "too many upload_media retries, response #{voicebase_response.inspect}"
             end
           end
         end
 
         def fetch_transcripts
-          self.response = get_transcript(format: "srt")
-          if response.success?
-            self.srt_transcript = response.transcript
+          self.voicebase_response = get_transcript(format: "srt")
+          if voicebase_response.success?
+            self.srt_transcript = voicebase_response.transcript
             # now, get the JSON transcript
-            self.response = get_transcript(format: "json")
-            if response.success?
-              self.json_transcript = JSON.parse(response.transcript)
+            self.voicebase_response = get_transcript(format: "json")
+            if voicebase_response.success?
+              self.json_transcript = JSON.parse(voicebase_response.transcript)
             else
-              raise InvalidResponseError, "get_transcript({format: 'json'}) response #{response.inspect}"
+              raise InvalidResponseError, "get_transcript({format: 'json'}) response #{voicebase_response.inspect}"
             end
           else
-            raise InvalidResponseError, "get_transcript({format: 'srt'}) response #{response.inspect}"
+            raise InvalidResponseError, "get_transcript({format: 'srt'}) response #{voicebase_response.inspect}"
           end
         end
 
@@ -170,30 +175,30 @@ module CPW
           if transcript_ready?
             fetch_transcripts
           else
-            raise TimeoutError, "too many retries, response #{response.inspect}"
+            raise TimeoutError, "too many retries, response #{voicebase_response.inspect}"
           end
         end
 
         def get_transcript(options = {})
-          self.response = client.get_transcript({
+          self.voicebase_response = client.get_transcript({
             format: "json"
           }.tap {|o| external_id ? o[:external_id] = external_id : o[:media_id] = media_id}.merge(options))
         end
 
         def delete_file
           if client && external_id
-            self.response = client.delete_file({
+            self.voicebase_response = client.delete_file({
               external_id: external_id
             })
           elsif client && media_id
-            self.response = client.delete_file({
+            self.voicebase_response = client.delete_file({
               media_id: media_id
             })
           end
         end
 
         def transcript_ready?(retries = DEFAULT_FETCH_TRANSCRIPT_RETRIES)
-          self.response = client.get_file_status({}.tap {|o| external_id ? o[:external_id] = external_id : o[:media_id] = media_id})
+          self.voicebase_response = client.get_file_status({}.tap {|o| external_id ? o[:external_id] = external_id : o[:media_id] = media_id})
           if response_success_and_machine_ready?
             true
           else
@@ -207,7 +212,7 @@ module CPW
         end
 
         def response_success_and_machine_ready?
-          !!response && response.success? && response.file_status == "MACHINECOMPLETE"
+          !!voicebase_response && voicebase_response.success? && voicebase_response.file_status == "MACHINECOMPLETE"
         end
 
         def decode_start_time(srt_line)
@@ -222,19 +227,19 @@ module CPW
           decode_end_time(srt_line) - decode_start_time(srt_line)
         end
 
-        def build_response(srt_line)
+        def build_raw_response(srt_line)
           response = {}
-          response['text']       = srt_line.text.join(" ")
-          response['start_time'] = srt_line.start_time
-          response['end_time']   = srt_line.end_time
-          response['sequence']   = srt_line.sequence
-          response['error']      = srt_line.error if srt_line.error
+          response['text']                = srt_line.text.join(" ")
+          response['start_time']          = srt_line.start_time
+          response['end_time']            = srt_line.end_time
+          response['sequence']            = srt_line.sequence
+          response['error']               = srt_line.error if srt_line.error
           response['display_coordinates'] = srt_line.display_coordinates if srt_line.try(:display_coordinates)
-          response['words']      = build_words_response(srt_line)
+          response['words']               = build_raw_words_response(srt_line)
           response
         end
 
-        def build_words_response(srt_line)
+        def build_raw_words_response(srt_line)
           all_words  = CPW::Speech::Engines::VoicebaseEngine::Words.parse(json_transcript)
           start_time = srt_line.start_time - 0.005
           end_time   = srt_line.end_time + 0.005

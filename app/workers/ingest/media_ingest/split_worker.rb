@@ -153,13 +153,14 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
       end
     end
 
+    logger.info "****** chunk.position: #{chunk.position}"
     logger.info "****** chunk.id: #{chunk.id}"
     logger.info "****** chunk.status: #{chunk.status}"
     logger.info "****** chunk.best_text: #{chunk.best_text}"
     logger.info "****** chunk.best_score: #{chunk.best_score}"
     logger.info "****** chunk.offset: #{chunk.offset}"
     logger.info "****** chunk.duration: #{chunk.duration}"
-    logger.info "****** chunk.response: #{chunk.response}"
+    logger.info "****** chunk.as_json: #{chunk.as_json.inspect}"
 
     create_or_update_ingest_with chunk
     chunk.clean if CPW::production?
@@ -214,12 +215,13 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
     chunk_attributes = {
       ingest_id: ingest.id,
       type: chunk_type_for(chunk),
-      position: chunk.id,
+      position: chunk.position,
       offset: chunk.offset,
       text: chunk.best_text,
+      score: chunk.best_score,
       # processing_errors: chunk.response['errors'],
       processing_status: chunk.status,
-      response: chunk.response,
+      response: chunk.as_json,
       track_attributes: track_attributes
     }.tap do |h|
       h[:score] = chunk.best_score if chunk.best_score
@@ -250,6 +252,8 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
     when /PocketsphinxEngine/ then "Chunk::PocketsphinxChunk"
     when /SubtitleEngine/ then "Chunk::SubtitleChunk"
     when /VoicebaseEngine/ then "Chunk::VoiceBaseChunk"
+    when /SpeechmaticsEngine/ then "Chunk::SpeechmaticsChunk"
+    when /IbmWatsonSpeechEngine/ then "Chunk::IbmWatsonSpeechChunk"
     else
       raise ArgumentError, "unkown chunk type for #{chunk.inspect}"
     end
