@@ -5,7 +5,7 @@ module CPW
       # https://cloud.google.com/speech/
       # https://cloud.google.com/speech/docs/getting-started
       class GoogleCloudSpeechEngine < Base
-        attr_accessor :service, :key, :version, :method, :response
+        attr_accessor :service, :key, :version, :method
 
         def initialize(media_file_or_url, options = {})
           super media_file_or_url, options
@@ -20,7 +20,7 @@ module CPW
           super options
           url = case version
           when "v1beta1" then
-            "https://speech.googleapis.com/v1beta1/speech:#{self.method}"
+            "https://speech.googleapis.com/#{version}/speech:#{self.method}"
           else
             raise "Unsupported API version."
           end
@@ -76,18 +76,15 @@ module CPW
               retry_count += 1
               sleep 0.5 # wait longer on error?, Google?
             else
-              build_response(service.body_str)
+              response = JSON.parse(service.body_str) rescue {}
               case version
               when "v1beta1"
-                parse_response_v1beta1(chunk, self.response, result)
+                parse_response_v1beta1(chunk, response, result)
               else
                 raise "Unsupported API version."
               end
-
               retrying = false
             end
-
-            sleep 0.1 # not too fast there tiger
           end
 
           logger.info "#{segments} processed: #{result.inspect} from: #{service.body_str.inspect}" if self.verbose
@@ -101,11 +98,6 @@ module CPW
         end
 
         private
-
-        def build_response(raw_data)
-          self.response = JSON.parse(raw_data) rescue {}
-          response
-        end
 
         # V1beta1 response
         #

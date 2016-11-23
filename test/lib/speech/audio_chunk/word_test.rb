@@ -1,6 +1,6 @@
 require 'test_helper.rb'
 
-class CPW::Speech::AudioChunkWordTest < Test::Unit::TestCase
+class CPW::Speech::AudioChunk::WordTest < Test::Unit::TestCase
 
   def setup
     @word = CPW::Speech::AudioChunk::Word.new({"p" => 1, "s" => 1610, "e" => 1780, "c" => 0.7, "w" => "This", "m" => "article"})

@@ -13,4 +13,3 @@ gem 'voicebase-client-ruby', git: "https://6782edef7eb6368c37bf501b8c2232e70515c
 gem 'foreman'
 
 gem 'ttml-ruby', github: "chinshr/ttml-ruby"
-# gem 'ttml-ruby', path: "/Users/juergen/work/ruby/ttml-ruby"

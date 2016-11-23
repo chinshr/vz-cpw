@@ -15,6 +15,7 @@ require "cpw/speech/audio_inspector"
 require "cpw/speech/audio_splitter"
 require "cpw/speech/audio_chunk"
 require "cpw/speech/audio_chunk/word"
+require "cpw/speech/audio_chunk/words"
 require "cpw/speech/audio_to_text"
 require "cpw/speech/engines/base"
 

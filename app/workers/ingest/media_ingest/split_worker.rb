@@ -49,7 +49,7 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
   def process_with_voicebase_engine
     download_single_channel_wav_audio_file
 
-    self.engine = CPW::Speech::Engines::VoiceBaseEngine.new(single_channel_wav_audio_file_fullpath, {
+    self.engine = CPW::Speech::Engines::VoicebaseEngine.new(single_channel_wav_audio_file_fullpath, {
       external_id: ingest.uid,
       transcription_type: "machine-best",
       logger: logger
@@ -249,7 +249,7 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
     when /NuanceDragonEngine/ then "Chunk::NuanceDragonChunk"
     when /PocketsphinxEngine/ then "Chunk::PocketsphinxChunk"
     when /SubtitleEngine/ then "Chunk::SubtitleChunk"
-    when /VoiceBaseEngine/ then "Chunk::VoiceBaseChunk"
+    when /VoicebaseEngine/ then "Chunk::VoiceBaseChunk"
     else
       raise ArgumentError, "unkown chunk type for #{chunk.inspect}"
     end

@@ -5,6 +5,7 @@
 .yardoc
 .env
 .env.*
+.byebug_history
 Gemfile.lock
 InstalledFiles
 _yardoc
