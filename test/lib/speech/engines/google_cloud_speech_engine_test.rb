@@ -51,11 +51,13 @@ class CPW::Speech::Engines::GoogleCloudSpeechEngineTest < Test::Unit::TestCase
   def test_should_v1beta1_convert_audio_to_json
     audio = CPW::Speech::AudioToText.new("#{fixtures_root}/i-like-pickles.wav",
       :engine => :google_cloud_speech_engine, :verbose => false, :key => "test_key", :version => "v1beta1")
-    json = audio.to_json
+    json = audio.as_json
     assert_equal true, json.has_key?("chunks")
     assert_equal 1, json["chunks"].size
     assert_equal 3, json["chunks"].first["status"]
     assert_equal 3, json["chunks"].first["hypotheses"].size
+    assert_equal 1, json["chunks"].first["position"]
+    assert_equal 1, json["chunks"].first["id"]
   end
 
   def test_should_v1beta1_convert_audio_to_json_with_block

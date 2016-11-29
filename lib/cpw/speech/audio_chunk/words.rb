@@ -105,6 +105,14 @@ module CPW
       end
       alias_method :length, :size
 
+      def empty?
+        @words.empty?
+      end
+
+      def present?
+        @words.present?
+      end
+
       def to_s
         result = ""
         each {|w| result += (w.m == "punc" ? w.word : " #{w.word}") }
@@ -116,6 +124,13 @@ module CPW
         map {|w| w.to_hash}.to_json
       end
 
+      def confidence
+        if (count = @words.reject {|w| w.confidence.to_f.zero?}.size.to_f) && !count.zero?
+          @words.reject {|w| w.confidence.to_f.zero?}.sum(&:confidence) / count
+        else
+          0.0
+        end
+      end
     end # AudioChunk::Words
   end
 end

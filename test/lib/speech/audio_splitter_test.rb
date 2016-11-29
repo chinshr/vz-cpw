@@ -144,7 +144,7 @@ class CPW::Speech::AudioSplitterTest < Test::Unit::TestCase
 
   # diarize
 
-  def test_should_diarize_locally
+  def test_should_diarize_local
     splitter = CPW::Speech::AudioSplitter.new(@long_wav_file, {:split_method => :diarize})
     assert_equal :diarize, splitter.split_method
     assert_equal '00:00:54.10', splitter.duration.to_s
@@ -154,6 +154,7 @@ class CPW::Speech::AudioSplitterTest < Test::Unit::TestCase
     assert_equal 5, chunks.size
     assert_equal true, chunks.all? {|ch| ch.status == CPW::Speech::AudioChunk::STATUS_UNPROCESSED}
 
+    assert_equal 1, chunks[0].position
     assert_equal 1, chunks[0].id
     assert_in_delta 0.0, chunks[0].offset, 0.01
     assert_in_delta 2.5, chunks[0].duration, 0.01
@@ -161,6 +162,7 @@ class CPW::Speech::AudioSplitterTest < Test::Unit::TestCase
     assert chunks[0].speaker
     assert_equal "M", chunks[0].speaker.gender
 
+    assert_equal 2, chunks[1].position
     assert_equal 2, chunks[1].id
     assert_in_delta 2.5, chunks[1].offset, 0.01
     assert_in_delta 17.23, chunks[1].duration, 0.01
@@ -168,6 +170,7 @@ class CPW::Speech::AudioSplitterTest < Test::Unit::TestCase
     assert chunks[1].speaker
     assert_equal "M", chunks[1].speaker.gender
 
+    assert_equal 3, chunks[2].position
     assert_equal 3, chunks[2].id
     assert_in_delta 19.75, chunks[2].offset, 0.01
     assert_in_delta 13.63, chunks[2].duration, 0.01
@@ -175,6 +178,7 @@ class CPW::Speech::AudioSplitterTest < Test::Unit::TestCase
     assert chunks[2].speaker
     assert_equal "M", chunks[2].speaker.gender
 
+    assert_equal 4, chunks[3].position
     assert_equal 4, chunks[3].id
     assert_in_delta 33.63, chunks[3].offset, 0.01
     assert_in_delta 14.59, chunks[3].duration, 0.01
@@ -182,6 +186,7 @@ class CPW::Speech::AudioSplitterTest < Test::Unit::TestCase
     assert chunks[3].speaker
     assert_equal "M", chunks[3].speaker.gender
 
+    assert_equal 5, chunks[4].position
     assert_equal 5, chunks[4].id
     assert_in_delta 48.22, chunks[4].offset, 0.01
     assert_in_delta 5.86, chunks[4].duration, 0.01

@@ -61,6 +61,12 @@ class SplitWorkerTest < Test::Unit::TestCase # Minitest::Test
 
     chunk.stubs(:engine).returns(CPW::Speech::Engines::VoicebaseEngine.new("a"))
     assert_equal "Chunk::VoiceBaseChunk", worker.send(:chunk_type_for, chunk)
+
+    chunk.stubs(:engine).returns(CPW::Speech::Engines::SpeechmaticsEngine.new("a"))
+    assert_equal "Chunk::SpeechmaticsChunk", worker.send(:chunk_type_for, chunk)
+
+    chunk.stubs(:engine).returns(CPW::Speech::Engines::IbmWatsonSpeechEngine.new("a"))
+    assert_equal "Chunk::IbmWatsonSpeechChunk", worker.send(:chunk_type_for, chunk)
   end
 
   protected

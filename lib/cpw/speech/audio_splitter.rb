@@ -36,29 +36,28 @@ module CPW
       protected
 
       def split_with_basic
-        result      = []
-        chunk_id    = 1
+        result, position = [], 1
         full_chunks = (self.duration.to_f / self.chunk_duration).to_i
         last_chunk  = ((self.duration.to_f % self.chunk_duration) * 100).round / 100.0
         logger.info "generate: #{full_chunks} chunks of #{chunk_duration} seconds, last: #{last_chunk} seconds" if self.verbose
 
         (full_chunks - 1).times do |index|
           if index > 0
-            result << AudioChunk.new(self, index * self.chunk_duration, self.chunk_duration, {id: chunk_id})
+            result << AudioChunk.new(self, index * self.chunk_duration, self.chunk_duration, {position: position})
           else
             off = (index * self.chunk_duration) - (self.chunk_duration / 2)
             off = 0 if off < 0
-            result << AudioChunk.new(self, off, self.chunk_duration, {id: chunk_id})
+            result << AudioChunk.new(self, off, self.chunk_duration, {position: position})
           end
-          chunk_id += 1
+          position += 1
         end
 
         if result.empty?
-          result << AudioChunk.copy(self, chunk_id)
+          result << AudioChunk.copy(self, position)
         else
-          result << AudioChunk.new(self, result.last.offset.to_i + result.last.duration.to_i, self.chunk_duration + last_chunk, {id: chunk_id})
+          result << AudioChunk.new(self, result.last.offset.to_i + result.last.duration.to_i, self.chunk_duration + last_chunk, {position: position})
         end
-        logger.info "Chunk (id=#{chunk_id}) count: #{result.size}" if self.verbose
+        logger.info "Chunk (position=#{position}) count: #{result.size}" if self.verbose
         result
       end
 
@@ -80,7 +79,7 @@ module CPW
         diarize_audio.analyze!
         diarize_audio.segments.sort_by(&:start).each_with_index do |segment, index|
           chunks << AudioChunk.new(self, segment.start, segment.duration,
-            {id: index + 1, bandwidth: segment.bandwidth, speaker: segment.speaker})
+            {position: index + 1, bandwidth: segment.bandwidth, speaker: segment.speaker})
         end
         chunks
       end

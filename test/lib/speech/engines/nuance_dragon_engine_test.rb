@@ -16,10 +16,10 @@ class CPW::Speech::Engines::NuanceDragonEngineTest < Test::Unit::TestCase
     assert_equal "I like pickles", audio.to_text
   end
 
-  def test_should_convert_audio_to_json
+  def test_should_convert_audio_as_json
     audio = CPW::Speech::AudioToText.new("#{fixtures_root}/i-like-pickles.wav",
       :engine => :nuance_dragon_engine, :verbose => false, :base_url => @base_url, :app_id => @app_id, :app_key => @app_key)
-    json = audio.to_json
+    json = audio.as_json
     assert_equal true, json.has_key?("chunks")
     assert_equal 1, json["chunks"].size
     assert_equal 3, json["chunks"].first["status"]

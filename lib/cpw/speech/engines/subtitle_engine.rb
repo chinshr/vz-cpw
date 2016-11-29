@@ -18,43 +18,41 @@ module CPW
           subtitle_file.lines.each do |line|
             if line.sequence && line.sequence > 0
               chunks << AudioChunk.new(splitter, decode_start_time(line),
-                decode_duration(line), {id: line.sequence, response: build_response(line)})
+                decode_duration(line), {position: line.sequence, raw_response: build_raw_response(line)})
             end
           end
           chunks
-        end
-
-        def to_json(options = {})
-          perform(options)
-          return {"chunks" => chunks.map {|ch| ch.response }}
         end
 
         protected
 
         def convert_chunk(chunk, options = {})
           result = {'status' => chunk.status}
-          if chunk.response  # from splitter
-            parse(chunk, chunk.response, result)
+          if chunk.raw_response.present?  # from splitter
+            parse(chunk, chunk.raw_response, result)
             logger.info "#{segments} processed: #{result.inspect}" if self.verbose
           else
             result['status'] = chunk.status = AudioSplitter::AudioChunk::STATUS_TRANSCRIPTION_ERROR
           end
         ensure
+          chunk.normalized_response = result
           return result
         end
 
         def parse(chunk, raw_data, result = {})
-          data                      = raw_data  # JSON.parse(service.body_str)
+          data = chunk.raw_response = raw_data
+          result['position']        = chunk.position
           result['id']              = chunk.id
 
           if data.key?('text')
-            result['text']          = data['text']
+            result['hypotheses']    = [{'utterance' => data['text'], 'confidence' => default_chunk_score}]
             result['status']        = AudioChunk::STATUS_TRANSCRIBED
             chunk.status            = AudioChunk::STATUS_TRANSCRIBED
-            chunk.best_text         = result['text']
+            chunk.best_text         = data['text']
             chunk.best_score        = default_chunk_score
             self.segments           += 1
-            logger.info "text: #{result['text']}" if self.verbose
+
+            logger.info "result: #{result.inspect}" if self.verbose
           else
             chunk.status = AudioChunk::STATUS_TRANSCRIPTION_ERROR
           end
@@ -79,8 +77,8 @@ module CPW
           end
         end
 
-        def build_response(subtitle_line)
-          self.response = {}
+        def build_raw_response(subtitle_line)
+          response = {}
           response['text']       = subtitle_line.text.join(" ")
           response['start_time'] = subtitle_line.start_time
           response['end_time']   = subtitle_line.end_time

@@ -9,50 +9,54 @@ module CPW
       STATUS_ENCODING_ERROR      = -2
       STATUS_TRANSCRIPTION_ERROR = -3
 
-      attr_accessor :id, :splitter, :chunk, :flac_chunk, :wav_chunk, :raw_chunk,
+      attr_accessor :position, :id, :splitter, :chunk, :flac_chunk, :wav_chunk, :raw_chunk,
         :mp3_chunk, :waveform_chunk, :offset, :duration, :flac_rate, :copied,
-        :captured_json, :best_text, :best_score, :status, :errors, :response,
-        :speaker, :bandwidth, :external_id, :poll_at
+        :best_text, :best_score, :status, :errors, :speaker, :bandwidth,
+        :external_id, :poll_at, :raw_response, :normalized_response
       attr_writer :words
 
       delegate :engine, to: :splitter, allow_nil: true
       delegate :base_file_type, to: :splitter, allow_nil: true
       delegate :source_file_type, to: :splitter, allow_nil: true
 
-      alias_method :position, :id
       alias_method :start_time, :offset
       alias_method :to_s, :best_text
       alias_method :confidence, :best_score
 
       def initialize(splitter, offset, duration, options = {})
-        self.offset        = offset
-        self.splitter      = splitter
-        self.duration      = duration
-        self.id            = options[:id]
-        self.copied        = false
-        self.captured_json = {}
-        self.best_text     = nil
-        self.best_score    = nil
-        self.status        = STATUS_UNPROCESSED
-        self.errors        = []
-        self.response      = options[:response]
-        self.chunk         = chunk_file_name(splitter)  # file_name?
-        self.speaker       = options[:speaker]
-        self.bandwidth     = options[:bandwidth]
-        self.external_id   = options[:external_id]
-        self.poll_at       = nil
+        self.offset              = offset
+        self.splitter            = splitter
+        self.duration            = duration
+        self.position            = options[:position]
+        self.id                  = options[:id]
+        self.external_id         = options[:external_id]
+        self.raw_response        = options[:raw_response] || {}
+        self.normalized_response = options[:normalized_response] || {}
+        self.copied              = false
+        self.best_text           = nil
+        self.best_score          = nil
+        self.status              = STATUS_UNPROCESSED
+        self.errors              = []
+        self.chunk               = chunk_file_name(splitter)  # file_name?
+        self.speaker             = options[:speaker]
+        self.bandwidth           = options[:bandwidth]
+        self.poll_at             = nil
       end
 
       class << self
 
-        def copy(splitter, id = nil)
-          chunk        = AudioChunk.new(splitter, 0, splitter.duration.to_f, {id: id})
+        def copy(splitter, position = nil)
+          chunk        = AudioChunk.new(splitter, 0, splitter.duration.to_f, {position: position})
           chunk.status = STATUS_BUILT if chunk.status < STATUS_BUILT
           chunk.copied = true
           system("cp #{splitter.original_file} #{chunk.chunk}")
           chunk
         end
 
+      end # class
+
+      def id
+        @id || position
       end
 
       def end_time
@@ -61,6 +65,30 @@ module CPW
 
       def words
         @words || []
+      end
+
+      def as_json(options = {})
+        normalized_response
+      end
+
+      def to_json(options = {})
+        as_json(options).to_json
+      end
+
+      def unprocessed?
+        status == STATUS_UNPROCESSED
+      end
+
+      def built?
+        status >= STATUS_BUILT
+      end
+
+      def encoded?
+        status >= STATUS_ENCODED
+      end
+
+      def transcribed?
+        status >= STATUS_TRANSCRIBED
       end
 
       # Build source file into source file type chunk.

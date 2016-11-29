@@ -4,7 +4,7 @@ module CPW
       class Base
         USER_AGENT = "Mozilla/5.0"
 
-        attr_accessor :media_file, :media_url, :rate, :captured_json,
+        attr_accessor :media_file, :media_url, :rate,
           :score, :verbose, :segments, :chunks, :chunk_duration,
           :max_results, :max_retries, :locale, :logger, :base_file_type,
           :source_file_type, :split_method, :split_options, :audio_splitter
@@ -16,7 +16,6 @@ module CPW
           else
             self.media_file     = media_file_or_url
           end
-          self.captured_json    = {}
           self.score            = 0.0
           self.segments         = 0  # chunk_count
           self.chunks           = []
@@ -24,7 +23,7 @@ module CPW
           self.verbose          = !!options[:verbose]
           self.max_results      = 2
           self.max_retries      = 3
-          self.locale           = "en-US"
+          self.locale           = options[:locale] ||"en-US"
           self.logger           = options[:logger] || CPW::logger
           self.base_file_type   = :flac
           self.source_file_type = nil
@@ -32,30 +31,12 @@ module CPW
           self.split_options    = options[:split_options] || {}
         end
 
-        def to_text(options = {})
-          to_json(options)
-          chunks.map { |ch| ch.best_text }.compact.join(" ")
-        end
-
-        def to_json(options = {})
-          reset! options
-
-          chunks.each do |chunk|
-            build(chunk)
-            convert_chunk(chunk, audio_chunk_options(options))
-            yield chunk if block_given?
-          end
-
-          self.score /= self.segments
-          return {"chunks" => chunks.map {|ch| JSON.parse(ch.captured_json)}}
-        end
-
         def perform(options = {})
           reset! options
 
           chunks.each do |chunk|
-            build(chunk)
-            convert_chunk(chunk, audio_chunk_options(options))
+            encode(chunk) unless chunk.encoded?
+            convert_chunk(chunk, audio_chunk_options(options)) unless chunk.transcribed?
             yield chunk if block_given?
           end
 
@@ -63,13 +44,25 @@ module CPW
           chunks
         end
 
-        def clean
-          chunks.each {|chunk| chunk.clean} if chunks
+        def to_text(options = {})
+          perform(options)
+          result = chunks.map {|chunk| chunk.best_text}.compact.join(" ")
+        end
+        alias_method :to_s, :to_text
+
+        def as_json(options = {})
+          result = {}
+          perform(options)
+          result['chunks'] = chunks.map {|chunk| chunk.normalized_response}
+          result
         end
 
-        def parse_words(chunk, words_response)
-          # Will parse words from response and
-          # add to chunk.words
+        def to_json(options = {})
+          as_json(options).to_json
+        end
+
+        def clean
+          chunks.each {|chunk| chunk.clean} if chunks
         end
 
         protected
@@ -90,8 +83,8 @@ module CPW
           raise "Implement #convert_chunk in engine."
         end
 
-        def build(chunk)
-          # Required if chunked audio files are necessary to be "built",
+        def encode(chunk)
+          # Required if chunked audio files are necessary to be "transcoded",
           # cut and encoded before they are passed on to the decoder.
           #
           # E.g. chunk.build.to_flac

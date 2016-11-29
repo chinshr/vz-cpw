@@ -16,25 +16,46 @@ class CPW::Speech::Engines::SpeechmaticsEngineTest < Test::Unit::TestCase
     assert_equal "xyz", engine.auth_token
   end
 
-  def xtest_should_v1_0_convert_audio_to_text
-    audio = CPW::Speech::AudioToText.new("#{fixtures_root}/i-like-pickles.wav",
+  def test_should_v1_0_audio_as_json
+    audio = CPW::Speech::AudioToText.new("#{fixtures_root}/i-like-pickles.wav", {
       :engine => :speechmatics_engine, :verbose => false,
-      :user_id => "test-user-1", :auth_token => "test_token", :version => "v1.0")
-    assert_equal "I like pickles", audio.to_text
-  end
-
-  def test_should_v1_0_audio_to_json
-    audio = CPW::Speech::AudioToText.new("#{fixtures_root}/i-like-pickles.wav",
-      :engine => :speechmatics_engine, :verbose => false,
-      :user_id => "test-user-1", :auth_token => "test_token", :version => "v1.0")
-    json = audio.to_json
+      :user_id => "test-user-1", :auth_token => "test_token",
+      :version => "v1.0"
+    })
+    json = audio.as_json
     assert_equal true, json.has_key?("chunks")
     assert_equal 1, json["chunks"].size
-    assert_equal 3, json["chunks"].first["status"]
-    assert_equal true, json["chunks"].first.has_key?("text")
-    assert_equal "I like pickles", json["chunks"].first["text"]
-    assert_equal true, json["chunks"].first.has_key?("words")
-    assert_equal audio.engine.chunks[0].words.as_json, json["chunks"].first["words"]
+    assert_equal 3, json["chunks"][0]["status"]
+    assert_equal 1, json["chunks"][0]["position"]
+    assert_equal 1, json["chunks"][0]["id"]
+    assert_equal true, json["chunks"][0].has_key?("hypotheses")
+
+    assert_equal "I like pickles", json["chunks"][0]["hypotheses"][0]["utterance"]
+    assert_in_delta 0.97, json["chunks"][0]["hypotheses"][0]["confidence"], 0.01
+    assert_equal true, json["chunks"][0].has_key?("words")
+    assert_equal audio.engine.chunks[0].words.as_json, json["chunks"][0]["words"]
+  end
+
+  def test_should_perform_v1_0
+    engine = CPW::Speech::Engines::SpeechmaticsEngine.new("#{fixtures_root}/i-like-pickles.wav", {
+      :user_id => "test-user-1", :auth_token => "test_token",
+    })
+
+    engine.perform do |chunk|
+      assert_equal CPW::Speech::AudioChunk::STATUS_TRANSCRIBED, chunk.status
+      assert_equal "I like pickles", chunk.to_s
+      assert_in_delta 0.97, chunk.confidence, 0.01
+      json = chunk.as_json
+
+      assert_equal CPW::Speech::AudioChunk::STATUS_TRANSCRIBED, json['status']
+      assert_equal 1, json['position']
+      assert_equal 1, json['id']
+      assert_equal true, json.has_key?("hypotheses")
+      assert_equal "I like pickles", json["hypotheses"][0]["utterance"]
+      assert_in_delta 0.97, json["hypotheses"][0]["confidence"], 0.01
+      assert_equal true, json.has_key?("words")
+      assert_equal chunk.words.as_json, CPW::Speech::Engines::SpeechmaticsEngine::Words.parse(json['words']).as_json
+    end
   end
 
   protected

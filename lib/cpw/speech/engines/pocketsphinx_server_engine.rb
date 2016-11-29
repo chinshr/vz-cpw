@@ -19,8 +19,7 @@ module CPW
           self.service = Curl::Easy.new(url)
         end
 
-        def build(chunk)
-          # chunk.build.to_raw
+        def encode(chunk)
           chunk.build.to_flac
         end
 
@@ -62,7 +61,7 @@ module CPW
           result['errors'] = (chunk.errors << ex.message.to_s.gsub(/\n|\r/, ""))
         ensure
           chunk.clean
-          chunk.captured_json = result.to_json
+          chunk.normalized_response = result
           return result
         end
 
@@ -82,6 +81,7 @@ module CPW
         #
         def parse_v1(chunk, raw_data, result = {})
           data                      = JSON.parse(service.body_str)
+          result['position']        = chunk.position
           result['id']              = chunk.id
           result['external_id']     = data['id']
           result['external_status'] = data['status']

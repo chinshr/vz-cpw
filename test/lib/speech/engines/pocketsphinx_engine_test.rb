@@ -20,31 +20,30 @@ class CPW::Speech::Engines::PocketsphinxEngineTest < Test::Unit::TestCase
       {:configuration => @configuration, :source_file_type => :raw})
 
     engine.perform(locale: "en-US", basefolder: "/tmp").each do |chunk|
+      assert_equal 1, chunk.position
       assert_equal 1, chunk.id
-      assert_not_nil chunk.best_text
-      assert_equal true, chunk.best_score > 0.3
       assert_equal CPW::Speech::AudioChunk::STATUS_TRANSCRIBED, chunk.status
-
-      assert_equal chunk.best_text, chunk.response['hypothesis']
+      assert_not_nil chunk.best_text
       assert_equal "go forward ten meters", chunk.best_text
-      assert_equal chunk.best_score, chunk.response['posterior_prob']
-      assert_equal true, chunk.best_score >= 0.59 && chunk.best_score <= 0.6
+      assert_in_delta 0.59, chunk.best_score, 0.01
       assert_equal 2.55, chunk.duration
 
-      assert chunk.response['hypothesis']
-      assert chunk.response['path_score']
-      assert chunk.response['posterior_prob']
+      assert_equal chunk.best_text, chunk.raw_response['hypothesis']
+      assert_equal chunk.best_score, chunk.raw_response['posterior_prob']
+      assert chunk.raw_response['path_score']
+      assert chunk.raw_response['posterior_prob']
 
-      assert chunk.response['words']
-      assert_equal "go", chunk.response['words'][1]['word']
-      assert chunk.response['words'][1]['start_frame']
-      assert chunk.response['words'][1]['end_frame']
-      assert chunk.response['words'][1]['start_time']
-      assert chunk.response['words'][1]['end_time']
-      assert chunk.response['words'][1]['acoustic_score']
-      assert chunk.response['words'][1]['language_score']
-      assert chunk.response['words'][1]['backoff_mode']
-      assert chunk.response['words'][1]['posterior_prob']
+      # words
+      assert chunk.raw_response['words']
+      assert_equal "go", chunk.raw_response['words'][1]['word']
+      assert chunk.raw_response['words'][1]['start_frame']
+      assert chunk.raw_response['words'][1]['end_frame']
+      assert chunk.raw_response['words'][1]['start_time']
+      assert chunk.raw_response['words'][1]['end_time']
+      assert chunk.raw_response['words'][1]['acoustic_score']
+      assert chunk.raw_response['words'][1]['language_score']
+      assert chunk.raw_response['words'][1]['backoff_mode']
+      assert chunk.raw_response['words'][1]['posterior_prob']
 
       assert_equal 4, chunk.words.size
       assert_equal "go forward ten meters", chunk.words.map(&:word).join(" ")
@@ -85,9 +84,11 @@ class CPW::Speech::Engines::PocketsphinxEngineTest < Test::Unit::TestCase
 
   def test_diarize_split_and_decode
     engine = CPW::Speech::Engines::PocketsphinxEngine.new(
-      File.join(fixtures_root, "will-and-juergen.wav"),
-      {:configuration => @configuration, :source_file_type => :wav, :split_method => :diarize}
-    )
+      File.join(fixtures_root, "will-and-juergen.wav"), {
+        :configuration => @configuration,
+        :source_file_type => :wav,
+        :split_method => :diarize
+    })
     chunks = []
     engine.perform(locale: "en-US", basefolder: "/tmp").each do |chunk|
       chunks.push(chunk)

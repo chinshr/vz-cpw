@@ -4,7 +4,6 @@ class CPW::Speech::Engines::BaseTest < Test::Unit::TestCase
 
   def test_default_settings
     engine = CPW::Speech::Engines::Base.new("foo.wav")
-    assert_equal({}, engine.captured_json)
     assert_equal 0.0, engine.score
     assert_equal 0, engine.segments
     assert_equal [], engine.chunks
@@ -18,6 +17,14 @@ class CPW::Speech::Engines::BaseTest < Test::Unit::TestCase
     assert_equal false, engine.verbose
     assert_equal :auto, engine.split_method
     assert_equal({}, engine.split_options)
+  end
+
+  def test_locale
+    engine = CPW::Speech::Engines::Base.new("foo.wav")
+    assert_equal "en-US", engine.locale
+
+    engine = CPW::Speech::Engines::Base.new("foo.wav", {:locale => "en-GB"})
+    assert_equal "en-GB", engine.locale
   end
 
   def test_logger
@@ -48,7 +55,7 @@ class CPW::Speech::Engines::BaseTest < Test::Unit::TestCase
     assert_equal :auto, options[:split_method]
   end
 
-  def test_audio_splitter_options
+  def test_audio_split_options
     engine = CPW::Speech::Engines::Base.new("foo.wav")
     options = engine.send(:audio_splitter_options, {
       engine: engine,

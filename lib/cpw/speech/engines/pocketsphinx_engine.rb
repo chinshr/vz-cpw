@@ -21,7 +21,7 @@ module CPW
 
         protected
 
-        def build(chunk)
+        def encode(chunk)
           if audio_splitter.split_method == :diarize
             chunk.build.to_raw
           end
@@ -29,17 +29,17 @@ module CPW
 
         def convert_chunk(chunk, options = {})
           result = {'status' => chunk.status}
-          if chunk.response
+          if chunk.raw_response.present?
             # already transcribed, e.g. using auto pocketsphinx recognizer
-            parse(chunk, chunk.response, result)
+            parse(chunk, chunk.raw_response, result)
             logger.info "#{segments} processed: #{result.inspect}" if self.verbose
           elsif chunk.status == CPW::Speech::AudioChunk::STATUS_ENCODED
             # still needs to be transcribed using decoder
             begin
               decoder = ::Pocketsphinx::Decoder.new(self.configuration)
               decoder.decode chunk.raw_chunk
-              chunk.response = build_response(decoder)
-              parse(chunk, chunk.response, result)
+              response = build_raw_response(decoder)
+              parse(chunk, response, result)
               logger.info "#{segments} processed: #{result.inspect}" if self.verbose
             rescue ::Pocketsphinx::API::Error => ex
               chunk.errors.push(ex)
@@ -49,12 +49,14 @@ module CPW
             result['status'] = chunk.status = CPW::Speech::AudioChunk::STATUS_TRANSCRIPTION_ERROR
           end
         ensure
+          chunk.normalized_response = result
           chunk.clean
-          chunk.captured_json = result.to_json
           return result
         end
 
         def parse(chunk, data, result = {})
+          chunk.raw_response        = data
+          result['position']        = chunk.position
           result['id']              = chunk.id
           result['external_id']     = data['id']
           result['external_status'] = data['status']
@@ -65,9 +67,11 @@ module CPW
             chunk.status            = AudioChunk::STATUS_TRANSCRIBED
             chunk.best_text         = result['hypothesis']
             chunk.best_score        = data['posterior_prob']
+
+            parse_words(chunk, data['words']) if data.key?('words')
+
             self.score              += data['posterior_prob']
             self.segments           += 1
-            parse_words(chunk, data['words']) if data.key?('words')
 
             logger.info "hypothesis: #{result['hypotheses']}" if self.verbose
           else
@@ -95,12 +99,12 @@ module CPW
         end
 
         def split_with_native_splitter_and_transcribe
-          chunks, chunk_id = [], 1
+          chunks, position = [], 1
           recognizer = CPW::Pocketsphinx::AudioFileSpeechRecognizer.new(configuration)
           recognizer.recognize(audio_splitter.original_file) do |decoder|
             chunks << AudioChunk.new(audio_splitter, decode_start_time(decoder),
-              decode_duration(decoder), {id: chunk_id, response: build_response(decoder)})
-            chunk_id += 1
+              decode_duration(decoder), {position: position, raw_response: build_raw_response(decoder)})
+            position += 1
           end
           chunks
         end
@@ -123,16 +127,16 @@ module CPW
           decode_end_time(decoder) - decode_start_time(decoder)
         end
 
-        def build_response(decoder)
+        def build_raw_response(decoder)
           response = {}
           response['hypothesis']     = decoder.hypothesis
           response['path_score']     = decoder.hypothesis.path_score
           response['posterior_prob'] = average_posterior_probability(decoder)
-          response['words']          = build_words_response(decoder)
+          response['words']          = build_raw_words_response(decoder)
           response
         end
 
-        def build_words_response(decoder)
+        def build_raw_words_response(decoder)
           decoder.words.map do |word|
             {
               'word'           => word.word,

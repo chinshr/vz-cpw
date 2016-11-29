@@ -21,7 +21,7 @@ module CPW
           self.service = Curl::Easy.new(url)
         end
 
-        def build(chunk)
+        def encode(chunk)
           chunk.build.to_wav
         end
 
@@ -60,6 +60,7 @@ module CPW
             else
               data                 = service.body_str
               data                 = data.split(/\n/) if data.present?
+              result['position']   = chunk.position
               result['id']         = chunk.id
               result['hypotheses'] = data.reject(&:blank?).map {|d| {'utterance' => d.force_encoding("utf-8")}}
 
@@ -83,7 +84,7 @@ module CPW
           result['errors'] = (chunk.errors << ex.message.to_s.gsub(/\n|\r/, ""))
         ensure
           chunk.clean
-          chunk.captured_json = result.to_json
+          chunk.normalized_response = result
           return result
         end
 
