@@ -4,8 +4,6 @@ class CPW::Speech::Engines::BaseTest < Test::Unit::TestCase
 
   def test_default_settings
     engine = CPW::Speech::Engines::Base.new("foo.wav")
-    assert_equal 0.0, engine.score
-    assert_equal 0, engine.segments
     assert_equal [], engine.chunks
     assert_equal 2, engine.max_results
     assert_equal 3, engine.max_retries

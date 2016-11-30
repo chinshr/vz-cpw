@@ -32,7 +32,7 @@ module CPW
           if chunk.raw_response.present?
             # already transcribed, e.g. using auto pocketsphinx recognizer
             parse(chunk, chunk.raw_response, result)
-            logger.info "#{segments} processed: #{result.inspect}" if self.verbose
+            logger.info "chunk #{chunk.position} processed: #{result.inspect}" if self.verbose
           elsif chunk.status == CPW::Speech::AudioChunk::STATUS_ENCODED
             # still needs to be transcribed using decoder
             begin
@@ -40,7 +40,7 @@ module CPW
               decoder.decode chunk.raw_chunk
               response = build_raw_response(decoder)
               parse(chunk, response, result)
-              logger.info "#{segments} processed: #{result.inspect}" if self.verbose
+              logger.info "chunk #{chunk.position} processed: #{result.inspect}" if self.verbose
             rescue ::Pocketsphinx::API::Error => ex
               chunk.errors.push(ex)
               result['status'] = chunk.status = CPW::Speech::AudioChunk::STATUS_TRANSCRIPTION_ERROR
@@ -69,9 +69,6 @@ module CPW
             chunk.best_score        = data['posterior_prob']
 
             parse_words(chunk, data['words']) if data.key?('words')
-
-            self.score              += data['posterior_prob']
-            self.segments           += 1
 
             logger.info "hypothesis: #{result['hypotheses']}" if self.verbose
           else

@@ -70,7 +70,7 @@ module CPW
             end
           end
 
-          logger.info "#{segments} processed: #{result.inspect} from: #{service.body_str.inspect}" if self.verbose
+          logger.info "chunk #{chunk.position} processed: #{result.inspect} from: #{service.body_str.inspect}" if self.verbose
         rescue Exception => ex
           result['status'] = chunk.status = AudioChunk::STATUS_TRANSCRIPTION_ERROR
           result['errors'] = (chunk.errors << ex.message.to_s.gsub(/\n|\r/, ""))
@@ -150,7 +150,6 @@ module CPW
             result['hypotheses'] = [{'utterance' => chunk.best_text, 'confidence' => chunk.best_score}]
             result['words']      = chunk.words.as_json
             result['status']     = chunk.status = AudioChunk::STATUS_TRANSCRIBED
-            self.segments        += 1
 
             logger.info "result #{result.inspect}" if self.verbose
           else

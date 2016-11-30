@@ -24,7 +24,7 @@ module CPW
         end
 
         def convert_chunk(chunk, options = {})
-          puts "sending chunk of size #{chunk.duration}, locale: #{locale}..." if self.verbose
+          logger.info "sending chunk of size #{chunk.duration}, locale: #{locale}..." if self.verbose
           retrying    = true
           retry_count = 0
           result      = {'status' => chunk.status}
@@ -43,7 +43,7 @@ module CPW
             service.http_post
 
             if service.response_code != 200  # == 500
-              puts "#{service.response_code} from server, retry after 0.5 seconds" if self.verbose
+              logger.info "#{service.response_code} from server, retry after 0.5 seconds" if self.verbose
               retrying    = true
               retry_count += 1
               sleep 0.5 # wait longer on error?
@@ -55,7 +55,7 @@ module CPW
             sleep 0.1 # not too fast there tiger
           end
 
-          puts "#{segments} processed: #{result.inspect} from: #{service.body_str.inspect}" if self.verbose
+          logger.info "chunk #{chunk.position} processed: #{result.inspect} from: #{service.body_str.inspect}" if self.verbose
         rescue Exception => ex
           result['status'] = chunk.status = AudioSplitter::AudioChunk::STATUS_TRANSCRIPTION_ERROR
           result['errors'] = (chunk.errors << ex.message.to_s.gsub(/\n|\r/, ""))
@@ -91,9 +91,7 @@ module CPW
             chunk.status            = result['status'] = AudioChunk::STATUS_TRANSCRIBED
             chunk.best_text         = result['hypotheses'].first['utterance']
             chunk.best_score        = result['hypotheses'].first['confidence']
-            self.score              += result['hypotheses'].first['confidence'] || 0
-            self.segments           += 1
-            puts result['hypotheses'].first['utterance'] if self.verbose
+            logger.info result['hypotheses'].first['utterance'] if self.verbose
           end
           result
         end
