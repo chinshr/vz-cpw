@@ -8,11 +8,11 @@ class CPW::Speech::AudioChunkTest < Test::Unit::TestCase
   end
 
   def test_initialize
+    segment = Diarize::Segment.new("audio", "start", "duration", "speaker_gender", "bandwidth", "speaker_id")
     chunk = CPW::Speech::AudioChunk.new(@splitter, 1.0, 5.0, {
       position: 1,
       response: {},
-      bandwidth: "U",
-      speaker: Diarize::Speaker.new,
+      speaker_segment: segment,
       external_id: "xyz"
     })
 
@@ -30,8 +30,7 @@ class CPW::Speech::AudioChunkTest < Test::Unit::TestCase
     assert_equal 6.0, chunk.end_time
     assert_equal 1, chunk.position
     assert_equal 1, chunk.id
-    assert_equal "U", chunk.bandwidth
-    assert_not_nil chunk.speaker
+    assert_equal segment, chunk.speaker_segment
     assert_equal "xyz", chunk.external_id
     assert_equal nil, chunk.poll_at
   end
@@ -113,7 +112,9 @@ class CPW::Speech::AudioChunkTest < Test::Unit::TestCase
 
   def test_speaker
     speaker = Diarize::Speaker.new
-    chunk = CPW::Speech::AudioChunk.new(@splitter, 1.0, 5.0, {speaker: speaker})
+    segment = Diarize::Segment.new("audio", "start", "duration", "speaker_gender", "bandwidth", "speaker_id")
+    segment.expects(:speaker).returns(speaker)
+    chunk = CPW::Speech::AudioChunk.new(@splitter, 1.0, 5.0, {speaker_segment: segment})
     assert_equal speaker, chunk.speaker
   end
 

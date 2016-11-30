@@ -35,7 +35,8 @@ module CPW
             result['status'] = chunk.status = AudioSplitter::AudioChunk::STATUS_TRANSCRIPTION_ERROR
           end
         ensure
-          chunk.normalized_response = result
+          chunk.normalized_response.merge!(result)
+          chunk.clean
           return result
         end
 

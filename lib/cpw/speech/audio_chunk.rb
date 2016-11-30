@@ -11,7 +11,7 @@ module CPW
 
       attr_accessor :position, :id, :splitter, :chunk, :flac_chunk, :wav_chunk, :raw_chunk,
         :mp3_chunk, :waveform_chunk, :offset, :duration, :flac_rate, :copied,
-        :best_text, :best_score, :status, :errors, :speaker, :bandwidth,
+        :best_text, :best_score, :status, :errors, :speaker_segment, :bandwidth,
         :external_id, :poll_at, :raw_response, :normalized_response
       attr_writer :words
 
@@ -38,8 +38,7 @@ module CPW
         self.status              = STATUS_UNPROCESSED
         self.errors              = []
         self.chunk               = chunk_file_name(splitter)  # file_name?
-        self.speaker             = options[:speaker]
-        self.bandwidth           = options[:bandwidth]
+        self.speaker_segment     = options[:speaker_segment]
         self.poll_at             = nil
       end
 
@@ -89,6 +88,10 @@ module CPW
 
       def transcribed?
         status >= STATUS_TRANSCRIBED
+      end
+
+      def speaker
+        speaker_segment.speaker if speaker_segment
       end
 
       # Build source file into source file type chunk.

@@ -45,7 +45,7 @@ class CPW::Speech::AudioSplitterTest < Test::Unit::TestCase
 
   def test_split_options
     splitter = CPW::Speech::AudioSplitter.new(@short_wav_file,
-        {:split_options => {:mode => :druby, :host => "drb.example.com", :port => 1234}})
+      {:split_options => {:mode => :druby, :host => "drb.example.com", :port => 1234}})
     assert_equal :druby, splitter.split_options[:mode]
     assert_equal "drb.example.com", splitter.split_options[:host]
     assert_equal 1234, splitter.split_options[:port]
@@ -145,7 +145,13 @@ class CPW::Speech::AudioSplitterTest < Test::Unit::TestCase
   # diarize
 
   def test_should_diarize_local
-    splitter = CPW::Speech::AudioSplitter.new(@long_wav_file, {:split_method => :diarize})
+    splitter = CPW::Speech::AudioSplitter.new(@long_wav_file, {
+      :split_method => :diarize,
+      :split_options => {
+        :model_base_url => "http://www.example.com",
+        :model_base_name => "xyz"
+      }
+    })
     assert_equal :diarize, splitter.split_method
     assert_equal '00:00:54.10', splitter.duration.to_s
     assert_equal 54.1, splitter.duration.to_f
@@ -154,45 +160,70 @@ class CPW::Speech::AudioSplitterTest < Test::Unit::TestCase
     assert_equal 5, chunks.size
     assert_equal true, chunks.all? {|ch| ch.status == CPW::Speech::AudioChunk::STATUS_UNPROCESSED}
 
+    # chunk 1
     assert_equal 1, chunks[0].position
     assert_equal 1, chunks[0].id
     assert_in_delta 0.0, chunks[0].offset, 0.01
     assert_in_delta 2.5, chunks[0].duration, 0.01
-    assert_equal "U", chunks[0].bandwidth
+    assert chunks[0].speaker_segment
+    assert_equal "M", chunks[0].speaker_segment.speaker_gender
+    assert_equal "S0", chunks[0].speaker_segment.speaker_id
     assert chunks[0].speaker
     assert_equal "M", chunks[0].speaker.gender
+    assert_equal "http://www.example.com/xyz-S0.gmm", chunks[0].speaker.model_uri
+    assert_not_nil chunks[0].as_json['speaker_segment']['speaker_supervector_hash']
 
+    # chunk 2
     assert_equal 2, chunks[1].position
     assert_equal 2, chunks[1].id
     assert_in_delta 2.5, chunks[1].offset, 0.01
     assert_in_delta 17.23, chunks[1].duration, 0.01
-    assert_equal "U", chunks[1].bandwidth
+    assert chunks[1].speaker_segment
+    assert_equal "M", chunks[1].speaker_segment.speaker_gender
+    assert_equal "S1", chunks[1].speaker_segment.speaker_id
     assert chunks[1].speaker
     assert_equal "M", chunks[1].speaker.gender
+    assert_equal "http://www.example.com/xyz-S1.gmm", chunks[1].speaker.model_uri
+    assert_not_nil chunks[1].as_json['speaker_segment']['speaker_supervector_hash']
 
+    # chunk 3
     assert_equal 3, chunks[2].position
     assert_equal 3, chunks[2].id
     assert_in_delta 19.75, chunks[2].offset, 0.01
     assert_in_delta 13.63, chunks[2].duration, 0.01
-    assert_equal "U", chunks[2].bandwidth
+    assert chunks[2].speaker_segment
+    assert_equal "M", chunks[2].speaker_segment.speaker_gender
+    assert_equal "S3", chunks[2].speaker_segment.speaker_id
     assert chunks[2].speaker
     assert_equal "M", chunks[2].speaker.gender
+    assert_equal "http://www.example.com/xyz-S3.gmm", chunks[2].speaker.model_uri
+    assert_not_nil chunks[2].as_json['speaker_segment']['speaker_supervector_hash']
 
+    # chunk 4
     assert_equal 4, chunks[3].position
     assert_equal 4, chunks[3].id
     assert_in_delta 33.63, chunks[3].offset, 0.01
     assert_in_delta 14.59, chunks[3].duration, 0.01
-    assert_equal "U", chunks[3].bandwidth
+    assert chunks[3].speaker_segment
+    assert_equal "M", chunks[3].speaker_segment.speaker_gender
+    assert_equal "S5", chunks[3].speaker_segment.speaker_id
     assert chunks[3].speaker
     assert_equal "M", chunks[3].speaker.gender
+    assert_equal "http://www.example.com/xyz-S5.gmm", chunks[3].speaker.model_uri
+    assert_not_nil chunks[3].as_json['speaker_segment']['speaker_supervector_hash']
 
+    # chunk 5
     assert_equal 5, chunks[4].position
     assert_equal 5, chunks[4].id
     assert_in_delta 48.22, chunks[4].offset, 0.01
     assert_in_delta 5.86, chunks[4].duration, 0.01
-    assert_equal "U", chunks[4].bandwidth
+    assert chunks[4].speaker_segment
+    assert_equal "M", chunks[4].speaker_segment.speaker_gender
+    assert_equal "S5", chunks[4].speaker_segment.speaker_id
     assert chunks[4].speaker
     assert_equal "M", chunks[4].speaker.gender
+    assert_equal "http://www.example.com/xyz-S5.gmm", chunks[4].speaker.model_uri
+    assert_not_nil chunks[4].as_json['speaker_segment']['speaker_supervector_hash']
   end
 
   def xtest_should_diarize_remote
