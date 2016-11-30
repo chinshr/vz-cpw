@@ -76,7 +76,7 @@ module CPW
           result = {'status' => chunk.status}
           if chunk.raw_response.present?  # from splitter
             parse(chunk, chunk.raw_response, result)
-            logger.info "#{segments} processed: #{result.inspect}" if self.verbose
+            logger.info "chunk #{chunk.position} processed: #{result.inspect}" if self.verbose
           else
             result['status'] = chunk.status = AudioSplitter::AudioChunk::STATUS_TRANSCRIPTION_ERROR
           end
@@ -98,7 +98,6 @@ module CPW
             result['status']     = AudioChunk::STATUS_TRANSCRIBED
             chunk.status         = AudioChunk::STATUS_TRANSCRIBED
             chunk.best_text      = data['text']
-            self.segments        += 1
 
             logger.info "result #{result.inspect}" if self.verbose
           else

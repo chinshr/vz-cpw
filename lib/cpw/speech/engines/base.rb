@@ -5,9 +5,10 @@ module CPW
         USER_AGENT = "Mozilla/5.0"
 
         attr_accessor :media_file, :media_url, :rate,
-          :score, :verbose, :segments, :chunks, :chunk_duration,
-          :max_results, :max_retries, :locale, :logger, :base_file_type,
-          :source_file_type, :split_method, :split_options, :audio_splitter
+          :verbose, :chunks, :chunk_duration, :max_results,
+          :max_retries, :locale, :logger, :base_file_type,
+          :source_file_type, :split_method, :split_options,
+          :audio_splitter
 
         def initialize(media_file_or_url, options = {})
           options.symbolize_keys!
@@ -16,8 +17,6 @@ module CPW
           else
             self.media_file     = media_file_or_url
           end
-          self.score            = 0.0
-          self.segments         = 0  # chunk_count
           self.chunks           = []
           self.chunk_duration   = options[:chunk_duration].to_i if options.key?(:chunk_duration)
           self.verbose          = !!options[:verbose]
@@ -33,14 +32,11 @@ module CPW
 
         def perform(options = {})
           reset! options
-
           chunks.each do |chunk|
             encode(chunk) unless chunk.encoded?
             convert_chunk(chunk, audio_chunk_options(options)) unless chunk.transcribed?
             yield chunk if block_given?
           end
-
-          self.score /= self.segments
           chunks
         end
 
@@ -68,8 +64,6 @@ module CPW
         protected
 
         def reset!(options = {})
-          self.score            = 0.0
-          self.segments         = 0
           self.max_results      = options[:max_results] || 2
           self.max_retries      = options[:max_retries] || 3
           self.locale           = options[:locale] || "en-US"
