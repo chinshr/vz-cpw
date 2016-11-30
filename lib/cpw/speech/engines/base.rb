@@ -108,6 +108,7 @@ module CPW
         def valid_url?(url)
           !!(url =~ URI::DEFAULT_PARSER.regexp[:ABS_URI])
         end
+
       end
     end
   end

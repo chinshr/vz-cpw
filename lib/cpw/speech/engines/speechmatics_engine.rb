@@ -75,8 +75,8 @@ module CPW
           result['status'] = chunk.status = AudioChunk::STATUS_TRANSCRIPTION_ERROR
           result['errors'] = (chunk.errors << ex.message.to_s.gsub(/\n|\r/, ""))
         ensure
+          chunk.normalized_response.merge!(result)
           chunk.clean
-          chunk.normalized_response = result
           return result
         end
 

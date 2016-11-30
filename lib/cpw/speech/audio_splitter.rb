@@ -78,8 +78,10 @@ module CPW
 
         diarize_audio.analyze!
         diarize_audio.segments.sort_by(&:start).each_with_index do |segment, index|
-          chunks << AudioChunk.new(self, segment.start, segment.duration,
-            {position: index + 1, bandwidth: segment.bandwidth, speaker: segment.speaker})
+          chunk = AudioChunk.new(self, segment.start, segment.duration,
+            {position: index + 1, speaker_segment: segment})
+          normalize_speaker_segment_response(chunk)
+          chunks.push(chunk)
         end
         chunks
       end
@@ -94,6 +96,42 @@ module CPW
         self.split_method    = options[:split_method] || split_method || :auto
         self.split_options   = options[:split_options] || split_options || {}
         self.logger          = options[:logger] || logger || CPW::logger
+      end
+
+      def normalize_speaker_segment_response(chunk)
+        result, data = {}, chunk.speaker_segment.as_json
+
+        result['start_time'] = data['start']
+        result['duration']   = data['duration']
+        result['end_time']   = data['start'] + data['duration'] if data['start'].is_a?(Float) && data['duration'].is_a?(Float)
+        result['gender']     = data['gender']
+        result['bandwidth']  = data['bandwidth']
+        result['speaker_id'] = data['speaker_id']
+        if data.has_key?('speaker')
+          result['speaker_model_url'] = if data['speaker']['model']
+            data['speaker']['model']
+          else speaker_model_url(chunk)
+            chunk.speaker_segment.speaker.model_uri = speaker_model_url(chunk)
+          end
+          result['speaker_mean_log_likelihood'] = data['speaker']['mean_log_likelihood']
+          result['speaker_supervector_hash']    = data['speaker']['supervector_hash']
+        end
+
+        chunk.normalized_response.merge!({
+          'status' => chunk.status,
+          'speaker_segment' => result
+        })
+      end
+
+      def speaker_model_url(chunk)
+        if split_options.has_key?(:model_base_url)
+          file_name = if split_options[:model_base_name]
+            "#{split_options[:model_base_name]}-#{chunk.speaker_segment.speaker_id}.gmm"
+          else
+            "#{chunk.speaker_segment.speaker_id}.gmm"
+          end
+          URI.join(split_options[:model_base_url], file_name).to_s
+        end
       end
     end
   end

@@ -33,10 +33,9 @@ module CPW
         end
 
         def convert_chunk(chunk, options = {})
-          logger.info "sending chunk of size #{chunk.duration}, locale: #{locale}..." if self.verbose
-          retrying    = true
-          retry_count = 0
-          result      = {'status' => chunk.status}
+          retrying          = true
+          retry_count       = 0
+          result            = {'status' => chunk.status}
 
           base_url = "https://stream.watsonplatform.net/speech-to-text/api/#{api_version}/recognize"
           params = {
@@ -92,8 +91,8 @@ module CPW
           result['status'] = chunk.status = AudioChunk::STATUS_TRANSCRIPTION_ERROR
           result['errors'] = (chunk.errors << ex.message.to_s.gsub(/\n|\r/, ""))
         ensure
+          chunk.normalized_response.merge!(result)
           chunk.clean
-          chunk.normalized_response = result
           return result
         end
 
@@ -204,11 +203,11 @@ module CPW
           result['position']        = chunk.position
           result['id']              = chunk.id
           if data['results'] && data['results'].is_a?(Array)
+            parse_words_v1(chunk, data, result)
+
             result['hypotheses']    = data['results'].map {|r| r['alternatives'].map {|a| {'utterance' => a['transcript'], 'confidence' => a['confidence']}}}.flatten
             result['hypotheses'].reject! {|a| !a['confidence'].is_a?(Float)}
             result['hypotheses'].sort! {|x, y| y['confidence'] || 0 <=> x['confidence'] || 0}
-
-            parse_words_v1(chunk, data, result)
 
             chunk.status            = result['status'] = AudioChunk::STATUS_TRANSCRIBED
             chunk.best_text         = result['hypotheses'].first['utterance']
