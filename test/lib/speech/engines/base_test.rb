@@ -15,6 +15,25 @@ class CPW::Speech::Engines::BaseTest < Test::Unit::TestCase
     assert_equal false, engine.verbose
     assert_equal :auto, engine.split_method
     assert_equal({}, engine.split_options)
+    assert_equal false, engine.perform_threaded?
+  end
+
+  def test_initialize
+    engine = CPW::Speech::Engines::Base.new("foo.wav", {
+      :perform_threaded => true,
+      :chunk_duration => 99,
+      :verbose => true,
+      :split_method => :foobar,
+      :split_options => {:model_base_url => "http://www.example.com"}
+    })
+    assert_equal "foo.wav", engine.media_file
+    assert_equal true, engine.perform_threaded?
+    assert_equal 99, engine.chunk_duration
+    assert_equal 99, engine.chunk_duration
+    assert_equal true, engine.verbose
+    assert_equal :foobar, engine.split_method
+    assert_not_nil engine.split_options
+    assert_equal "http://www.example.com", engine.split_options[:model_base_url]
   end
 
   def test_locale
