@@ -28,16 +28,38 @@ module CPW
           self.source_file_type = nil
           self.split_method     = options[:split_method] || :auto
           self.split_options    = options[:split_options] || {}
+          @perform_threaded     = options[:perform_threaded] || false
         end
 
         def perform(options = {})
           reset! options
-          chunks.each do |chunk|
-            encode(chunk) unless chunk.encoded?
-            convert_chunk(chunk, audio_chunk_options(options)) unless chunk.transcribed?
-            yield chunk if block_given?
+
+          if perform_threaded?
+            # parallel
+            threads = []
+            chunks.each do |chunk|
+              threads.push(Thread.new {
+                encode(chunk) unless chunk.encoded?
+                convert_chunk(chunk, audio_chunk_options(options)) unless chunk.transcribed?
+              })
+            end
+            threads.each(&:join)
+            chunks.each do |chunk|
+              yield chunk if block_given?
+            end
+          else
+            # sequential
+            chunks.each do |chunk|
+              encode(chunk) unless chunk.encoded?
+              convert_chunk(chunk, audio_chunk_options(options)) unless chunk.transcribed?
+              yield chunk if block_given?
+            end
           end
           chunks
+        end
+
+        def perform_threaded?
+          !!@perform_threaded
         end
 
         def to_text(options = {})

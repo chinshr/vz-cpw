@@ -4,6 +4,7 @@ module CPW
 
       # https://cloud.google.com/speech/
       # https://cloud.google.com/speech/docs/getting-started
+      # https://cloud.google.com/speech/limits
       class GoogleCloudSpeechEngine < Base
         attr_accessor :service, :key, :version, :method
 
