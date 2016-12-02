@@ -3,16 +3,8 @@ module CPW
     module Engines
 
       # https://speechmatics.com/api-details
-      class SpeechmaticsEngine < Base
+      class SpeechmaticsEngine < SpeechEngine
         attr_accessor :base_url, :api_version, :user_id, :auth_token
-
-        DEFAULT_UPLOAD_MEDIA_RETRIES     = 5
-        DEFAULT_FETCH_TRANSCRIPT_RETRIES = 360
-        RETRY_DELAY_IN_SECONDS           = 1
-
-        class InvalidResponseError < StandardError; end
-        class TimeoutError < StandardError; end
-        class UnsupportedLocale < StandardError; end
 
         def initialize(url_or_file, options = {})
           super url_or_file, options
@@ -31,7 +23,7 @@ module CPW
           result
         end
 
-        def convert_chunk(chunk, options = {})
+        def convert(chunk, options = {})
           retrying        = true
           retry_count     = 0
           result          = {'status' => chunk.status}
@@ -40,12 +32,12 @@ module CPW
           service.verbose = self.verbose
 
           # headers
-          service.headers['Content-Type']  = "application/json"
-          service.headers['User-Agent']    = USER_AGENT
+          service.headers['Content-Type'] = "application/json"
+          service.headers['User-Agent']   = user_agent
 
           logger.info  "convert chunk of size #{chunk.duration}, locale: #{locale}..." if self.verbose
 
-          while retrying && retry_count < DEFAULT_FETCH_TRANSCRIPT_RETRIES
+          while retrying && retry_count < max_poll_retries
             if !chunk.poll_at || (chunk.poll_at && chunk.poll_at < Time.now)
               # request
               service.http_get
@@ -61,9 +53,9 @@ module CPW
                 end
                 retrying = false
               else
-                logger.info "Error, retry after #{RETRY_DELAY_IN_SECONDS} seconds" if self.verbose
+                logger.info "Error, retry after #{poll_retry_delay} seconds" if self.verbose
                 retry_count += 1
-                sleep RETRY_DELAY_IN_SECONDS
+                sleep poll_retry_delay
               end
             else
               sleep (chunk.poll_at - Time.now) + 0.1
@@ -73,7 +65,7 @@ module CPW
           logger.info "chunk #{chunk.position} processed: #{result.inspect} from: #{service.body_str.inspect}" if self.verbose
         rescue Exception => ex
           result['status'] = chunk.status = AudioChunk::STATUS_TRANSCRIPTION_ERROR
-          result['errors'] = (chunk.errors << ex.message.to_s.gsub(/\n|\r/, ""))
+          add_chunk_error(chunk, ex, result)
         ensure
           chunk.normalized_response.merge!(result)
           chunk.clean
@@ -82,14 +74,14 @@ module CPW
 
         private
 
-        def upload_chunks(retries = DEFAULT_UPLOAD_MEDIA_RETRIES)
+        def upload_chunks(retries = max_retries)
           chunks.each do |chunk|
             chunk.build.to_wav
             upload_chunk(chunk, retries)
           end
         end
 
-        def upload_chunk(chunk, retries = DEFAULT_UPLOAD_MEDIA_RETRIES)
+        def upload_chunk(chunk, retries = max_retries)
           upload_response = {}
           retrying        = true
           retry_count     = 0
@@ -99,7 +91,7 @@ module CPW
           service.verbose = self.verbose
 
           # headers
-          service.headers['User-Agent']   = USER_AGENT
+          service.headers['User-Agent']   = user_agent
 
           while retrying && retry_count < retries
             # form fields
@@ -132,7 +124,7 @@ module CPW
               if retry_count >= retries
                 raise TimeoutError, "too many upload retries, response #{upload_response.inspect}"
               else
-                sleep RETRY_DELAY_IN_SECONDS
+                sleep retry_delay
               end
             end
           end
@@ -188,7 +180,7 @@ module CPW
           when /ru/ then "ru"
           when /sv/ then "sv"
           else
-            raise UnsupportedLocale, "Unsupported language."
+            raise UnsupportedLocaleError, "Unsupported language."
           end
         end
 

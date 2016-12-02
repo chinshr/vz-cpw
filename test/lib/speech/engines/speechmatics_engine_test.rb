@@ -65,7 +65,7 @@ class CPW::Speech::Engines::SpeechmaticsEngineTest < Test::Unit::TestCase
     upload_json = {'id' => 1, 'cost' => 5, 'check_wait' => 0.5, 'balance' => 95}.to_json
     stub_request(:post, "https://api.speechmatics.com/v1.0/user/test-user-1/jobs/?auth_token=test_token").
       with(:body => "model=en-US&diarisation=false&meta=1&notification=none&data_file=%2Ftmp%2Fi-like-pickles-chunk-1-00-00-00_00-00-00-03_52.wav",
-        :headers => {'User-Agent'=>'Mozilla/5.0'}).
+        :headers => {'User-Agent'=>/.*/}).
       to_return(:status => 200, :body => upload_json, :headers => {})
 
     # fetch stub
@@ -109,7 +109,7 @@ class CPW::Speech::Engines::SpeechmaticsEngineTest < Test::Unit::TestCase
       "format": "1.0"
     }.to_json
     stub_request(:get, "https://api.speechmatics.com/v1.0/user/test-user-1/jobs/1/transcript?auth_token=test_token").
-      with(:headers => {'Content-Type'=>'application/json', 'User-Agent'=>'Mozilla/5.0'}).
+      with(:headers => {'Content-Type'=>'application/json', 'User-Agent'=>/.*/}).
       to_return(:status => 200, :body => fetch_json, :headers => {})
   end
 end

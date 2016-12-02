@@ -46,7 +46,7 @@ class CPW::Speech::Engines::VoicebaseEngineTest < Test::Unit::TestCase
     engine.perform(locale: "es-MX")
     assert_equal "es-MEX", engine.client.locale
 
-    assert_raise CPW::Speech::Engines::VoicebaseEngine::UnsupportedLocale do
+    assert_raise CPW::Speech::UnsupportedLocaleError do
       engine.perform(locale: "ru")
     end
   end
@@ -124,7 +124,7 @@ class CPW::Speech::Engines::VoicebaseEngineTest < Test::Unit::TestCase
     assert_equal words_json, chunks[0].words.to_json
   end
 
-  def test_should_hypotheses_in_convert_chunk
+  def test_should_hypotheses_in_convert
     engine = new_engine
     chunks = engine.perform(basefolder: "/tmp")
 
@@ -133,7 +133,7 @@ class CPW::Speech::Engines::VoicebaseEngineTest < Test::Unit::TestCase
     assert_in_delta 0.67, chunks[0].as_json['hypotheses'][0]['confidence'], 0.01
   end
 
-  def test_should_words_in_convert_chunk
+  def test_should_words_in_convert
     engine     = new_engine
     chunks     = engine.perform(basefolder: "/tmp")
     words_json = '[{"p":1,"c":0.815,"s":0.309,"e":0.888,"w":"in"},{"p":2,"c":0.675,"s":0.888,"e":0.967,"w":"the"},{"p":3,"c":0.26,"s":0.967,"e":1.347,"w":"beginning"},{"p":4,"c":0.127,"s":1.347,"e":1.606,"w":"got"},{"p":5,"c":0.234,"s":1.606,"e":1.885,"w":"screwed"},{"p":6,"c":0.138,"s":1.885,"e":1.945,"w":"in"},{"p":7,"c":0.543,"s":1.945,"e":2.045,"w":"the"},{"p":8,"c":0.494,"s":2.045,"e":2.404,"w":"heavens"},{"p":9,"c":0.836,"s":2.404,"e":2.524,"w":"of"},{"p":10,"c":0.91,"s":2.524,"e":2.644,"w":"the"},{"p":11,"c":0.696,"s":2.644,"e":3.601,"w":"art"},{"p":12,"c":0.788,"s":3.601,"e":3.861,"w":"now"},{"p":13,"c":0.856,"s":3.861,"e":4.04,"w":"the"},{"p":14,"c":0.941,"s":4.04,"e":4.4,"w":"earth"},{"p":15,"c":0.981,"s":4.4,"e":4.599,"w":"was"},{"p":16,"c":0.982,"s":4.599,"e":5.337,"w":"formless"},{"p":17,"c":0.978,"s":5.337,"e":5.497,"w":"and"},{"p":18,"c":0.983,"s":5.497,"e":6.634,"w":"empty"},{"p":19,"c":65.535,"s":6.634,"e":6.644,"w":","}]'

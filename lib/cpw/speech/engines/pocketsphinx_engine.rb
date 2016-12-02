@@ -1,7 +1,7 @@
 module CPW
   module Speech
     module Engines
-      class PocketsphinxEngine < Base
+      class PocketsphinxEngine < SpeechEngine
         attr_accessor :configuration
 
         def initialize(media_file_or_url, options = {})
@@ -27,7 +27,7 @@ module CPW
           end
         end
 
-        def convert_chunk(chunk, options = {})
+        def convert(chunk, options = {})
           result = {'status' => chunk.status}
           if chunk.raw_response.present?
             # already transcribed, e.g. using auto pocketsphinx recognizer
@@ -42,8 +42,8 @@ module CPW
               parse(chunk, response, result)
               logger.info "chunk #{chunk.position} processed: #{result.inspect}" if self.verbose
             rescue ::Pocketsphinx::API::Error => ex
-              chunk.errors.push(ex)
               result['status'] = chunk.status = CPW::Speech::AudioChunk::STATUS_TRANSCRIPTION_ERROR
+              add_chunk_error(chunk, ex, result)
             end
           else
             result['status'] = chunk.status = CPW::Speech::AudioChunk::STATUS_TRANSCRIPTION_ERROR

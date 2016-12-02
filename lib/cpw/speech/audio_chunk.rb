@@ -1,10 +1,13 @@
 module CPW
   module Speech
     class AudioChunk
-      STATUS_UNPROCESSED         = 0
-      STATUS_BUILT               = 1
-      STATUS_ENCODED             = 2
-      STATUS_TRANSCRIBED         = 3
+      include CPW::Speech::ExtractionHelper
+
+      # TODO: move status into Speech
+      STATUS_UNPROCESSED         = 0 # STATUS_UNPROCESSED
+      STATUS_BUILT               = 1 # TODO: obsolete
+      STATUS_ENCODED             = 2 # TODO: obsolete
+      STATUS_TRANSCRIBED         = 3 # TODO: refactor STATUS_SUCCESS
       STATUS_BUILD_ERROR         = -1
       STATUS_ENCODING_ERROR      = -2
       STATUS_TRANSCRIPTION_ERROR = -3
@@ -13,14 +16,13 @@ module CPW
         :mp3_chunk, :waveform_chunk, :offset, :duration, :flac_rate, :copied,
         :best_text, :best_score, :status, :errors, :speaker_segment, :bandwidth,
         :external_id, :poll_at, :raw_response, :normalized_response
-      attr_writer :words
+      attr_writer :words, :extracted
 
       delegate :engine, to: :splitter, allow_nil: true
       delegate :base_file_type, to: :splitter, allow_nil: true
       delegate :source_file_type, to: :splitter, allow_nil: true
 
       alias_method :start_time, :offset
-      alias_method :to_s, :best_text
       alias_method :confidence, :best_score
 
       def initialize(splitter, offset, duration, options = {})
@@ -40,6 +42,7 @@ module CPW
         self.chunk               = chunk_file_name(splitter)  # file_name?
         self.speaker_segment     = options[:speaker_segment]
         self.poll_at             = nil
+        self.extracted           = false
       end
 
       class << self
@@ -74,6 +77,11 @@ module CPW
         as_json(options).to_json
       end
 
+      def to_text
+        self.best_text
+      end
+      alias_method :to_s, :to_text
+
       def unprocessed?
         status == STATUS_UNPROCESSED
       end
@@ -88,6 +96,10 @@ module CPW
 
       def transcribed?
         status >= STATUS_TRANSCRIBED
+      end
+
+      def extracted?
+        !!@extracted
       end
 
       def speaker

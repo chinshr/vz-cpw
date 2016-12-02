@@ -5,7 +5,7 @@ module CPW
       # https://www.ibm.com/watson/developercloud/speech-to-text.html
       # https://www.ibm.com/watson/developercloud/speech-to-text/api/v1/
       # https://github.com/watson-developer-cloud/speech-to-text-websockets-ruby
-      class IbmWatsonSpeechEngine < Base
+      class IbmWatsonSpeechEngine < SpeechEngine
         attr_accessor :api_version, :method, :username, :password,
           :token, :sampling_rate
 
@@ -32,7 +32,7 @@ module CPW
           chunk.build.to_flac
         end
 
-        def convert_chunk(chunk, options = {})
+        def convert(chunk, options = {})
           retrying          = true
           retry_count       = 0
           result            = {'status' => chunk.status}
@@ -62,7 +62,7 @@ module CPW
 
           # headers
           service.headers['Content-Type'] = "audio/flac"
-          service.headers['User-Agent']   = USER_AGENT
+          service.headers['User-Agent']   = user_agent
 
           while retrying && retry_count < max_retries # 3 retries
             # request
@@ -89,7 +89,7 @@ module CPW
           logger.info "chunk #{chunk.position} processed: #{result.inspect} from: #{service.body_str.inspect}" if self.verbose
         rescue Exception => ex
           result['status'] = chunk.status = AudioChunk::STATUS_TRANSCRIPTION_ERROR
-          result['errors'] = (chunk.errors << ex.message.to_s.gsub(/\n|\r/, ""))
+          add_chunk_error(chunk, ex, result)
         ensure
           chunk.normalized_response.merge!(result)
           chunk.clean

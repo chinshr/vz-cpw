@@ -3,7 +3,7 @@ require "srt"
 module CPW
   module Speech
     module Engines
-      class SubtitleEngine < Base
+      class SubtitleEngine < SpeechEngine
         attr_accessor :format, :default_chunk_score, :response
 
         def initialize(media_file_or_url, options = {})
@@ -26,7 +26,7 @@ module CPW
 
         protected
 
-        def convert_chunk(chunk, options = {})
+        def convert(chunk, options = {})
           result = {'status' => chunk.status}
           if chunk.raw_response.present?  # from splitter
             parse(chunk, chunk.raw_response, result)

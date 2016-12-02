@@ -5,7 +5,7 @@ module CPW
       # https://cloud.google.com/speech/
       # https://cloud.google.com/speech/docs/getting-started
       # https://cloud.google.com/speech/limits
-      class GoogleCloudSpeechEngine < Base
+      class GoogleCloudSpeechEngine < SpeechEngine
         attr_accessor :service, :key, :version, :method
 
         def initialize(media_file_or_url, options = {})
@@ -23,10 +23,9 @@ module CPW
           when "v1beta1" then
             "https://speech.googleapis.com/#{version}/speech:#{self.method}"
           else
-            raise "Unsupported API version."
+            raise UnsupportedApiError, "Unsupported API version `#{version}`."
           end
           url += "?key=#{key}" if key
-
           self.service = Curl::Easy.new(url)
         end
 
@@ -34,7 +33,7 @@ module CPW
           chunk.build.to_flac
         end
 
-        def convert_chunk(chunk, options = {})
+        def convert(chunk, options = {})
           logger.info "sending chunk of size #{chunk.duration}, locale: #{locale}..." if self.verbose
           retrying    = true
           retry_count = 0
@@ -44,8 +43,8 @@ module CPW
             service.verbose = self.verbose
 
             # headers
-            service.headers['Content-Type']  = "application/json"
-            service.headers['User-Agent']    = USER_AGENT
+            service.headers['Content-Type'] = "application/json"
+            service.headers['User-Agent']   = user_agent
 
             # body
             encode = Base64.strict_encode64(chunk.to_flac_bytes)
@@ -91,7 +90,7 @@ module CPW
           logger.info "chunk #{chunk.position} processed: #{result.inspect} from: #{service.body_str.inspect}" if self.verbose
         rescue Exception => ex
           result['status'] = chunk.status = AudioChunk::STATUS_TRANSCRIPTION_ERROR
-          result['errors'] = (chunk.errors << ex.message.to_s.gsub(/\n|\r/, ""))
+          add_chunk_error(chunk, ex, result)
         ensure
           chunk.normalized_response.merge!(result)
           chunk.clean

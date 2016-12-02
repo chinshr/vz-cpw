@@ -1,7 +1,7 @@
 module CPW
   module Speech
     module Engines
-      class PocketsphinxServerEngine < Base
+      class PocketsphinxServerEngine < SpeechEngine
         attr_accessor :service, :key
 
         def initialize(media_file_or_url, options = {})
@@ -23,7 +23,7 @@ module CPW
           chunk.build.to_flac
         end
 
-        def convert_chunk(chunk, options = {})
+        def convert(chunk, options = {})
           logger.info "sending chunk of size #{chunk.duration}, locale: #{locale}..." if self.verbose
           retrying    = true
           retry_count = 0
@@ -35,7 +35,7 @@ module CPW
             # headers
             # service.headers['Content-Type'] = "audio/x-raw-int; rate=#{chunk.flac_rate}"
             service.headers['Content-Type'] = "audio/x-flac; rate=#{chunk.flac_rate}"
-            service.headers['User-Agent']   = USER_AGENT
+            service.headers['User-Agent']   = user_agent
 
             # request
             service.post_body = "#{chunk.to_flac_bytes}"
@@ -58,7 +58,7 @@ module CPW
           logger.info "chunk #{chunk.position} processed: #{result.inspect} from: #{service.body_str.inspect}" if self.verbose
         rescue Exception => ex
           result['status'] = chunk.status = AudioSplitter::AudioChunk::STATUS_TRANSCRIPTION_ERROR
-          result['errors'] = (chunk.errors << ex.message.to_s.gsub(/\n|\r/, ""))
+          add_chunk_error(chunk, ex, result)
         ensure
           chunk.normalized_response.merge!(result)
           chunk.clean

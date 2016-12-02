@@ -26,6 +26,10 @@ class CPW::Speech::Engines::GoogleCloudSpeechEngineTest < Test::Unit::TestCase
     }.to_json)
   end
 
+  def test_descendant_of_speech_engine
+    assert_equal CPW::Speech::Engines::SpeechEngine, CPW::Speech::Engines::GoogleCloudSpeechEngine.superclass
+  end
+
   def test_default_options
     engine = CPW::Speech::Engines::GoogleCloudSpeechEngine.new("#{fixtures_root}/i-like-pickles.wav", :key => "test-key")
     assert_equal "v1beta1", engine.version
@@ -35,7 +39,7 @@ class CPW::Speech::Engines::GoogleCloudSpeechEngineTest < Test::Unit::TestCase
 
   def test_assert_unsupported_api_version
     engine = CPW::Speech::Engines::GoogleCloudSpeechEngine.new("#{fixtures_root}/i-like-pickles.wav", :key => "test-key", :version => "v1unsupported")
-    assert_raise RuntimeError do
+    assert_raise CPW::Speech::UnsupportedApiError do
       engine.perform
     end
   end
@@ -86,6 +90,7 @@ class CPW::Speech::Engines::GoogleCloudSpeechEngineTest < Test::Unit::TestCase
       assert_not_nil chunk.as_json['speaker_segment']['speaker_supervector_hash']
       assert_equal "http://www.example.com/S0.gmm", chunk.speaker.model_uri
     end
+    assert_equal true, audio.engine.perform_success?
   end
 
   def test_should_v1beta1_perform_threaded
