@@ -218,14 +218,11 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
       position: chunk.position,
       offset: chunk.offset,
       text: chunk.best_text,
-      score: chunk.best_score,
-      # processing_errors: chunk.response['errors'],
       processing_status: chunk.status,
       response: chunk.as_json,
       track_attributes: track_attributes
     }.tap do |h|
       h[:score] = chunk.best_score if chunk.best_score
-      h[:words] = chunk.words.to_json unless chunk.words.blank?
     end
 
     result = if ingest_chunk.try(:id)

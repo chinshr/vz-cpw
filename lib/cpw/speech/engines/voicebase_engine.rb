@@ -1,19 +1,11 @@
 module CPW
   module Speech
     module Engines
-      class VoicebaseEngine < Base
+      class VoicebaseEngine < SpeechEngine
         attr_accessor :api_version, :auth_key, :auth_secret,
           :client, :transcription_type, :media_url, :media_id,
           :srt_transcript, :json_transcript, :external_id,
           :voicebase_response
-
-        DEFAULT_UPLOAD_MEDIA_RETRIES     = 5
-        DEFAULT_FETCH_TRANSCRIPT_RETRIES = 360
-        RETRY_DELAY_IN_SECONDS           = 10
-
-        class InvalidResponseError < StandardError; end
-        class TimeoutError < StandardError; end
-        class UnsupportedLocale < StandardError; end
 
         def initialize(url_or_file, options = {})
           super url_or_file, options
@@ -72,7 +64,7 @@ module CPW
           self.chunks
         end
 
-        def convert_chunk(chunk, options = {})
+        def convert(chunk, options = {})
           result = {'status' => chunk.status}
           if chunk.raw_response.present?  # from splitter
             parse(chunk, chunk.raw_response, result)
@@ -131,7 +123,7 @@ module CPW
           end
         end
 
-        def upload_media(retries = DEFAULT_UPLOAD_MEDIA_RETRIES)
+        def upload_media(retries = max_retries)
           self.voicebase_response = client.upload_media({
             transcription_type: transcription_type
           }.tap {|o|
@@ -147,7 +139,7 @@ module CPW
             self.media_id = voicebase_response.media_id
           else
             if retries > 0
-              sleep RETRY_DELAY_IN_SECONDS
+              sleep retry_delay
               upload_media(retries - 1)
             else
               raise TimeoutError, "too many upload_media retries, response #{voicebase_response.inspect}"
@@ -197,13 +189,13 @@ module CPW
           end
         end
 
-        def transcript_ready?(retries = DEFAULT_FETCH_TRANSCRIPT_RETRIES)
+        def transcript_ready?(retries = max_poll_retries)
           self.voicebase_response = client.get_file_status({}.tap {|o| external_id ? o[:external_id] = external_id : o[:media_id] = media_id})
           if response_success_and_machine_ready?
             true
           else
             if retries > 0
-              sleep RETRY_DELAY_IN_SECONDS
+              sleep poll_retry_delay
               transcript_ready?(retries - 1)
             else
               false
@@ -260,7 +252,7 @@ module CPW
           when /it/ then "it"
           when /nl/ then "nl"
           else
-            raise UnsupportedLocale, "Unsupported language."
+            raise UnsupportedLocaleError, "Unsupported language."
           end
         end
 

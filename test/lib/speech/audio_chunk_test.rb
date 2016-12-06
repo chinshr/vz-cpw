@@ -33,10 +33,11 @@ class CPW::Speech::AudioChunkTest < Test::Unit::TestCase
     assert_equal segment, chunk.speaker_segment
     assert_equal "xyz", chunk.external_id
     assert_equal nil, chunk.poll_at
+    assert_equal false, chunk.extracted?
   end
 
   def test_attributes
-    chunk = CPW::Speech::AudioChunk.new(@splitter, 1.0, 5.0, {position: 1, response: {}})
+    chunk = CPW::Speech::AudioChunk.new(@splitter, 1.0, 5.0, {position: 1})
     chunk.best_text  = "sample"
     chunk.best_score = 0.86
 
@@ -50,6 +51,7 @@ class CPW::Speech::AudioChunkTest < Test::Unit::TestCase
     assert_equal 1, chunk.position
 
     assert_equal "sample", chunk.best_text
+    assert_equal chunk.best_text, chunk.to_text
     assert_equal chunk.best_text, chunk.to_s
 
     assert_equal 0.86, chunk.best_score
@@ -163,5 +165,12 @@ class CPW::Speech::AudioChunkTest < Test::Unit::TestCase
     assert_equal true, chunk.built?
     assert_equal true, chunk.encoded?
     assert_equal true, chunk.transcribed?
+  end
+
+  def test_is_extracted
+    chunk = CPW::Speech::AudioChunk.new(@splitter, 1.0, 5.0)
+    assert_equal false, chunk.extracted?
+    chunk.extracted = true
+    assert_equal true, chunk.extracted?
   end
 end
