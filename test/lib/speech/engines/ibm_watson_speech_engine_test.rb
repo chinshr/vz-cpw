@@ -58,7 +58,7 @@ class CPW::Speech::Engines::IbmWatsonSpeechEngineTest < Test::Unit::TestCase
   def test_should_perform_with_block
     engine = CPW::Speech::Engines::IbmWatsonSpeechEngine.new("#{fixtures_root}/i-like-pickles.wav")
     engine.perform do |chunk|
-      assert_equal CPW::Speech::AudioChunk::STATUS_TRANSCRIBED, chunk.status
+      assert_equal CPW::Speech::STATUS_PROCESSED, chunk.status
       assert_equal "I like pickles ", chunk.best_text
       assert_equal 0.946, chunk.best_score
       assert_equal 1, chunk.id
@@ -67,8 +67,9 @@ class CPW::Speech::Engines::IbmWatsonSpeechEngineTest < Test::Unit::TestCase
       assert_equal [], chunk.errors
       # as_json
       as_json = chunk.as_json
-      assert_equal CPW::Speech::AudioChunk::STATUS_TRANSCRIBED, as_json['status']
+      assert_equal CPW::Speech::STATUS_PROCESSED, as_json['status']
       assert_equal chunk.words.as_json, as_json['words']
+      assert_equal [:build, :encode, :convert], chunk.processed_stages.to_a
     end
   end
 

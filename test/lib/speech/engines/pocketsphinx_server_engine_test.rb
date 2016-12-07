@@ -37,12 +37,12 @@ class CPW::Speech::Engines::PocketsphinxServerEngineTest < Test::Unit::TestCase
     audio = CPW::Speech::AudioToText.new("#{fixtures_root}/i-like-pickles.wav",
       :engine => :pocketsphinx_server_engine, :verbose => false, :version => "v1")
     audio.to_json do |chunk|
-      assert_equal CPW::Speech::AudioChunk::STATUS_TRANSCRIBED, chunk.status
+      assert_equal CPW::Speech::AudioChunk::STATUS_SUCCESS, chunk.status
       assert_equal "I like pickles", chunk.best_text
       assert_equal 1, chunk.id
       assert_equal 0, chunk.offset
       assert_equal 3.52, chunk.duration
-      assert_equal CPW::Speech::AudioChunk::STATUS_TRANSCRIBED, JSON.parse(chunk.captured_json)['status']
+      assert_equal CPW::Speech::AudioChunk::STATUS_SUCCESS, JSON.parse(chunk.captured_json)['status']
       assert_equal [], chunk.errors
     end
   end

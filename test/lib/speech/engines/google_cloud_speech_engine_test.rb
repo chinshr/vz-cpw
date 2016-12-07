@@ -74,21 +74,22 @@ class CPW::Speech::Engines::GoogleCloudSpeechEngineTest < Test::Unit::TestCase
       }
     })
     audio.perform do |chunk|
-      assert_equal CPW::Speech::AudioChunk::STATUS_TRANSCRIBED, chunk.status
+      assert_equal CPW::Speech::STATUS_PROCESSED, chunk.status
       assert_equal "I like pickles", chunk.best_text
       assert_equal 0.92408695, chunk.best_score
       assert_equal 1, chunk.id
       assert_equal 0, chunk.offset
       assert_equal 3.5, chunk.duration
-      assert_equal CPW::Speech::AudioChunk::STATUS_TRANSCRIBED, chunk.as_json['status']
+      assert_equal CPW::Speech::STATUS_PROCESSED, chunk.as_json['status']
       assert_equal [], chunk.errors
       # diarize
       assert_equal "S0", chunk.speaker_segment.speaker_id
       assert_equal "F", chunk.speaker_segment.speaker_gender
-      assert_equal CPW::Speech::AudioChunk::STATUS_TRANSCRIBED, chunk.as_json['status']
+      assert_equal CPW::Speech::STATUS_PROCESSED, chunk.as_json['status']
       assert_equal true, chunk.as_json.has_key?('speaker_segment')
       assert_not_nil chunk.as_json['speaker_segment']['speaker_supervector_hash']
       assert_equal "http://www.example.com/S0.gmm", chunk.speaker.model_uri
+      assert_equal [:build, :encode, :convert], chunk.processed_stages.to_a
     end
     assert_equal true, audio.engine.perform_success?
   end
@@ -102,21 +103,22 @@ class CPW::Speech::Engines::GoogleCloudSpeechEngineTest < Test::Unit::TestCase
       }
     })
     audio.perform do |chunk|
-      assert_equal CPW::Speech::AudioChunk::STATUS_TRANSCRIBED, chunk.status
+      assert_equal CPW::Speech::STATUS_PROCESSED, chunk.status
       assert_equal "I like pickles", chunk.best_text
       assert_equal 0.92408695, chunk.best_score
       assert_equal 1, chunk.id
       assert_equal 0, chunk.offset
       assert_equal 3.5, chunk.duration
-      assert_equal CPW::Speech::AudioChunk::STATUS_TRANSCRIBED, chunk.as_json['status']
+      assert_equal CPW::Speech::STATUS_PROCESSED, chunk.as_json['status']
       assert_equal [], chunk.errors
       # diarize
       assert_equal "S0", chunk.speaker_segment.speaker_id
       assert_equal "F", chunk.speaker_segment.speaker_gender
-      assert_equal CPW::Speech::AudioChunk::STATUS_TRANSCRIBED, chunk.as_json['status']
+      assert_equal CPW::Speech::STATUS_PROCESSED, chunk.as_json['status']
       assert_equal true, chunk.as_json.has_key?('speaker_segment')
       assert_not_nil chunk.as_json['speaker_segment']['speaker_supervector_hash']
       assert_equal "http://www.example.com/S0.gmm", chunk.speaker.model_uri
+      assert_equal [:build, :encode, :convert], chunk.processed_stages.to_a
     end
   end
 

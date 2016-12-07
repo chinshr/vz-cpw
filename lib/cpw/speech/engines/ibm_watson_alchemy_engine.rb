@@ -40,7 +40,7 @@ module CPW
                 if op
                   response = AlchemyAPI.search(op, op_options)
                   parse(op, entity, response, result)
-                  entity.extracted = true
+                  entity.processed_stages << :extract
                 end
               rescue *KNOWN_ERRORS => ex
                 add_entity_error(entity, ex, result)

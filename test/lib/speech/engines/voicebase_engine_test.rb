@@ -64,7 +64,7 @@ class CPW::Speech::Engines::VoicebaseEngineTest < Test::Unit::TestCase
     assert_equal 6.33, chunks[0].duration
     assert_equal "In the beginning got screwed in the heavens of the art now the earth was formless and empty,",
       chunks[0].to_s
-    assert_equal CPW::Speech::AudioChunk::STATUS_TRANSCRIBED, chunks[0].status
+    assert_equal CPW::Speech::STATUS_PROCESSED, chunks[0].status
     assert_in_delta 0.67, chunks[0].confidence, 0.01
     assert_equal 19, chunks[0].words.size
 
@@ -76,7 +76,7 @@ class CPW::Speech::Engines::VoicebaseEngineTest < Test::Unit::TestCase
     assert_equal 7.03, chunks[1].duration
     assert_equal "darkness was over the surface of the deep of the Spirit of God was hovering over the waters.",
       chunks[1].to_s
-    assert_equal CPW::Speech::AudioChunk::STATUS_TRANSCRIBED, chunks[1].status
+    assert_equal CPW::Speech::STATUS_PROCESSED, chunks[1].status
     assert_in_delta 0.95, chunks[1].confidence, 0.01
     assert_equal 19, chunks[1].words.size
 
@@ -88,7 +88,7 @@ class CPW::Speech::Engines::VoicebaseEngineTest < Test::Unit::TestCase
     assert_in_delta 5.11, chunks[2].duration, 0.01
     assert_equal "and God said let there be light and there was light.",
       chunks[2].to_s
-    assert_equal CPW::Speech::AudioChunk::STATUS_TRANSCRIBED, chunks[2].status
+    assert_equal CPW::Speech::STATUS_PROCESSED, chunks[2].status
     assert_in_delta 0.94, chunks[2].confidence, 0.01
     assert_equal 12, chunks[2].words.size
 
@@ -100,7 +100,7 @@ class CPW::Speech::Engines::VoicebaseEngineTest < Test::Unit::TestCase
     assert_in_delta 5.79, chunks[3].duration, 0.01
     assert_equal "God saw that the light was good and he separated the light from the darkness,",
       chunks[3].to_s
-    assert_equal CPW::Speech::AudioChunk::STATUS_TRANSCRIBED, chunks[3].status
+    assert_equal CPW::Speech::STATUS_PROCESSED, chunks[3].status
     assert_in_delta 0.93, chunks[3].confidence, 0.01
     assert_equal 16, chunks[3].words.size
 
@@ -112,7 +112,7 @@ class CPW::Speech::Engines::VoicebaseEngineTest < Test::Unit::TestCase
     assert_equal 9.11, chunks[4].duration
     assert_equal "God called the light day of the darkness he called night. and There was evening and there was morning the first thing",
       chunks[4].to_s
-    assert_equal CPW::Speech::AudioChunk::STATUS_TRANSCRIBED, chunks[4].status
+    assert_equal CPW::Speech::STATUS_PROCESSED, chunks[4].status
     assert_in_delta 0.90, chunks[4].confidence, 0.01
     assert_equal 23, chunks[4].words.size
   end
@@ -204,3 +204,4 @@ class CPW::Speech::Engines::VoicebaseEngineTest < Test::Unit::TestCase
     }.merge(options))
   end
 end
+

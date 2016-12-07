@@ -42,12 +42,12 @@ class CPW::Speech::Engines::SpeechmaticsEngineTest < Test::Unit::TestCase
     })
 
     engine.perform do |chunk|
-      assert_equal CPW::Speech::AudioChunk::STATUS_TRANSCRIBED, chunk.status
+      assert_equal CPW::Speech::STATUS_PROCESSED, chunk.status
       assert_equal "I like pickles", chunk.to_s
       assert_in_delta 0.97, chunk.confidence, 0.01
       json = chunk.as_json
 
-      assert_equal CPW::Speech::AudioChunk::STATUS_TRANSCRIBED, json['status']
+      assert_equal CPW::Speech::STATUS_PROCESSED, json['status']
       assert_equal 1, json['position']
       assert_equal 1, json['id']
       assert_equal true, json.has_key?("hypotheses")

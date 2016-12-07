@@ -3,7 +3,7 @@ require 'test_helper.rb'
 class CPW::Speech::AudioChunkTest < Test::Unit::TestCase
 
   def setup
-    @engine   = stub('engine')
+    @engine = CPW::Speech::Engines::SpeechEngine.new(File.join(fixtures_root, 'i-like-pickles.wav'))
     @splitter = CPW::Speech::AudioSplitter.new(File.join(fixtures_root, 'i-like-pickles.wav'), {engine: @engine})
   end
 
@@ -17,7 +17,7 @@ class CPW::Speech::AudioChunkTest < Test::Unit::TestCase
     })
 
     assert_equal [], chunk.errors
-    assert_equal CPW::Speech::AudioChunk::STATUS_UNPROCESSED, chunk.status
+    assert_equal CPW::Speech::STATUS_UNPROCESSED, chunk.status
     assert_equal @splitter, chunk.splitter
     assert_equal false, chunk.copied
     assert_equal({}, chunk.raw_response)
@@ -145,32 +145,37 @@ class CPW::Speech::AudioChunkTest < Test::Unit::TestCase
 
   def test_is_built
     chunk = CPW::Speech::AudioChunk.new(@splitter, 1.0, 5.0)
-    chunk.status = CPW::Speech::AudioChunk::STATUS_BUILT
+    assert_equal true, chunk.unprocessed?
+    chunk.build
     assert_equal false, chunk.unprocessed?
     assert_equal true, chunk.built?
+    chunk.clean
   end
 
   def test_is_encoded
     chunk = CPW::Speech::AudioChunk.new(@splitter, 1.0, 5.0)
-    chunk.status = CPW::Speech::AudioChunk::STATUS_ENCODED
-    assert_equal false, chunk.unprocessed?
+    assert_equal true, chunk.unprocessed?
+    chunk.build.to_flac
     assert_equal true, chunk.built?
     assert_equal true, chunk.encoded?
+    chunk.clean
   end
 
-  def test_is_transcribed
+  def test_is_converted
     chunk = CPW::Speech::AudioChunk.new(@splitter, 1.0, 5.0)
-    chunk.status = CPW::Speech::AudioChunk::STATUS_TRANSCRIBED
-    assert_equal false, chunk.unprocessed?
+    assert_equal true, chunk.unprocessed?
+    chunk.build.to_wav
     assert_equal true, chunk.built?
     assert_equal true, chunk.encoded?
-    assert_equal true, chunk.transcribed?
+    assert_equal false, chunk.converted?
+    chunk.processed_stages << :convert
+    assert_equal true, chunk.converted?
   end
 
   def test_is_extracted
     chunk = CPW::Speech::AudioChunk.new(@splitter, 1.0, 5.0)
     assert_equal false, chunk.extracted?
-    chunk.extracted = true
+    chunk.processed_stages.push(:extract)
     assert_equal true, chunk.extracted?
   end
 end

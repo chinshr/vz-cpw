@@ -27,9 +27,10 @@ module CPW
 
         def convert(chunk, options = {})
           logger.info "sending chunk of size #{chunk.duration}, locale: #{locale}..." if self.verbose
+          result      = {'status' => (chunk.status = CPW::Speech::STATUS_PROCESSING)}
+          chunk.processed_stages << :convert
           retrying    = true
           retry_count = 0
-          result      = {'status' => chunk.status}
 
           while retrying && retry_count < max_retries # 3 retries
             service.verbose = self.verbose
@@ -56,7 +57,7 @@ module CPW
               logger.info "500 from Nuance retry after 0.5 seconds" if self.verbose
               retrying    = true
               retry_count += 1
-              sleep 0.5 # wait longer on error?, google??
+              sleep retry_delay
             else
               data                 = service.body_str
               data                 = data.split(/\n/) if data.present?
@@ -65,7 +66,7 @@ module CPW
               result['hypotheses'] = data.reject(&:blank?).map {|d| {'utterance' => d.force_encoding("utf-8")}}
 
               if result.key?('hypotheses') && result['hypotheses'].first
-                chunk.status     = result['status'] = AudioChunk::STATUS_TRANSCRIBED
+                chunk.status     = result['status'] = CPW::Speech::STATUS_PROCESSED
                 chunk.best_text  = result['hypotheses'].first['utterance']
                 chunk.best_score = result['hypotheses'].first['confidence']
                 logger.info result['hypotheses'].first['utterance'] if self.verbose
@@ -78,7 +79,7 @@ module CPW
 
           logger.info "chunk #{chunk.position} processed: #{result.inspect} from: #{data.inspect}" if self.verbose
         rescue Exception => ex
-          result['status'] = chunk.status = AudioChunk::STATUS_TRANSCRIPTION_ERROR
+          result['status'] = chunk.status = CPW::Speech::STATUS_PROCESSING_ERROR
           add_chunk_error(chunk, ex, result)
         ensure
           chunk.normalized_response.merge!(result)

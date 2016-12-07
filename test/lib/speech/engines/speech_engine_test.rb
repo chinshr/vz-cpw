@@ -183,8 +183,8 @@ class CPW::Speech::Engines::SpeechEngineTest < Test::Unit::TestCase
 
   def test_extracted
     engine = CPW::Speech::Engines::SpeechEngine.new("foo.wav")
-    assert_equal false, engine.send(:extracted?)
-    engine.extracted = true
-    assert_equal true, engine.send(:extracted?)
+    assert_equal false, engine.extracted?
+    engine.processed_stages << :extract
+    assert_equal true, engine.extracted?
   end
 end

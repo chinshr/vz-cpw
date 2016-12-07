@@ -24,9 +24,10 @@ module CPW
         end
 
         def convert(chunk, options = {})
+          result          = {'status' => (chunk.status = CPW::Speech::STATUS_PROCESSING)}
+          chunk.processed_stages << :convert
           retrying        = true
           retry_count     = 0
-          result          = {'status' => chunk.status}
           fetch_url       = "#{base_url}/#{api_version}/user/#{user_id}/jobs/#{chunk.external_id}/transcript?auth_token=#{auth_token}"
           service         = Curl::Easy.new(fetch_url)
           service.verbose = self.verbose
@@ -64,7 +65,7 @@ module CPW
 
           logger.info "chunk #{chunk.position} processed: #{result.inspect} from: #{service.body_str.inspect}" if self.verbose
         rescue Exception => ex
-          result['status'] = chunk.status = AudioChunk::STATUS_TRANSCRIPTION_ERROR
+          result['status'] = chunk.status = CPW::Speech::STATUS_PROCESSING_ERROR
           add_chunk_error(chunk, ex, result)
         ensure
           chunk.normalized_response.merge!(result)
@@ -141,11 +142,11 @@ module CPW
             chunk.best_score     = chunk.words.confidence
             result['hypotheses'] = [{'utterance' => chunk.best_text, 'confidence' => chunk.best_score}]
             result['words']      = chunk.words.as_json
-            result['status']     = chunk.status = AudioChunk::STATUS_TRANSCRIBED
+            result['status']     = chunk.status = CPW::Speech::STATUS_PROCESSED
 
             logger.info "result #{result.inspect}" if self.verbose
           else
-            chunk.status         = AudioChunk::STATUS_TRANSCRIPTION_ERROR
+            chunk.status         = CPW::Speech::STATUS_PROCESSING_ERROR
           end
           result
         end
