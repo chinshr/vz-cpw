@@ -13,7 +13,14 @@ require "srt"
 require "iso-639"
 require "alchemy_api"
 
-require "cpw/speech/extraction_helper"
+module CPW::Speech
+  STATUS_UNPROCESSED         = 0
+  STATUS_PROCESSING          = 1
+  STATUS_PROCESSED           = 3
+  STATUS_PROCESSING_ERROR    = -1
+end
+
+require "cpw/speech/process_helper"
 require "cpw/speech/audio_inspector"
 require "cpw/speech/audio_splitter"
 require "cpw/speech/audio_chunk"

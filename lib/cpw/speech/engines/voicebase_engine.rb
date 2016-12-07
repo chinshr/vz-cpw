@@ -51,6 +51,7 @@ module CPW
 
         def reset!(options = {})
           self.locale = options[:locale] || "en-US"
+
           self.client = ::VoiceBase::Client.new({
             api_version: api_version,
             auth_key: auth_key,
@@ -65,12 +66,14 @@ module CPW
         end
 
         def convert(chunk, options = {})
-          result = {'status' => chunk.status}
+          result = {'status' => (chunk.status = CPW::Speech::STATUS_PROCESSING)}
+          chunk.processed_stages << :convert
+
           if chunk.raw_response.present?  # from splitter
             parse(chunk, chunk.raw_response, result)
             logger.info "chunk #{chunk.position} processed: #{result.inspect}" if self.verbose
           else
-            result['status'] = chunk.status = AudioSplitter::AudioChunk::STATUS_TRANSCRIPTION_ERROR
+            result['status'] = chunk.status = CPW::Speech::STATUS_PROCESSING_ERROR
           end
         ensure
           chunk.normalized_response.merge!(result)
@@ -87,13 +90,12 @@ module CPW
             parse_words(chunk, data['words'], result)
 
             result['hypotheses'] = [{'utterance' => data['text'], 'confidence' => chunk.best_score}]
-            result['status']     = AudioChunk::STATUS_TRANSCRIBED
-            chunk.status         = AudioChunk::STATUS_TRANSCRIBED
+            result['status']     = chunk.status = CPW::Speech::STATUS_PROCESSED
             chunk.best_text      = data['text']
 
             logger.info "result #{result.inspect}" if self.verbose
           else
-            chunk.status         = AudioChunk::STATUS_TRANSCRIPTION_ERROR
+            chunk.status         = CPW::Speech::STATUS_PROCESSING_ERROR
           end
           result
         end

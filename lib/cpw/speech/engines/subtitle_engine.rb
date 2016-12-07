@@ -27,14 +27,15 @@ module CPW
         protected
 
         def convert(chunk, options = {})
-          result = {'status' => chunk.status}
+          result = {'status' => (chunk.status = CPW::Speech::STATUS_PROCESSING)}
           if chunk.raw_response.present?  # from splitter
             parse(chunk, chunk.raw_response, result)
             logger.info "chunk #{chunk.position} processed: #{result.inspect}" if self.verbose
           else
-            result['status'] = chunk.status = AudioSplitter::AudioChunk::STATUS_TRANSCRIPTION_ERROR
+            result['status'] = chunk.status = CPW::Speech::STATUS_PROCESSING_ERROR
           end
         ensure
+          chunk.processed_stages << :convert
           chunk.normalized_response.merge!(result)
           chunk.clean
           return result
@@ -47,14 +48,13 @@ module CPW
 
           if data.key?('text')
             result['hypotheses']    = [{'utterance' => data['text'], 'confidence' => default_chunk_score}]
-            result['status']        = AudioChunk::STATUS_TRANSCRIBED
-            chunk.status            = AudioChunk::STATUS_TRANSCRIBED
+            result['status']        = chunk.status = CPW::Speech::STATUS_PROCESSED
             chunk.best_text         = data['text']
             chunk.best_score        = default_chunk_score
 
             logger.info "result: #{result.inspect}" if self.verbose
           else
-            chunk.status = AudioChunk::STATUS_TRANSCRIPTION_ERROR
+            chunk.status = CPW::Speech::STATUS_PROCESSING_ERROR
           end
           result
         end

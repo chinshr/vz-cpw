@@ -19,7 +19,7 @@ class Ingest::MediaIngest::CrowdoutWorker < CPW::Worker::Base
         any_of_ingest_iterations: @ingest.iteration,
         score_lt: SOURCE_CHUNK_SCORE_THRESHOLD,
         any_of_types: "pocketsphinx_chunk",
-        any_of_processing_status: [Ingest::Chunk::STATUS_ENCODED, Ingest::Chunk::STATUS_TRANSCRIBED]
+        any_of_processing_status: [2, CPW::Speech::STATUS_PROCESSED]
       })
     end
 
@@ -37,7 +37,7 @@ class Ingest::MediaIngest::CrowdoutWorker < CPW::Worker::Base
           score_gteq: REFERENCE_CHUNK_SCORE_THRESHOLD,
           duration_lteq: source_chunk.duration.to_f + 3.0,
           any_of_locales: locale_language(source_chunk.locale),
-          any_of_processing_status: [Ingest::Chunk::STATUS_ENCODED, Ingest::Chunk::STATUS_TRANSCRIBED],
+          any_of_processing_status: [2, CPW::Speech::STATUS_PROCESSED],
           sort_order: [:random], limit: 1
         })
       end
@@ -102,7 +102,7 @@ class Ingest::MediaIngest::CrowdoutWorker < CPW::Worker::Base
       offset: 0,
       text: chunk_text,
       chunk_ids: chunk_ids,
-      processing_status: Ingest::Chunk::STATUS_ENCODED,
+      processing_status: 2, # TODO: used to be ENCODED
       track_attributes: track_attributes
     }
 

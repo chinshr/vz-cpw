@@ -2,7 +2,7 @@ module CPW
   module Speech
     module Engines
       class SpeechEngine
-        include CPW::Speech::ExtractionHelper
+        include CPW::Speech::ProcessHelper
 
         attr_accessor :media_file, :media_url, :rate,
           :verbose, :chunks, :chunk_duration, :max_results,
@@ -13,7 +13,7 @@ module CPW
           :extraction_engine, :extraction_mode, :extraction_options,
           :errors, :normalized_response
 
-        attr_writer :perform_threaded, :performed, :extracted
+        attr_writer :perform_threaded, :performed
 
         def initialize(media_file_or_url, options = {})
           options.symbolize_keys!
@@ -45,7 +45,6 @@ module CPW
           self.extraction_options  = options[:extraction_options] || {}
           self.errors              = []
           self.normalized_response = {}
-          self.extracted           = false
         end
 
         def perform(options = {})
@@ -57,7 +56,7 @@ module CPW
               grouped_chunks.map do |chunk|
                 Thread.new do
                   encode(chunk) unless chunk.encoded?
-                  convert(chunk, audio_chunk_options(options)) unless chunk.transcribed?
+                  convert(chunk, audio_chunk_options(options)) unless chunk.converted?
                   extract(chunk, extraction_engine_options(options)) if extract_chunks? && !chunk.extracted?
                 end
               end.map(&:join)
@@ -69,7 +68,7 @@ module CPW
             # sequential
             chunks.each do |chunk|
               encode(chunk) unless chunk.encoded?
-              convert(chunk, audio_chunk_options(options)) unless chunk.transcribed?
+              convert(chunk, audio_chunk_options(options)) unless chunk.converted?
               extract(chunk, extraction_engine_options(options)) if extract_chunks? && !chunk.extracted?
               yield chunk if block_given?
             end
@@ -79,7 +78,7 @@ module CPW
           logger.info ex.to_s
         ensure
           self.performed = true
-          normalized_response['status'] = CPW::Speech::AudioChunk::STATUS_TRANSCRIBED if perform_success?
+          normalized_response['status'] = CPW::Speech::STATUS_PROCESSED if perform_success?
           normalized_response['chunks'] = chunks.map {|chunk| chunk.as_json}
           raise ex if ex
           return chunks
@@ -105,7 +104,7 @@ module CPW
         end
 
         def perform_success?
-          performed? && chunks.size > 0 && chunks.all? {|ch| ch.status == CPW::Speech::AudioChunk::STATUS_TRANSCRIBED}
+          performed? && chunks.size > 0 && chunks.all? {|ch| ch.status == CPW::Speech::STATUS_PROCESSED}
         end
 
         def performed?
@@ -114,10 +113,6 @@ module CPW
 
         def perform_threaded?
           !!@perform_threaded
-        end
-
-        def extracted?
-          !!@extracted
         end
 
         protected

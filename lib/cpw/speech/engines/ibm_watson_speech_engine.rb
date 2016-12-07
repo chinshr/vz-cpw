@@ -33,9 +33,10 @@ module CPW
         end
 
         def convert(chunk, options = {})
-          retrying          = true
-          retry_count       = 0
-          result            = {'status' => chunk.status}
+          result      = {'status' => (chunk.status = CPW::Speech::STATUS_PROCESSING)}
+          chunk.processed_stages << :convert
+          retrying    = true
+          retry_count = 0
 
           base_url = "https://stream.watsonplatform.net/speech-to-text/api/#{api_version}/recognize"
           params = {
@@ -64,7 +65,7 @@ module CPW
           service.headers['Content-Type'] = "audio/flac"
           service.headers['User-Agent']   = user_agent
 
-          while retrying && retry_count < max_retries # 3 retries
+          while retrying && retry_count < max_retries
             # request
             service.post_body = chunk.to_flac_bytes
             service.http_post
@@ -82,13 +83,13 @@ module CPW
               logger.info "#{service.response_code} from IBM Watson Speech retry after 0.5 seconds" if self.verbose
               retrying    = true
               retry_count += 1
-              sleep 0.5 # wait longer on error?, Google?
+              sleep retry_delay
             end
           end
 
           logger.info "chunk #{chunk.position} processed: #{result.inspect} from: #{service.body_str.inspect}" if self.verbose
         rescue Exception => ex
-          result['status'] = chunk.status = AudioChunk::STATUS_TRANSCRIPTION_ERROR
+          result['status'] = chunk.status = CPW::Speech::STATUS_PROCESSING_ERROR
           add_chunk_error(chunk, ex, result)
         ensure
           chunk.normalized_response.merge!(result)
@@ -209,16 +210,16 @@ module CPW
             result['hypotheses'].reject! {|a| !a['confidence'].is_a?(Float)}
             result['hypotheses'].sort! {|x, y| y['confidence'] || 0 <=> x['confidence'] || 0}
 
-            chunk.status            = result['status'] = AudioChunk::STATUS_TRANSCRIBED
+            chunk.status            = result['status'] = CPW::Speech::STATUS_PROCESSED
             chunk.best_text         = result['hypotheses'].first['utterance']
             chunk.best_score        = result['hypotheses'].first['confidence']
 
             logger.info data['results'].inspect if self.verbose
           elsif data['error']
-            chunk.status = AudioChunk::STATUS_TRANSCRIPTION_ERROR
+            chunk.status = CPW::Speech::STATUS_PROCESSING_ERROR
             result['external_error'] = data['error']
           else
-            chunk.status = AudioChunk::STATUS_TRANSCRIPTION_ERROR
+            chunk.status = CPW::Speech::STATUS_PROCESSING_ERROR
           end
           result
         end
