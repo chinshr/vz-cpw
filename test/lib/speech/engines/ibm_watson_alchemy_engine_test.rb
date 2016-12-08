@@ -2,7 +2,8 @@ require 'test_helper.rb'
 
 class CPW::Speech::Engines::IbmWatsonAlchemyEngineTest < Test::Unit::TestCase
   def setup
-    @speech_engine = CPW::Speech::Engines::SpeechEngine.new(File.join(fixtures_root, 'i-like-pickles.wav'))
+    @speech_engine = CPW::Speech::Engines::SpeechEngine.new(File.join(fixtures_root, 'i-like-pickles.wav'),
+      {split_method: :basic})
     @splitter      = CPW::Speech::AudioSplitter.new(File.join(fixtures_root, 'i-like-pickles.wav'), {engine: @engine})
     @chunk         = CPW::Speech::AudioChunk.new(@splitter, 1.0, 5.0, {position: 1})
     stub_requests
@@ -33,7 +34,7 @@ class CPW::Speech::Engines::IbmWatsonAlchemyEngineTest < Test::Unit::TestCase
   def test_extract_keywords_from_chunk
     extraction_engine = CPW::Speech::Engines::IbmWatsonAlchemyEngine.new(@speech_engine, {
       api_key: "abcd1234",
-      include: :keyword_extraction
+      include: :keyword_extraction,
     })
     @chunk.stubs(:to_text).returns("I like pickles")
     assert_equal false, @chunk.extracted?

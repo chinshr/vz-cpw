@@ -51,12 +51,26 @@ class CPW::Speech::AudioSplitterTest < Test::Unit::TestCase
     assert_equal 1234, splitter.split_options[:port]
   end
 
+  def test_raise_invalid_split_method_error_with_invalid_split_method
+    splitter = CPW::Speech::AudioSplitter.new(@short_wav_file, {split_method: :foobar})
+    assert_raise CPW::Speech::InvalidSplitMethod do
+      splitter.split
+    end
+  end
+
+  def test_raise_invalid_split_method_error_with_auto_and_without_engine
+    engine = CPW::Speech::Engines::SpeechEngine.new(@short_wav_file)
+    splitter = CPW::Speech::AudioSplitter.new(@short_wav_file, {engine: engine})
+    assert_raise CPW::Speech::InvalidSplitMethod do
+      splitter.split
+    end
+  end
+
   def test_should_split_audio_into_flac_chunks
-    splitter = CPW::Speech::AudioSplitter.new(@short_wav_file)
+    splitter = CPW::Speech::AudioSplitter.new(@short_wav_file, {split_method: :basic})
 
     assert_equal '00:00:03.52', splitter.duration.to_s
     assert_equal 3.52, splitter.duration.to_f
-
     chunks = splitter.split
     assert_equal 1, chunks.size
     chunks.each do|chunk|
@@ -78,7 +92,7 @@ class CPW::Speech::AudioSplitterTest < Test::Unit::TestCase
   end
 
   def test_should_split_audio_into_wav_chunks
-    splitter = CPW::Speech::AudioSplitter.new(File.join(fixtures_root, 'i-like-pickles.wav'))
+    splitter = CPW::Speech::AudioSplitter.new(File.join(fixtures_root, 'i-like-pickles.wav'), {split_method: :basic})
 
     assert_equal '00:00:03.52', splitter.duration.to_s
     assert_equal 3.52, splitter.duration.to_f
@@ -104,7 +118,7 @@ class CPW::Speech::AudioSplitterTest < Test::Unit::TestCase
   end
 
   def test_should_split_audio_into_raw_chunks
-    splitter = CPW::Speech::AudioSplitter.new(File.join(fixtures_root, 'i-like-pickles.wav'))
+    splitter = CPW::Speech::AudioSplitter.new(@short_wav_file, {split_method: :basic})
 
     assert_equal '00:00:03.52', splitter.duration.to_s
     assert_equal 3.52, splitter.duration.to_f
@@ -130,7 +144,7 @@ class CPW::Speech::AudioSplitterTest < Test::Unit::TestCase
   end
 
   def test_should_use_basic_splitter_with_long_file
-    splitter = CPW::Speech::AudioSplitter.new(@long_wav_file)
+    splitter = CPW::Speech::AudioSplitter.new(@long_wav_file, {split_method: :basic})
 
     assert_equal '00:00:54.10', splitter.duration.to_s
     assert_equal 54.1, splitter.duration.to_f

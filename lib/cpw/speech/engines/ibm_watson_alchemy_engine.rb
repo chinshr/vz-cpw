@@ -16,7 +16,7 @@ module CPW
         def initialize(speech_engine, options = {})
           super(speech_engine, options)
 
-          self.api_key = options[:api_key] || ENV['IBM_WATSON_ALCHEMY_API_KEY']
+          self.api_key      = options[:api_key] || ENV['IBM_WATSON_ALCHEMY_API_KEY']
 
           AlchemyAPI.configure do |config|
             config.apikey      = api_key

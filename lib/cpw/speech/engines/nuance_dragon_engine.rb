@@ -7,10 +7,11 @@ module CPW
         def initialize(media_file_or_url, options = {})
           super media_file_or_url, options
 
-          self.base_url  = options.key?(:base_url) ? options[:base_url] : "https://dictation.nuancemobility.net:443"
-          self.app_id    = options[:app_id] if options.key?(:app_id)
-          self.app_key   = options[:app_key].gsub(/ 0x/, "") if options.key?(:app_key)
-          self.device_id = options.key?(:device_id) ? options[:device_id] : "8CGoCMXyIcJosb2"
+          self.base_url      = options.key?(:base_url) ? options[:base_url] : "https://dictation.nuancemobility.net:443"
+          self.app_id        = options[:app_id] if options.key?(:app_id)
+          self.app_key       = options[:app_key].gsub(/ 0x/, "") if options.key?(:app_key)
+          self.device_id     = options.key?(:device_id) ? options[:device_id] : "8CGoCMXyIcJosb2"
+          self.split_method  = options[:split_method] || :basic
         end
 
         protected
