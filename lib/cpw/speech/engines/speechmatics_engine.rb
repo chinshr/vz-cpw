@@ -9,10 +9,11 @@ module CPW
         def initialize(url_or_file, options = {})
           super url_or_file, options
 
-          self.base_url     = "https://api.speechmatics.com"
-          self.api_version  = options[:api_version] || ENV.fetch('SPEECHMATICS_API_VERSION', 'v1.0')
-          self.user_id      = options[:user_id] || ENV['SPEECHMATICS_USER_ID']
-          self.auth_token   = options[:auth_token] || ENV['SPEECHMATICS_AUTH_TOKEN']
+          self.base_url      = "https://api.speechmatics.com"
+          self.api_version   = options[:api_version] || ENV.fetch('SPEECHMATICS_API_VERSION', 'v1.0')
+          self.user_id       = options[:user_id] || ENV['SPEECHMATICS_USER_ID']
+          self.auth_token    = options[:auth_token] || ENV['SPEECHMATICS_AUTH_TOKEN']
+          self.split_method  = options[:split_method] || :basic
         end
 
         protected
@@ -50,7 +51,7 @@ module CPW
                 when /v1.0/
                   parse_response_v1_0(chunk, response, result)
                 else
-                  raise "Unsupported API version."
+                  raise NotImplementedError, "Unsupported API version `#{api_version}`."
                 end
                 retrying = false
               else
@@ -114,7 +115,7 @@ module CPW
             service.http_post(*form_fields)
 
             if service.response_code == 200
-              upload_response = JSON.parse(service.body_str)
+              upload_response   = JSON.parse(service.body_str)
               logger.info upload_response.inspect if self.verbose
               chunk.external_id = upload_response['id']
               check_wait        = (upload_response['check_wait'] || 10).to_i

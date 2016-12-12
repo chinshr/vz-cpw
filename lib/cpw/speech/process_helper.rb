@@ -14,6 +14,7 @@ module CPW
           encode: 2**1,
           convert: 2**2,
           extract: 2**3,
+          split: 2**4
         }
 
         attr_accessor :bits
@@ -108,6 +109,24 @@ module CPW
           processed_stages.include?(:extract)
         end
 
+        def split?
+          processed_stages.include?(:split)
+        end
+
+        def processing?
+          raise CPW::Speech::NotImplementedError, "status not present" unless respond_to?(:status)
+          status == CPW::Speech::STATUS_PROCESSING
+        end
+
+        def processed?
+          raise CPW::Speech::NotImplementedError, "status not present" unless respond_to?(:status)
+          status == CPW::Speech::STATUS_PROCESSED
+        end
+
+        def processing_error?
+          raise CPW::Speech::NotImplementedError, "status not present" unless respond_to?(:status)
+          status == CPW::Speech::STATUS_PROCESSING_ERROR
+        end
       end # InstanceMethods
     end # ProcessHelper
   end

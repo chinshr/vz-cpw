@@ -10,9 +10,10 @@ module CPW
 
         def initialize(media_file_or_url, options = {})
           super media_file_or_url, options
-          self.key     = options[:key]
-          self.version = options[:version] || "v1beta1"
-          self.method  = options[:method] || "syncrecognize"
+          self.key          = options[:key]
+          self.version      = options[:version] || "v1beta1"
+          self.method       = options[:method] || "syncrecognize"
+          self.split_method = options[:split_method] || :basic
         end
 
         protected

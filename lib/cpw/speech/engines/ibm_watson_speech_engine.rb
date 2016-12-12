@@ -18,6 +18,7 @@ module CPW
           self.api_version   = options[:api_version] || ENV.fetch('IBM_WATSON_SPEECH_API_VERSION', 'v1')
           self.username      = options[:username] || ENV.fetch('IBM_WATSON_SPEECH_USERNAME', nil)
           self.password      = options[:password] || ENV.fetch('IBM_WATSON_SPEECH_PASSWORD', nil)
+          self.split_method  = options[:split_method] || :basic
         end
 
         protected

@@ -7,7 +7,7 @@ require "pocketsphinx-ruby"
 require "cpw/pocketsphinx/audio_file_speech_recognizer"
 begin
   require "voicebase"
-rescue LoadError => error
+rescue LoadError
 end
 require "srt"
 require "iso-639"
@@ -40,3 +40,4 @@ class CPW::Speech::UnsupportedApiError < CPW::Speech::BaseError; end
 class CPW::Speech::UnsupportedLocaleError < CPW::Speech::BaseError; end
 class CPW::Speech::TimeoutError < CPW::Speech::BaseError; end
 class CPW::Speech::InvalidResponseError < CPW::Speech::BaseError; end
+class CPW::Speech::InvalidSplitMethod < CPW::Speech::BaseError; end

@@ -6,7 +6,8 @@ module CPW
 
         def initialize(media_file_or_url, options = {})
           super media_file_or_url, options
-          self.key = options[:key]
+          self.key           = options[:key]
+          self.split_method  = options[:split_method] || :basic
         end
 
         protected

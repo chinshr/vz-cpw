@@ -11,7 +11,7 @@ module CPW
           :audio_splitter, :max_threads, :retry_delay,
           :max_poll_retries, :poll_retry_delay, :user_agent,
           :extraction_engine, :extraction_mode, :extraction_options,
-          :errors, :normalized_response
+          :errors, :normalized_response, :status
 
         attr_writer :perform_threaded, :performed
 
@@ -23,6 +23,7 @@ module CPW
           else
             self.media_file        = media_file_or_url
           end
+          self.status              = CPW::Speech::STATUS_UNPROCESSED
           self.chunks              = []
           self.chunk_duration      = options[:chunk_duration].to_i if options.key?(:chunk_duration)
           self.verbose             = !!options[:verbose]
@@ -39,7 +40,7 @@ module CPW
           self.retry_delay         = options[:retry_delay] || ENV.fetch('SPEECH_RETRY_DELAY', 1).to_f
           self.max_poll_retries    = options[:max_poll_retries] || ENV.fetch('SPEECH_MAX_POLL_RETRIES', 360).to_i
           self.poll_retry_delay    = options[:poll_retry_delay] || ENV.fetch('SPEECH_POLL_RETRY_DELAY', 5).to_f
-          self.user_agent          = options[:user_agent] || "CPW-Speech/#{CPW::VERSION}"
+          self.user_agent          = options[:user_agent] || "vz-cpw-speech/#{CPW::VERSION}"
           self.extraction_engine   = options[:extraction_engine]
           self.extraction_mode     = options[:extraction_mode] || :auto
           self.extraction_options  = options[:extraction_options] || {}
@@ -118,13 +119,21 @@ module CPW
         protected
 
         def reset!(options = {})
-          @performed            = false
-          self.max_results      = options[:max_results] || 2
-          self.max_retries      = options[:max_retries] || 3
-          self.locale           = options[:locale] || "en-US"
+          @performed              = false
+          self.max_results        = options[:max_results] || 2
+          self.max_retries        = options[:max_retries] || 3
+          self.locale             = options[:locale] || "en-US"
           if media_file
-            self.audio_splitter = Speech::AudioSplitter.new(media_file, audio_splitter_options(options))
-            self.chunks         = audio_splitter.split
+            begin
+              self.status         = CPW::Speech::STATUS_PROCESSING
+              self.processed_stages << :split
+              self.audio_splitter = Speech::AudioSplitter.new(media_file, audio_splitter_options(options))
+              self.chunks         = audio_splitter.split
+              self.status         = CPW::Speech::STATUS_PROCESSED
+            rescue CPW::Speech::BaseError => error
+              self.status         = CPW::Speech::STATUS_PROCESSING_ERROR
+              raise error
+            end
           end
         end
 

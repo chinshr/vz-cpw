@@ -38,7 +38,8 @@ class CPW::Speech::Engines::GoogleCloudSpeechEngineTest < Test::Unit::TestCase
   end
 
   def test_assert_unsupported_api_version
-    engine = CPW::Speech::Engines::GoogleCloudSpeechEngine.new("#{fixtures_root}/i-like-pickles.wav", :key => "test-key", :version => "v1unsupported")
+    engine = CPW::Speech::Engines::GoogleCloudSpeechEngine.new("#{fixtures_root}/i-like-pickles.wav",
+      {:key => "test-key", :version => "v1unsupported"})
     assert_raise CPW::Speech::UnsupportedApiError do
       engine.perform
     end

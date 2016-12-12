@@ -27,7 +27,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "minitest", "~> 5.5"
   spec.add_development_dependency "test-unit", "~> 3.0"
   spec.add_development_dependency "mocha"
-  spec.add_development_dependency "webmock"
+  spec.add_development_dependency "webmock", "~> 1.21.0"
   spec.add_development_dependency "byebug"
   spec.add_development_dependency "foreman-monit", "~> 1.0.4"
 
@@ -46,7 +46,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "json", "~> 1.8.3"
   spec.add_dependency "youtube-dl.rb", "~> 0.2.5"
   spec.add_dependency "srt", "~> 0.1.3"
-  spec.add_dependency "voicebase-client-ruby"
+  spec.add_dependency "voicebase-client-ruby", "~> 1.2.2"
   spec.add_dependency "webvtt-ruby", "~> 0.3.2"
   spec.add_dependency "ttml-ruby"
   spec.add_dependency "diarize-ruby", "~> 0"

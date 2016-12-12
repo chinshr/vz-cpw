@@ -22,14 +22,21 @@ module CPW
 
       def split(options = {})
         assign_options(options)
-        if engine && engine.respond_to?(:split) && split_method == :auto
-          engine.split(self)
-        else
-          case split_method
-          when :diarize then split_with_diarize
+        case split_method
+        when :diarize then split_with_diarize
+        when :basic then split_with_basic
+        when :auto
+          if engine && engine.respond_to?(:split)
+            engine.split(self)
           else
-            split_with_basic
+            if engine
+              raise InvalidSplitMethod, "unsupported #split_method `#{split_method}` in `#{engine.class.inspect}` engine."
+            else
+              raise InvalidSplitMethod, "unsupported #split_method `#{split_method}`."
+            end
           end
+        else
+          raise InvalidSplitMethod, "split_method `#{split_method}` not supported."
         end
       end
 

@@ -1,6 +1,33 @@
 require 'test_helper.rb'
 
 class CPW::Speech::Engines::VoicebaseEngineTest < Test::Unit::TestCase
+  def test_initialize_default
+    engine = CPW::Speech::Engines::VoicebaseEngine.new("foo.wav")
+    assert_equal "foo.wav", engine.media_file
+    assert_equal "1.1", engine.api_version
+    assert_equal "machine", engine.transcription_type
+    assert_equal nil, engine.auth_key
+    assert_equal nil, engine.auth_secret
+    assert_equal nil, engine.auth_token
+    assert_equal nil, engine.external_id
+  end
+
+  def test_initialize_with_options
+    engine = CPW::Speech::Engines::VoicebaseEngine.new("foo.wav", {
+      api_version: "2.0",
+      transcription_type: "superpower_mr_america",
+      auth_key: "foobar_auth_key",
+      auth_secret: "foobar_auth_secret",
+      auth_token: "foobar_auth_token",
+      external_id: "foobar_external_id"
+    })
+    assert_equal "2.0", engine.api_version
+    assert_equal "superpower_mr_america", engine.transcription_type
+    assert_equal "foobar_auth_key", engine.auth_key
+    assert_equal "foobar_auth_secret", engine.auth_secret
+    assert_equal "foobar_auth_token", engine.auth_token
+    assert_equal "foobar_external_id", engine.external_id
+  end
 
   def test_should_initialize_with_media_url
     engine = CPW::Speech::Engines::VoicebaseEngine.new(
@@ -21,14 +48,16 @@ class CPW::Speech::Engines::VoicebaseEngineTest < Test::Unit::TestCase
     assert_equal "abcd1234", engine.external_id
   end
 
-  def test_should_clean
-    engine = new_engine
+  # auto split
+
+  def test_engine_v1_clean
+    engine = new_engine_v1_with_auto_split
     engine.stubs(:delete_file)
     engine.clean
   end
 
-  def test_locale
-    engine = new_engine
+  def test_engine_v1_locale
+    engine = new_engine_v1_with_auto_split
     engine.stubs(:split).returns([])
 
     engine.perform(locale: "en-US")
@@ -51,8 +80,8 @@ class CPW::Speech::Engines::VoicebaseEngineTest < Test::Unit::TestCase
     end
   end
 
-  def test_should_split
-    engine = new_engine
+  def test_engine_v1_auto_should_split
+    engine = new_engine_v1_with_auto_split
     chunks = engine.perform(basefolder: "/tmp")
 
     assert_equal 5, chunks.size
@@ -117,15 +146,15 @@ class CPW::Speech::Engines::VoicebaseEngineTest < Test::Unit::TestCase
     assert_equal 23, chunks[4].words.size
   end
 
-  def test_words_to_json
-    engine     = new_engine
+  def test_engine_v1_with_auto_split_words_to_json
+    engine     = new_engine_v1_with_auto_split
     chunks     = engine.perform(basefolder: "/tmp")
     words_json = '[{"p":1,"c":0.815,"s":0.309,"e":0.888,"w":"in"},{"p":2,"c":0.675,"s":0.888,"e":0.967,"w":"the"},{"p":3,"c":0.26,"s":0.967,"e":1.347,"w":"beginning"},{"p":4,"c":0.127,"s":1.347,"e":1.606,"w":"got"},{"p":5,"c":0.234,"s":1.606,"e":1.885,"w":"screwed"},{"p":6,"c":0.138,"s":1.885,"e":1.945,"w":"in"},{"p":7,"c":0.543,"s":1.945,"e":2.045,"w":"the"},{"p":8,"c":0.494,"s":2.045,"e":2.404,"w":"heavens"},{"p":9,"c":0.836,"s":2.404,"e":2.524,"w":"of"},{"p":10,"c":0.91,"s":2.524,"e":2.644,"w":"the"},{"p":11,"c":0.696,"s":2.644,"e":3.601,"w":"art"},{"p":12,"c":0.788,"s":3.601,"e":3.861,"w":"now"},{"p":13,"c":0.856,"s":3.861,"e":4.04,"w":"the"},{"p":14,"c":0.941,"s":4.04,"e":4.4,"w":"earth"},{"p":15,"c":0.981,"s":4.4,"e":4.599,"w":"was"},{"p":16,"c":0.982,"s":4.599,"e":5.337,"w":"formless"},{"p":17,"c":0.978,"s":5.337,"e":5.497,"w":"and"},{"p":18,"c":0.983,"s":5.497,"e":6.634,"w":"empty"},{"p":19,"c":65.535,"s":6.634,"e":6.644,"w":","}]'
     assert_equal words_json, chunks[0].words.to_json
   end
 
-  def test_should_hypotheses_in_convert
-    engine = new_engine
+  def test_engine_v1_with_auto_split_hypotheses_in_convert
+    engine = new_engine_v1_with_auto_split
     chunks = engine.perform(basefolder: "/tmp")
 
     assert_equal 1, chunks[0].as_json['hypotheses'].size
@@ -133,21 +162,84 @@ class CPW::Speech::Engines::VoicebaseEngineTest < Test::Unit::TestCase
     assert_in_delta 0.67, chunks[0].as_json['hypotheses'][0]['confidence'], 0.01
   end
 
-  def test_should_words_in_convert
-    engine     = new_engine
+  def test_engine_v1_with_auto_split_words_in_convert
+    engine     = new_engine_v1_with_auto_split
     chunks     = engine.perform(basefolder: "/tmp")
     words_json = '[{"p":1,"c":0.815,"s":0.309,"e":0.888,"w":"in"},{"p":2,"c":0.675,"s":0.888,"e":0.967,"w":"the"},{"p":3,"c":0.26,"s":0.967,"e":1.347,"w":"beginning"},{"p":4,"c":0.127,"s":1.347,"e":1.606,"w":"got"},{"p":5,"c":0.234,"s":1.606,"e":1.885,"w":"screwed"},{"p":6,"c":0.138,"s":1.885,"e":1.945,"w":"in"},{"p":7,"c":0.543,"s":1.945,"e":2.045,"w":"the"},{"p":8,"c":0.494,"s":2.045,"e":2.404,"w":"heavens"},{"p":9,"c":0.836,"s":2.404,"e":2.524,"w":"of"},{"p":10,"c":0.91,"s":2.524,"e":2.644,"w":"the"},{"p":11,"c":0.696,"s":2.644,"e":3.601,"w":"art"},{"p":12,"c":0.788,"s":3.601,"e":3.861,"w":"now"},{"p":13,"c":0.856,"s":3.861,"e":4.04,"w":"the"},{"p":14,"c":0.941,"s":4.04,"e":4.4,"w":"earth"},{"p":15,"c":0.981,"s":4.4,"e":4.599,"w":"was"},{"p":16,"c":0.982,"s":4.599,"e":5.337,"w":"formless"},{"p":17,"c":0.978,"s":5.337,"e":5.497,"w":"and"},{"p":18,"c":0.983,"s":5.497,"e":6.634,"w":"empty"},{"p":19,"c":65.535,"s":6.634,"e":6.644,"w":","}]'
     assert_equal words_json, chunks[0].as_json['words'].to_json
   end
 
+  # V1 basic split
+
+  def test_engine_v1_with_basic_split
+    engine = new_engine_v1_with_basic_split
+    chunks = engine.perform
+
+    assert_equal 1, chunks.size
+
+    #1
+    assert_equal CPW::Speech::STATUS_PROCESSED, chunks[0].status
+    assert_equal 1, chunks[0].position
+    assert_equal 1, chunks[0].id
+    assert_equal 0, chunks[0].start_time
+    assert_equal 3.52, chunks[0].end_time
+    assert_equal 3.52, chunks[0].duration
+    assert_equal "I like pickles", chunks[0].to_s
+    assert_in_delta 0.53, chunks[0].confidence, 0.01
+    assert_equal 3, chunks[0].words.size
+  end
+
+  # V2 basic split
+
+  def xtest_engine_v2_with_basic_split
+    engine = new_engine_v2_with_basic_split
+    chunks = engine.perform
+
+    assert_equal 1, chunks.size
+
+    #1
+    assert_equal CPW::Speech::STATUS_PROCESSED, chunks[0].status
+    assert_equal 1, chunks[0].position
+    assert_equal 1, chunks[0].id
+    assert_equal 0, chunks[0].start_time
+    assert_equal 3.52, chunks[0].end_time
+    assert_equal 3.52, chunks[0].duration
+    assert_equal "I like pickles", chunks[0].to_s
+    assert_in_delta 0.53, chunks[0].confidence, 0.01
+    assert_equal 3, chunks[0].words.size
+  end
+
   protected
 
-  def new_engine(options = {})
+  def new_engine_v1_with_basic_split(options = {})
     media_file = File.join(fixtures_root, "i-like-pickles.wav")
+    upload_response = stub("Voicebase::Response")
+    upload_response.stubs(:success?).returns(true)
+    upload_response.stubs(:media_id).returns("abcdefgh")
+    Voicebase::Client.any_instance.stubs(:upload_media).returns(upload_response)
+    upload_response = stub("upload_response")
+    transcript_response = stub("Voicebase::Response")
+    transcript_response.stubs(:success?).returns(true)
+    transcript_response.stubs(:transcript_ready?).returns(true)
+    words = [{"p"=>1, "c"=>0.782, "s"=>9, "e"=>1565, "w"=>"I"}, {"p"=>2, "c"=>0.602, "s"=>1565, "e"=>1905, "w"=>"like"}, {"p"=>3, "c"=>0.214, "s"=>1905, "e"=>2733, "w"=>"pickles"}]
+    transcript_response.stubs(:transcript).returns(words)
+    Voicebase::Client.any_instance.stubs(:get_transcript).returns(transcript_response)
 
+    CPW::Speech::Engines::VoicebaseEngine.new(media_file, {
+      api_version: "1.1",
+      transcription_type: "machine",
+      auth_key: "opqrst",
+      auth_secret: "uvwxyz",
+      auth_token: "footoken",
+      split_method: :basic
+    }.merge(options))
+  end
+
+  def new_engine_v1_with_auto_split(options = {})
+    media_file = File.join(fixtures_root, "i-like-pickles.wav")
     # upload_media (with file)
     stub_request(:post, "https://api.voicebase.com/services").
-      with(:headers => {'Accept'=>'application/json', 'Content-Length'=>'226171', 'Content-Type'=>'multipart/form-data; boundary=-----------RubyMultipartPost'}).
+      with(:headers => {'Accept'=>'application/json', "Content-Type" => %r[multipart/form-data]}).
       to_return(:status => 200,
         :body => '{"requestStatus":"SUCCESS","statusMessage":"The request was processed successfully","mediaId":"569e7fe9092a6","externalId":"abcd1234","fileUrl":"http:\/\/www.voicebase.com\/autonotes\/private_detail\/14167302\/hash=apiWZmtoZmqWbGydx2iXnXGSb2qWlw=="}',
         :headers => {
@@ -176,7 +268,6 @@ class CPW::Speech::Engines::VoicebaseEngineTest < Test::Unit::TestCase
 
     # get_transcript (srt)
     stub_request(:post, "https://api.voicebase.com/services").
-      #with(:body => "version=1.1&apiKey=opqrst&password=uvwxyz&lang=en&mediaID=569e7fe9092a6&format=srt&action=getTranscript",
       with(:body => "version=1.1&apiKey=opqrst&password=uvwxyz&lang=en&format=srt&externalID=abcd1234&action=getTranscript",
         :headers => {'Accept'=>'application/json'}).
       to_return(:status => 200,
@@ -200,7 +291,33 @@ class CPW::Speech::Engines::VoicebaseEngineTest < Test::Unit::TestCase
       transcription_type: "machine",
       auth_key: "opqrst",
       auth_secret: "uvwxyz",
-      external_id: "abcd1234"
+      external_id: "abcd1234",
+      split_method: :auto
+    }.merge(options))
+  end
+
+  def new_engine_v2_with_basic_split(options = {})
+    media_file = File.join(fixtures_root, "i-like-pickles.wav")
+    upload_response = stub("Voicebase::Response")
+    upload_response.stubs(:success?).returns(true)
+    upload_response.stubs(:media_id).returns("123456789")
+    upload_response.stubs(:foo).returns("bar")
+    Voicebase::Client.any_instance.stubs(:upload_media).returns(upload_response)
+    # Voicebase::V2::Client.stubs(:upload_media).returns(upload_response)
+    upload_response = stub("upload_response")
+    transcript_response = stub("Voicebase::Response")
+    transcript_response.stubs(:success?).returns(true)
+    transcript_response.stubs(:transcript_ready?).returns(true)
+    words = [{"p"=>1, "c"=>0.782, "s"=>9, "e"=>1565, "w"=>"I"}, {"p"=>2, "c"=>0.602, "s"=>1565, "e"=>1905, "w"=>"like"}, {"p"=>3, "c"=>0.214, "s"=>1905, "e"=>2733, "w"=>"pickles"}]
+    transcript_response.stubs(:transcript).returns(words)
+    Voicebase::Client.any_instance.stubs(:get_transcript).returns(transcript_response)
+    # Voicebase::V2::Client.stubs(:get_transcript).returns(transcript_response)
+
+    CPW::Speech::Engines::VoicebaseEngine.new(media_file, {
+      api_version: "2.0",
+      transcription_type: "machine",
+      auth_token: "footoken",
+      split_method: :basic
     }.merge(options))
   end
 end
