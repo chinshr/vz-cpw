@@ -217,6 +217,28 @@ module CPW
         @terminate || (ingest.present? && !!ingest.terminate)
       end
 
+      def lsh_index
+        @lsh_index ||= begin
+          storage = if ENV['REDIS_URL']
+            LSH::Storage::RedisBackend.new({
+              # :redis => { :host => '127.0.0.1', :port => 6379 },
+              :redis => {:url => ENV['REDIS_URL']},
+              :data_dir => '/tmp',
+              :cache_vectors => false
+            })
+          else
+            LSH::Storage::Memory.new
+          end
+
+          LSH::Index.new({
+            :dim => ENV.fetch('LSH_INDEX_DIMENSIONS', 12288).to_i,
+            :number_of_random_vectors => ENV.fetch('LSH_NUMBER_OF_RANDOM_VECTORS', 16).to_i,
+            :number_of_independent_projections => ENV.fetch('LSH_NUMBER_OF_INDEPENDENT_PROJECTIONS', 150).to_i,
+            :window => Float::INFINITY
+          }, storage)
+        end
+      end
+
       private
 
       def finished_progress

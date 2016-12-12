@@ -29,6 +29,8 @@ module CPW
           chunk.processed_stages << :convert
           retrying        = true
           retry_count     = 0
+
+          # service
           fetch_url       = "#{base_url}/#{api_version}/user/#{user_id}/jobs/#{chunk.external_id}/transcript?auth_token=#{auth_token}"
           service         = Curl::Easy.new(fetch_url)
           service.verbose = self.verbose
@@ -51,7 +53,7 @@ module CPW
                 when /v1.0/
                   parse_response_v1_0(chunk, response, result)
                 else
-                  raise NotImplementedError, "Unsupported API version `#{api_version}`."
+                  raise UnsupportedApiError, "Unsupported API version `#{api_version}`."
                 end
                 retrying = false
               else
@@ -102,7 +104,7 @@ module CPW
             form_fields.push Curl::PostField.content('diarisation', "false")
             form_fields.push Curl::PostField.content('meta', "#{chunk.id}")
             form_fields.push Curl::PostField.content('notification', "none")
-            form_fields.push Curl::PostField.file('data_file', chunk.wav_chunk)
+            form_fields.push Curl::PostField.file('data_file', chunk.wav_file_name)
             if !chunk.best_text.blank?
               # alignment
               form_fields.push Curl::PostField.file('text_file', chunk.best_text)

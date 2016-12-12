@@ -15,7 +15,7 @@ class CPW::Speech::Engines::SpeechEngineTest < Test::Unit::TestCase
     assert_equal false, engine.verbose
     assert_equal :auto, engine.split_method
     assert_equal({}, engine.split_options)
-    assert_equal false, engine.perform_threaded?
+    assert_equal false, engine.send(:perform_threaded?)
     assert_equal 10, engine.max_threads
     assert_equal 1, engine.retry_delay
     assert_equal 360, engine.max_poll_retries
@@ -43,10 +43,11 @@ class CPW::Speech::Engines::SpeechEngineTest < Test::Unit::TestCase
       :retry_delay => 55,
       :max_poll_retries => 999,
       :poll_retry_delay => 67,
-      :user_agent => "Mozilla/5.0"
+      :user_agent => "Mozilla/5.0",
+      :extraction_engine => :ibm_watson_alchemy_engine
     })
     assert_equal "foo.wav", engine.media_file
-    assert_equal true, engine.perform_threaded?
+    assert_equal true, engine.send(:perform_threaded?)
     assert_equal 99, engine.chunk_duration
     assert_equal 99, engine.chunk_duration
     assert_equal true, engine.verbose
@@ -60,6 +61,7 @@ class CPW::Speech::Engines::SpeechEngineTest < Test::Unit::TestCase
     assert_equal 999, engine.max_poll_retries
     assert_equal 67, engine.poll_retry_delay
     assert_equal "Mozilla/5.0", engine.user_agent
+    assert_equal :ibm_watson_alchemy_engine, engine.extraction_engine
   end
 
   def test_locale
@@ -117,11 +119,12 @@ class CPW::Speech::Engines::SpeechEngineTest < Test::Unit::TestCase
     assert_equal({:mode => :foo}, options[:split_options])
   end
 
-  def test_extraction_engine_class_for
-    engine = CPW::Speech::Engines::SpeechEngine.new("foo.wav")
-    assert_equal CPW::Speech::Engines::IbmWatsonAlchemyEngine, engine.send(:extraction_engine_class_for, :ibm_watson_alchemy_engine)
-    assert_equal nil, engine.send(:extraction_engine_class_for, :foo)
-    assert_equal nil, engine.send(:extraction_engine_class_for, nil)
+  def test_extraction_engine_class
+    engine = CPW::Speech::Engines::SpeechEngine.new("foo.wav", {extraction_engine: :ibm_watson_alchemy_engine})
+    assert_equal CPW::Speech::Engines::IbmWatsonAlchemyEngine, engine.send(:extraction_engine_class)
+
+    engine = CPW::Speech::Engines::SpeechEngine.new("foo.wav", {extraction_engine: :foo})
+    assert_equal nil, engine.send(:extraction_engine_class)
   end
 
   def test_extraction_engine_options
@@ -144,7 +147,7 @@ class CPW::Speech::Engines::SpeechEngineTest < Test::Unit::TestCase
 
   def test_should_not_be_perform_success_with_new_engine
     engine = CPW::Speech::Engines::SpeechEngine.new("foo.wav")
-    assert_equal false, engine.perform_success?
+    assert_equal false, engine.send(:perform_success?)
   end
 
   def test_add_chunk_error
@@ -169,6 +172,18 @@ class CPW::Speech::Engines::SpeechEngineTest < Test::Unit::TestCase
 
     engine = CPW::Speech::Engines::SpeechEngine.new("foo.wav", {extraction_mode: :all})
     assert_equal true, engine.send(:extract_chunks?)
+
+    engine = CPW::Speech::Engines::SpeechEngine.new("foo.wav", {extraction_mode: [:chunks]})
+    assert_equal true, engine.send(:extract_chunks?)
+
+    engine = CPW::Speech::Engines::SpeechEngine.new("foo.wav", {extraction_mode: [:chunk]})
+    assert_equal true, engine.send(:extract_chunks?)
+
+    engine = CPW::Speech::Engines::SpeechEngine.new("foo.wav", {extraction_mode: [:chunks, :media]})
+    assert_equal true, engine.send(:extract_chunks?)
+
+    engine = CPW::Speech::Engines::SpeechEngine.new("foo.wav", {extraction_mode: [:foobar]})
+    assert_equal false, engine.send(:extract_chunks?)
   end
 
   def test_extract_media
@@ -180,6 +195,15 @@ class CPW::Speech::Engines::SpeechEngineTest < Test::Unit::TestCase
 
     engine = CPW::Speech::Engines::SpeechEngine.new("foo.wav", {extraction_mode: :all})
     assert_equal true, engine.send(:extract_media?)
+
+    engine = CPW::Speech::Engines::SpeechEngine.new("foo.wav", {extraction_mode: [:media]})
+    assert_equal true, engine.send(:extract_media?)
+
+    engine = CPW::Speech::Engines::SpeechEngine.new("foo.wav", {extraction_mode: [:media, :chunks]})
+    assert_equal true, engine.send(:extract_media?)
+
+    engine = CPW::Speech::Engines::SpeechEngine.new("foo.wav", {extraction_mode: [:foobar]})
+    assert_equal false, engine.send(:extract_media?)
   end
 
   def test_extracted

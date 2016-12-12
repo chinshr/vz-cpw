@@ -97,6 +97,25 @@ class WorkerBaseTest < Test::Unit::TestCase
     assert_equal false, worker.send(:has_perform_error?)
   end
 
+  def test_lsh_index
+    worker = CPW::Worker::Base.new
+    ENV['REDIS_URL'] = nil
+    ENV['LSH_INDEX_DIMENSIONS'] = "100"
+    ENV['LSH_NUMBER_OF_RANDOM_VECTORS'] = "8"
+    ENV['LSH_NUMBER_OF_INDEPENDENT_PROJECTIONS'] = "150"
+    index = worker.send(:lsh_index)
+    assert_not_nil index
+    v1 = index.random_vector(100)
+    v2 = index.random_vector(100)
+    v3 = index.random_vector(100)
+    index.add(v1, 1)
+    assert_equal v1, index.id_to_vector(1)
+    assert_equal nil, index.id_to_vector(2)
+    index.add(v2, 2)
+    index.add(v3, 3)
+    assert_equal true, index.query(v1).size >= 1
+  end
+
   protected
 
   def stub_ingest(attributes = {})

@@ -13,11 +13,10 @@ module CPW
           :extraction_engine, :extraction_mode, :extraction_options,
           :errors, :normalized_response, :status
 
-        attr_writer :perform_threaded, :performed
+        attr_writer :perform_threaded
 
         def initialize(media_file_or_url, options = {})
           options.symbolize_keys!
-          self.performed           = false
           if valid_url?(media_file_or_url)
             self.media_url         = media_file_or_url
           else
@@ -51,6 +50,10 @@ module CPW
         def perform(options = {})
           reset! options
 
+          # set state & stage
+          self.status      = CPW::Speech::STATUS_PROCESSING
+          processed_stages << :perform
+
           if perform_threaded?
             # parallel
             chunks.in_groups_of(max_threads).map(&:compact).each do |grouped_chunks|
@@ -74,15 +77,12 @@ module CPW
               yield chunk if block_given?
             end
           end
-          extract(self, extraction_engine_options(options)) if extract_media? && !extracted? && perform_success?
-        rescue Exception => ex
-          logger.info ex.to_s
-        ensure
-          self.performed = true
-          normalized_response['status'] = CPW::Speech::STATUS_PROCESSED if perform_success?
+          # cleanup
           normalized_response['chunks'] = chunks.map {|chunk| chunk.as_json}
-          raise ex if ex
-          return chunks
+          extract(self, extraction_engine_options(options)) if extract_media? && !extracted? && perform_success?
+          self.status = normalized_response['status'] = CPW::Speech::STATUS_PROCESSED
+          # done
+          chunks
         end
 
         def as_json(options = {})
@@ -104,22 +104,10 @@ module CPW
           chunks.each {|chunk| chunk.clean} if chunks
         end
 
-        def perform_success?
-          performed? && chunks.size > 0 && chunks.all? {|ch| ch.status == CPW::Speech::STATUS_PROCESSED}
-        end
-
-        def performed?
-          !!@performed
-        end
-
-        def perform_threaded?
-          !!@perform_threaded
-        end
-
         protected
 
         def reset!(options = {})
-          @performed              = false
+          self.processed_stages   = []
           self.max_results        = options[:max_results] || 2
           self.max_retries        = options[:max_retries] || 3
           self.locale             = options[:locale] || "en-US"
@@ -154,7 +142,6 @@ module CPW
         # }}
         def extract(entity, options = {})
           result = nil
-          extraction_engine_class = extraction_engine_class_for(options[:extraction_engine])
           if extraction_engine_class
             extraction_engine = extraction_engine_class.new(self, extraction_engine_options(options))
             result = extraction_engine.extract(entity)
@@ -187,29 +174,40 @@ module CPW
           {verbose: verbose}.merge(options).reject {|k,v| v.blank?}
         end
 
+        def valid_url?(url)
+          !!(url =~ URI::DEFAULT_PARSER.regexp[:ABS_URI])
+        end
+
         def extraction_engine_options(options = {})
           {
             include: extraction_options[:include]
           }.merge(options[:extraction_options] || {}).reject {|k,v| v.blank?}
         end
 
-        def valid_url?(url)
-          !!(url =~ URI::DEFAULT_PARSER.regexp[:ABS_URI])
-        end
-
-        def extraction_engine_class_for(name)
-          "CPW::Speech::Engines::#{name.to_s.classify}".constantize if name
+        def extraction_engine_class
+          "CPW::Speech::Engines::#{self.extraction_engine.to_s.classify}".constantize if self.extraction_engine
         rescue NameError => ex
           nil
         end
 
         def extract_chunks?
-          extraction_mode && (extraction_mode == :chunks || extraction_mode == :all)
+          em = [extraction_mode].flatten.reject(&:blank?)
+          em.include?(:chunks) || em.include?(:chunk) || em.include?(:all)
         end
 
         def extract_media?
-          extraction_mode && (extraction_mode == :media || extraction_mode == :all)
+          em = [extraction_mode].flatten.reject(&:blank?)
+          em.include?(:media) || em.include?(:all)
         end
+
+        def perform_threaded?
+          !!@perform_threaded
+        end
+
+        def perform_success?
+          performed? && chunks.size > 0 && chunks.all? {|ch| ch.status == CPW::Speech::STATUS_PROCESSED}
+        end
+
       end # SpeechEngine
     end
   end

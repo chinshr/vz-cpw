@@ -41,3 +41,5 @@ class CPW::Speech::UnsupportedLocaleError < CPW::Speech::BaseError; end
 class CPW::Speech::TimeoutError < CPW::Speech::BaseError; end
 class CPW::Speech::InvalidResponseError < CPW::Speech::BaseError; end
 class CPW::Speech::InvalidSplitMethod < CPW::Speech::BaseError; end
+class CPW::Speech::BuildError < CPW::Speech::BaseError; end
+class CPW::Speech::EncodeError < CPW::Speech::BaseError; end

@@ -31,15 +31,27 @@ class CPW::Speech::Engines::GoogleCloudSpeechEngineTest < Test::Unit::TestCase
   end
 
   def test_default_options
-    engine = CPW::Speech::Engines::GoogleCloudSpeechEngine.new("#{fixtures_root}/i-like-pickles.wav", :key => "test-key")
-    assert_equal "v1beta1", engine.version
-    assert_equal "syncrecognize", engine.method
-    assert_equal "test-key", engine.key
+    engine = CPW::Speech::Engines::GoogleCloudSpeechEngine.new("#{fixtures_root}/i-like-pickles.wav", {
+      :api_key => "test-key"
+    })
+    assert_equal "v1beta1", engine.api_version
+    assert_equal "syncrecognize", engine.api_method
+    assert_equal "test-key", engine.api_key
+  end
+
+  def test_base_url
+    engine = CPW::Speech::Engines::GoogleCloudSpeechEngine.new("#{fixtures_root}/i-like-pickles.wav", {
+      :api_key => "test-key"
+    })
+    assert_equal nil, engine.base_url
+    engine.send(:reset!)
+    assert_equal "https://speech.googleapis.com/v1beta1/speech:syncrecognize?key=test-key",
+      engine.base_url
   end
 
   def test_assert_unsupported_api_version
     engine = CPW::Speech::Engines::GoogleCloudSpeechEngine.new("#{fixtures_root}/i-like-pickles.wav",
-      {:key => "test-key", :version => "v1unsupported"})
+      {:api_key => "test-key", :api_version => "v1unsupported"})
     assert_raise CPW::Speech::UnsupportedApiError do
       engine.perform
     end
@@ -49,14 +61,20 @@ class CPW::Speech::Engines::GoogleCloudSpeechEngineTest < Test::Unit::TestCase
 
   def test_should_v1beta1_convert_audio_to_text
     audio = CPW::Speech::AudioToText.new("#{fixtures_root}/i-like-pickles.wav", {
-      :engine => :google_cloud_speech_engine, :verbose => false, :key => "test_key", :version => "v1beta1"
+      :engine => :google_cloud_speech_engine,
+      :verbose => false,
+      :api_key => "test_key",
+      :api_version => "v1beta1"
     })
     assert_equal "I like pickles", audio.to_text
   end
 
   def test_should_v1beta1_convert_audio_to_json
     audio = CPW::Speech::AudioToText.new("#{fixtures_root}/i-like-pickles.wav", {
-      :engine => :google_cloud_speech_engine, :verbose => false, :key => "test_key", :version => "v1beta1"
+      :engine => :google_cloud_speech_engine,
+      :verbose => false,
+      :api_key => "test_key",
+      :api_version => "v1beta1"
     })
     json = audio.as_json
     assert_equal true, json.has_key?("chunks")
@@ -69,8 +87,12 @@ class CPW::Speech::Engines::GoogleCloudSpeechEngineTest < Test::Unit::TestCase
 
   def test_should_v1beta1_perform
     audio = CPW::Speech::AudioToText.new("#{fixtures_root}/i-like-pickles.wav", {
-      :engine => :google_cloud_speech_engine, :verbose => false, :key => "test_key", :version => "v1beta1",
-      :split_method => :diarize, :split_options => {
+      :engine => :google_cloud_speech_engine,
+      :verbose => false,
+      :api_key => "test_key",
+      :api_version => "v1beta1",
+      :split_method => :diarize,
+      :split_options => {
         :model_base_url => "http://www.example.com"
       }
     })
@@ -92,14 +114,18 @@ class CPW::Speech::Engines::GoogleCloudSpeechEngineTest < Test::Unit::TestCase
       assert_equal "http://www.example.com/S0.gmm", chunk.speaker.model_uri
       assert_equal [:build, :encode, :convert], chunk.processed_stages.to_a
     end
-    assert_equal true, audio.engine.perform_success?
+    assert_equal true, audio.engine.send(:perform_success?)
   end
 
   def test_should_v1beta1_perform_threaded
     audio = CPW::Speech::AudioToText.new("#{fixtures_root}/i-like-pickles.wav", {
-      :engine => :google_cloud_speech_engine, :verbose => false, :key => "test_key", :version => "v1beta1",
+      :engine => :google_cloud_speech_engine,
+      :verbose => false,
+      :api_key => "test_key",
+      :api_version => "v1beta1",
       :perform_threaded => true,
-      :split_method => :diarize, :split_options => {
+      :split_method => :diarize,
+      :split_options => {
         :model_base_url => "http://www.example.com"
       }
     })

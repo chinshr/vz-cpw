@@ -16,7 +16,7 @@ module CPW
         def initialize(speech_engine, options = {})
           super(speech_engine, options)
 
-          self.api_key      = options[:api_key] || ENV['IBM_WATSON_ALCHEMY_API_KEY']
+          self.api_key = options[:api_key] || ENV['IBM_WATSON_ALCHEMY_API_KEY']
 
           AlchemyAPI.configure do |config|
             config.apikey      = api_key
@@ -29,19 +29,14 @@ module CPW
         # {options: {include: [[:keyword_extraction, {emotion: true}], :sentiment_analysis]}}
         def extract(entity, options = {})
           result, options = {}, self.options.merge(options)
-          if options && options[:include]
-            operations = [options[:include]].to_a.flatten
-            operations.each do |operation|
-              operation = [operation].to_a.flatten
+          operations = extract_operations(options)
+          unless operations.empty?
+            operations.each do |operation, op_options|
               begin
-                op         = operation[0]
-                op_options = operation[1] || {}
-                op_options.merge!(text: entity.to_text)
-                if op
-                  response = AlchemyAPI.search(op, op_options)
-                  parse(op, entity, response, result)
-                  entity.processed_stages << :extract
-                end
+                response = AlchemyAPI.search(operation,
+                  op_options.merge({text: entity.to_text}))
+                parse(operation, entity, response, result)
+                entity.processed_stages << :extract
               rescue *KNOWN_ERRORS => ex
                 add_entity_error(entity, ex, result)
               end
@@ -55,6 +50,37 @@ module CPW
         def parse(operation, entity, response, result)
           result[indexer(operation)] = entity.normalized_response[indexer(operation)] = response
           result
+        end
+
+        def extract_operations(options = {})
+          operations = {}
+          if includes = options[:include]
+            if includes.is_a?(Array)
+              includes.each do |el|
+                if el.is_a?(Array)
+                  operations[el.first.to_sym] = el.last || {}
+                else
+                  operations[el.to_sym] = {}
+                end
+              end
+            elsif includes.is_a?(Hash)
+              includes.each {|k, v| operations[k.to_sym] = v.to_hash}
+            elsif includes.is_a?(Symbol) || includes.is_a?(String)
+              operations = {includes.to_sym => {}}
+            end
+          end
+          # normalize boolean
+          operations.each {|k, v|
+            v.each {|ok, ov|
+              if ov.is_a?(TrueClass)
+                v[ok] = 1
+              elsif ov.is_a?(FalseClass)
+                v[ok] = 0
+              end
+            }
+          }
+          # done
+          operations
         end
 
         private

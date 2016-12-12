@@ -13,95 +13,108 @@ end
 class CPW::Speech::ProcessHelperTest < Test::Unit::TestCase
 
   def setup
-    @chunk = CPW::Speech::Chunkster.new
+    @entity = CPW::Speech::Chunkster.new
   end
 
   def test_should_get_processed_stages
-    assert_equal [], @chunk.processed_stages.get
+    assert_equal [], @entity.processed_stages.get
   end
 
   def test_should_to_a_processed_stages
-    assert_equal [], @chunk.processed_stages.to_a
+    assert_equal [], @entity.processed_stages.to_a
   end
 
   def test_should_set_processed_stages
-    @chunk.processed_stages = :build
-    assert_equal [:build], @chunk.processed_stages.to_a
+    @entity.processed_stages = :build
+    assert_equal [:build], @entity.processed_stages.to_a
   end
 
   def test_should_add_processed_stage
-    @chunk.processed_stages.add(:build)
-    assert_equal [:build], @chunk.processed_stages.to_a
-    assert_equal CPW::Speech::ProcessHelper::ProcessedStages::PROCESSED_STAGES[:build], @chunk.processed_stages.bits
-    @chunk.processed_stages.add(:build)
-    assert_equal CPW::Speech::ProcessHelper::ProcessedStages::PROCESSED_STAGES[:build], @chunk.processed_stages.bits
+    @entity.processed_stages.add(:build)
+    assert_equal [:build], @entity.processed_stages.to_a
+    assert_equal CPW::Speech::ProcessHelper::ProcessedStages::PROCESSED_STAGES[:build], @entity.processed_stages.bits
+    @entity.processed_stages.add(:build)
+    assert_equal CPW::Speech::ProcessHelper::ProcessedStages::PROCESSED_STAGES[:build], @entity.processed_stages.bits
   end
 
   def test_should_alias_push_processed_stage
-    @chunk.processed_stages.push(:build)
-    assert_equal [:build], @chunk.processed_stages.to_a
+    @entity.processed_stages.push(:build)
+    assert_equal [:build], @entity.processed_stages.to_a
   end
 
   def test_should_not_add_unknown_stage
-    @chunk.processed_stages << :foobar
-    assert_equal [], @chunk.processed_stages.to_a
+    @entity.processed_stages << :foobar
+    assert_equal [], @entity.processed_stages.to_a
   end
 
   def test_should_add_operator_processed_stage
-    @chunk.processed_stages << :build
-    assert_equal [:build], @chunk.processed_stages.to_a
-    @chunk.processed_stages << :encode
-    assert_equal [:build, :encode], @chunk.processed_stages.to_a
-    @chunk.processed_stages << :convert
-    assert_equal [:build, :encode, :convert], @chunk.processed_stages.to_a
-    @chunk.processed_stages << :extract
-    assert_equal [:build, :encode, :convert, :extract], @chunk.processed_stages.to_a
+    @entity.processed_stages << :build
+    assert_equal [:build], @entity.processed_stages.to_a
+    @entity.processed_stages << :encode
+    assert_equal [:build, :encode], @entity.processed_stages.to_a
+    @entity.processed_stages << :convert
+    assert_equal [:build, :encode, :convert], @entity.processed_stages.to_a
+    @entity.processed_stages << :extract
+    assert_equal [:build, :encode, :convert, :extract], @entity.processed_stages.to_a
   end
 
   def test_should_use_equal_operator
-    @chunk.processed_stages << :build
-    assert_equal true, @chunk.processed_stages == [:build]
+    @entity.processed_stages << :build
+    assert_equal true, @entity.processed_stages == [:build]
   end
 
   def test_should_include
-    assert_equal false, @chunk.processed_stages.include?(:build)
-    @chunk.processed_stages << :build
-    assert_equal true, @chunk.processed_stages.include?(:build)
+    assert_equal false, @entity.processed_stages.include?(:build)
+    @entity.processed_stages << :build
+    assert_equal true, @entity.processed_stages.include?(:build)
   end
 
   def test_should_status
-    @chunk.processed_stages << :build
-    assert_equal CPW::Speech::ProcessHelper::ProcessedStages::PROCESSED_STAGES[:build], @chunk.processed_stages.status
+    @entity.processed_stages << :build
+    assert_equal CPW::Speech::ProcessHelper::ProcessedStages::PROCESSED_STAGES[:build], @entity.processed_stages.status
   end
 
   def test_should_build
-    @chunk.processed_stages << :build
-    assert_equal [:build], @chunk.processed_stages.to_a
-    assert_equal true, @chunk.built?
+    @entity.processed_stages << :build
+    assert_equal [:build], @entity.processed_stages.to_a
+    assert_equal true, @entity.built?
   end
 
   def test_should_encode
-    @chunk.processed_stages << :encode
-    assert_equal [:encode], @chunk.processed_stages.to_a
-    assert_equal true, @chunk.encoded?
+    @entity.processed_stages << :encode
+    assert_equal [:encode], @entity.processed_stages.to_a
+    assert_equal true, @entity.encoded?
   end
 
   def test_should_convert
-    @chunk.processed_stages << :convert
-    assert_equal [:convert], @chunk.processed_stages.to_a
-    assert_equal true, @chunk.converted?
+    @entity.processed_stages << :convert
+    assert_equal [:convert], @entity.processed_stages.to_a
+    assert_equal true, @entity.converted?
   end
 
   def test_should_extract
-    @chunk.processed_stages << :extract
-    assert_equal [:extract], @chunk.processed_stages.to_a
-    assert_equal true, @chunk.extracted?
+    @entity.processed_stages << :extract
+    assert_equal [:extract], @entity.processed_stages.to_a
+    assert_equal true, @entity.extracted?
   end
 
   def test_should_split
-    @chunk.processed_stages << :split
-    assert_equal [:split], @chunk.processed_stages.to_a
-    assert_equal true, @chunk.split?
+    @entity.processed_stages << :split
+    assert_equal [:split], @entity.processed_stages.to_a
+    assert_equal true, @entity.split?
+  end
+
+  def test_should_perform
+    @entity.processed_stages << :perform
+    assert_equal [:perform], @entity.processed_stages.to_a
+    assert_equal true, @entity.performed?
+  end
+
+  def test_should_clear
+    @entity.processed_stages << :split
+    assert_equal [:split], @entity.processed_stages.to_a
+    @entity.processed_stages = []
+    assert_equal [], @entity.processed_stages.to_a
   end
 
   def test_should_raise_not_implemented_status
@@ -118,20 +131,20 @@ class CPW::Speech::ProcessHelperTest < Test::Unit::TestCase
   end
 
   def test_should_processing?
-    assert_equal false, @chunk.processing?
-    @chunk.status = CPW::Speech::STATUS_PROCESSING
-    assert_equal true, @chunk.processing?
+    assert_equal false, @entity.processing?
+    @entity.status = CPW::Speech::STATUS_PROCESSING
+    assert_equal true, @entity.processing?
   end
 
   def test_should_processed?
-    assert_equal false, @chunk.processed?
-    @chunk.status = CPW::Speech::STATUS_PROCESSED
-    assert_equal true, @chunk.processed?
+    assert_equal false, @entity.processed?
+    @entity.status = CPW::Speech::STATUS_PROCESSED
+    assert_equal true, @entity.processed?
   end
 
   def test_should_processing_error?
-    assert_equal false, @chunk.processing_error?
-    @chunk.status = CPW::Speech::STATUS_PROCESSING_ERROR
-    assert_equal true, @chunk.processing_error?
+    assert_equal false, @entity.processing_error?
+    @entity.status = CPW::Speech::STATUS_PROCESSING_ERROR
+    assert_equal true, @entity.processing_error?
   end
 end

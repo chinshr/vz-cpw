@@ -14,7 +14,8 @@ module CPW
           encode: 2**1,
           convert: 2**2,
           extract: 2**3,
-          split: 2**4
+          split: 2**4,
+          perform: 2**5
         }
 
         attr_accessor :bits
@@ -33,6 +34,7 @@ module CPW
         def set(values)
           new_keys  = ([values].flatten.map(&:to_sym) & PROCESSED_STAGES.keys)
           self.bits = new_keys.sum {|d| self.class.bit_of(d)}
+          self
         end
 
         def get
@@ -111,6 +113,10 @@ module CPW
 
         def split?
           processed_stages.include?(:split)
+        end
+
+        def performed?
+          processed_stages.include?(:perform)
         end
 
         def processing?
