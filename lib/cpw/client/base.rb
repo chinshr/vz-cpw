@@ -27,7 +27,7 @@ module CPW
         tried = 0
         begin
           tries_left ||= request_retries
-          yield
+          yield(tried, tries_left)
         rescue *REQUEST_EXCEPTIONS => ex
           tried += 1
           if (tries_left -= 1) > 0

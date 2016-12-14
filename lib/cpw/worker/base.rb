@@ -139,18 +139,10 @@ module CPW
         logger.info "+++ #{self.class.name}#lock_worker! 'entry point' #{body.inspect}"
         raise ResourceLoadError, "Cannot find ingest_id in message body" unless ingest_id
 
-        if worker_id
-          update_worker({
-            event: "start",
-            instance_id: ec2_instance.try(:instance_id)
-          })
-        else
-          create_worker({
-            worker_name: self.class.name.underscore,
-            event: "start",
-            instance_id: ec2_instance.try(:instance_id)
-          })
-        end
+        @worker, @ingest = Ingest::Worker.secure_lock(ingest_id, worker_id, [:running, :stopped], {
+          event: "start",
+          instance_id: ec2_instance.try(:instance_id)
+        })
 
         raise ResourceLoadError, "Cannot load worker (ingest_id=#{ingest_id}, worker_id=#{worker_id}): worker not found" unless @worker.present?
         raise ResourceLoadError, "Cannot load ingest (ingest_id=#{ingest_id}, worker_id=#{worker_id}): ingest not found" unless @ingest.present?
