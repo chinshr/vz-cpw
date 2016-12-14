@@ -66,9 +66,11 @@ module CPW
           service.headers['Content-Type'] = "audio/flac"
           service.headers['User-Agent']   = user_agent
 
+          # body
+          service.post_body = chunk.to_flac_bytes
+
           while retrying && retry_count < max_retries
             # request
-            service.post_body = chunk.to_flac_bytes
             service.http_post
 
             if service.response_code == 200
@@ -77,7 +79,7 @@ module CPW
               when "v1"
                 parse_response_v1(chunk, response, result)
               else
-                raise "Unsupported API version."
+                raise UnsupportedApiError, "Unsupported API version `#{api_version}`."
               end
               retrying = false
             else

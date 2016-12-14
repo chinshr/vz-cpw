@@ -39,7 +39,7 @@ module CPW
             # still needs to be transcribed using decoder
             begin
               decoder = ::Pocketsphinx::Decoder.new(self.configuration)
-              decoder.decode chunk.raw_chunk
+              decoder.decode chunk.raw_file_name
               response = build_raw_response(decoder)
               parse(chunk, response, result)
               logger.info "chunk #{chunk.position} processed: #{result.inspect}" if self.verbose

@@ -6,28 +6,28 @@ module CPW
       # https://cloud.google.com/speech/docs/getting-started
       # https://cloud.google.com/speech/limits
       class GoogleCloudSpeechEngine < SpeechEngine
-        attr_accessor :service, :key, :version, :method
+        attr_accessor :base_url, :api_key, :api_version, :api_method
 
         def initialize(media_file_or_url, options = {})
           super media_file_or_url, options
-          self.key          = options[:key]
-          self.version      = options[:version] || "v1beta1"
-          self.method       = options[:method] || "syncrecognize"
-          self.split_method = options[:split_method] || :basic
+          self.api_key          = options[:api_key] || ENV['GOOGLE_CLOUD_SPEECH_API_KEY']
+          self.api_version      = options[:api_version] || ENV['GOOGLE_CLOUD_SPEECH_API_VERSION'] || "v1beta1"
+          self.api_method       = options[:api_method] || ENV['GOOGLE_CLOUD_SPEECH_API_METHOD'] || "syncrecognize"
+          self.split_method     = options[:split_method] || :basic
         end
 
         protected
 
         def reset!(options = {})
           super options
-          url = case version
+
+          self.base_url = case api_version
           when "v1beta1" then
-            "https://speech.googleapis.com/#{version}/speech:#{self.method}"
+            "https://speech.googleapis.com/#{api_version}/speech:#{self.api_method}"
           else
-            raise UnsupportedApiError, "Unsupported API version `#{version}`."
+            raise UnsupportedApiError, "Unsupported API version `#{api_version}`."
           end
-          url += "?key=#{key}" if key
-          self.service = Curl::Easy.new(url)
+          self.base_url += "?key=#{api_key}" if api_key
         end
 
         def encode(chunk)
@@ -41,35 +41,37 @@ module CPW
           retrying     = true
           retry_count  = 0
 
-          while retrying && retry_count < max_retries # 3 retries
-            service.verbose = self.verbose
+          service = Curl::Easy.new(base_url)
+          service.verbose = self.verbose
+          service.on_progress {|dl_total, dl_now, ul_total, ul_now| printf("%.2f/%.2f\r", ul_now, ul_total); true} if self.verbose
 
-            # headers
-            service.headers['Content-Type'] = "application/json"
-            service.headers['User-Agent']   = user_agent
+          # headers
+          service.headers['Content-Type'] = "application/json"
+          service.headers['User-Agent']   = "Mozilla/5.0" # user_agent
 
-            # body
-            encode = Base64.strict_encode64(chunk.to_flac_bytes)
-            body = {
-              'config' => {
-                'encoding' => "FLAC",
-                'sampleRate' => chunk.flac_rate,
-                'languageCode' => locale,
-                'maxAlternatives' => 3,
-                'profanityFilter' => false,
-                'speechContext' => {
-                  'phrases' => []
-                }
-              },
-              'audio' => {
-                'content' => encode.force_encoding(Encoding::ASCII_8BIT)
+          # body
+          encode = Base64.strict_encode64(chunk.to_flac_bytes)
+          body = {
+            'config' => {
+              'encoding' => "FLAC",
+              'sampleRate' => chunk.flac_rate,
+              'languageCode' => locale,
+              'maxAlternatives' => 3,
+              'profanityFilter' => false,
+              'speechContext' => {
+                'phrases' => []
               }
+            },
+            'audio' => {
+              'content' => encode.force_encoding(Encoding::ASCII_8BIT)
             }
-            logger.info body.inspect if self.verbose
+          }
 
+          service.post_body = body.to_json
+          logger.info body.inspect if self.verbose
+
+          while retrying && retry_count < max_retries # 3 retries
             # request
-            service.post_body = body.to_json
-            service.on_progress {|dl_total, dl_now, ul_total, ul_now| printf("%.2f/%.2f\r", ul_now, ul_total); true} if self.verbose
             service.http_post
 
             if service.response_code == 500
@@ -79,11 +81,11 @@ module CPW
               sleep retry_delay
             else
               response = JSON.parse(service.body_str) rescue {}
-              case version
+              case api_version
               when "v1beta1"
                 parse_response_v1beta1(chunk, response, result)
               else
-                raise "Unsupported API version."
+                raise UnsupportedApiError, "Unsupported API version `#{api_version}`."
               end
               retrying = false
             end

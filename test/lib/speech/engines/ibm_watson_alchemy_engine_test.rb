@@ -6,6 +6,7 @@ class CPW::Speech::Engines::IbmWatsonAlchemyEngineTest < Test::Unit::TestCase
       {split_method: :basic})
     @splitter      = CPW::Speech::AudioSplitter.new(File.join(fixtures_root, 'i-like-pickles.wav'), {engine: @engine})
     @chunk         = CPW::Speech::AudioChunk.new(@splitter, 1.0, 5.0, {position: 1})
+    @extraction_engine = CPW::Speech::Engines::IbmWatsonAlchemyEngine.new(@speech_engine, {})
     stub_requests
   end
 
@@ -59,6 +60,23 @@ class CPW::Speech::Engines::IbmWatsonAlchemyEngineTest < Test::Unit::TestCase
     assert_equal @simple_keywords, @speech_engine.normalized_response['keywords']
     assert_equal ["pickle", "sauerkraut"], @speech_engine.keywords
     assert_equal ["pickle"], @speech_engine.keywords(0.49)
+  end
+
+  def test_extract_options_with_single_value
+    ops = @extraction_engine.send(:extract_operations, {include: :keyword_extraction})
+    assert_equal({keyword_extraction: {}}, ops)
+  end
+
+  def test_extract_options_with_array
+    ops = @extraction_engine.send(:extract_operations,
+      {include: [:keyword_extraction, :topic_extraction]})
+    assert_equal({keyword_extraction: {}, topic_extraction: {}}, ops)
+  end
+
+  def test_extract_options_with_hash_and_options
+    ops = @extraction_engine.send(:extract_operations,
+      {include: {keyword_extraction: {emotion: true}}})
+    assert_equal({keyword_extraction: {emotion: 1}}, ops)
   end
 
   protected

@@ -84,9 +84,9 @@ module CPW
         end
 
         diarize_audio.analyze!
-        diarize_audio.segments.sort_by(&:start).each_with_index do |segment, index|
-          chunk = AudioChunk.new(self, segment.start, segment.duration,
-            {position: index + 1, speaker_segment: segment})
+        diarize_audio.segments.sort_by(&:start).each_with_index do |speaker_segment, index|
+          chunk = AudioChunk.new(self, speaker_segment.start, speaker_segment.duration,
+            {position: index + 1, speaker_segment: speaker_segment})
           normalize_speaker_segment_response(chunk)
           chunks.push(chunk)
         end
@@ -106,7 +106,7 @@ module CPW
       end
 
       def normalize_speaker_segment_response(chunk)
-        result, data = {}, chunk.speaker_segment.as_json
+        result, data = {}, chunk.speaker_segment._as_json
 
         result['start_time'] = data['start']
         result['duration']   = data['duration']

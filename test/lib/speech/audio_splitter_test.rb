@@ -66,7 +66,7 @@ class CPW::Speech::AudioSplitterTest < Test::Unit::TestCase
     end
   end
 
-  def test_should_split_audio_into_flac_chunks
+  def test_should_split_audio_into_flac_file_names
     splitter = CPW::Speech::AudioSplitter.new(@short_wav_file, {split_method: :basic})
 
     assert_equal '00:00:03.52', splitter.duration.to_s
@@ -83,15 +83,15 @@ class CPW::Speech::AudioSplitterTest < Test::Unit::TestCase
       assert_equal 46385, chunk.flac_size
 
       assert_equal [], chunk.errors
-      assert File.exist? chunk.chunk
-      assert File.exist? chunk.flac_chunk
+      assert File.exist? chunk.file_name
+      assert File.exist? chunk.flac_file_name
       chunk.clean
-      assert !File.exist?(chunk.chunk)
-      assert !File.exist?(chunk.flac_chunk)
+      assert !File.exist?(chunk.file_name)
+      assert !File.exist?(chunk.flac_file_name)
     end
   end
 
-  def test_should_split_audio_into_wav_chunks
+  def test_should_split_audio_into_wav_file_names
     splitter = CPW::Speech::AudioSplitter.new(File.join(fixtures_root, 'i-like-pickles.wav'), {split_method: :basic})
 
     assert_equal '00:00:03.52', splitter.duration.to_s
@@ -109,15 +109,15 @@ class CPW::Speech::AudioSplitterTest < Test::Unit::TestCase
       assert_equal 112698, chunk.wav_size
 
       assert_equal [], chunk.errors
-      assert File.exist? chunk.chunk
-      assert File.exist? chunk.wav_chunk
+      assert_equal true, File.exist?(chunk.file_name)
+      assert_equal true, File.exist?(chunk.wav_file_name)
       chunk.clean
-      assert !File.exist?(chunk.chunk)
-      assert !File.exist?(chunk.wav_chunk)
+      assert_equal false, File.exist?(chunk.file_name)
+      assert_equal false, File.exist?(chunk.wav_file_name)
     end
   end
 
-  def test_should_split_audio_into_raw_chunks
+  def test_should_split_audio_into_raw_file_names
     splitter = CPW::Speech::AudioSplitter.new(@short_wav_file, {split_method: :basic})
 
     assert_equal '00:00:03.52', splitter.duration.to_s
@@ -135,11 +135,11 @@ class CPW::Speech::AudioSplitterTest < Test::Unit::TestCase
       assert_equal 112620, chunk.raw_size
 
       assert_equal [], chunk.errors
-      assert File.exist? chunk.chunk
-      assert File.exist? chunk.raw_chunk
+      assert File.exist? chunk.file_name
+      assert File.exist? chunk.raw_file_name
       chunk.clean
-      assert !File.exist?(chunk.chunk)
-      assert !File.exist?(chunk.raw_chunk)
+      assert !File.exist?(chunk.file_name)
+      assert !File.exist?(chunk.raw_file_name)
     end
   end
 
@@ -158,7 +158,7 @@ class CPW::Speech::AudioSplitterTest < Test::Unit::TestCase
 
   # diarize
 
-  def test_should_diarize_local
+  def test_should_diarize_locally
     splitter = CPW::Speech::AudioSplitter.new(@long_wav_file, {
       :split_method => :diarize,
       :split_options => {
@@ -186,6 +186,11 @@ class CPW::Speech::AudioSplitterTest < Test::Unit::TestCase
     assert_equal "M", chunks[0].speaker.gender
     assert_equal "http://www.example.com/xyz-S0.gmm", chunks[0].speaker.model_uri
     assert_not_nil chunks[0].as_json['speaker_segment']['speaker_supervector_hash']
+    assert_equal chunks[0], chunks[0].to_speaker_gmm
+    assert_equal "/tmp/will-and-juergen-chunk-1-speaker-S0.gmm", chunks[0].speaker_gmm_file_name
+    assert_equal true, File.exist?(chunks[0].speaker_gmm_file_name)
+    chunks[0].clean
+    assert_equal false, File.exist?(chunks[0].speaker_gmm_file_name)
 
     # chunk 2
     assert_equal 2, chunks[1].position

@@ -220,13 +220,13 @@ module CPW
               client.upload_media({
                 transcription_type: transcription_type
               }.tap {|o|
-                o[:file] = File.new(chunk.wav_chunk)
+                o[:file] = File.new(chunk.wav_file_name)
               })
             else
               client.upload_media({
                 transcription_type: transcription_type,
               }.tap {|o|
-                o[:media_file] = File.new(chunk.wav_chunk)
+                o[:media_file] = File.new(chunk.wav_file_name)
               })
             end
 

@@ -34,6 +34,10 @@ class CPW::Speech::AudioChunkTest < Test::Unit::TestCase
     assert_equal "xyz", chunk.external_id
     assert_equal nil, chunk.poll_at
     assert_equal false, chunk.extracted?
+
+    assert_equal "/tmp/i-like-pickles-chunk-1-00-00-01_00-00-00-06_00.wav",
+      chunk.file_name
+    assert_equal nil, chunk.speaker_gmm_file_name
   end
 
   def test_attributes
@@ -152,16 +156,80 @@ class CPW::Speech::AudioChunkTest < Test::Unit::TestCase
     chunk.clean
   end
 
-  def test_is_encoded
+  def test_is_encoded_to_flac
     chunk = CPW::Speech::AudioChunk.new(@splitter, 1.0, 5.0)
     assert_equal true, chunk.unprocessed?
     chunk.build.to_flac
     assert_equal true, chunk.built?
     assert_equal true, chunk.encoded?
+    assert_equal "/tmp/i-like-pickles-chunk-00-00-01_00-00-00-06_00.flac",
+      chunk.flac_file_name
+    assert_equal true, File.exist?(chunk.flac_file_name)
     chunk.clean
+    assert_equal false, File.exist?(chunk.flac_file_name)
   end
 
-  def test_is_converted
+  def test_is_encoded_to_wav
+    chunk = CPW::Speech::AudioChunk.new(@splitter, 1.0, 5.0)
+    assert_equal true, chunk.unprocessed?
+    chunk.build.to_wav
+    assert_equal true, chunk.built?
+    assert_equal true, chunk.encoded?
+    assert_equal "/tmp/i-like-pickles-chunk-00-00-01_00-00-00-06_00.wav",
+      chunk.wav_file_name
+    assert_equal true, File.exist?(chunk.wav_file_name)
+    chunk.clean
+    assert_equal false, File.exist?(chunk.wav_file_name)
+  end
+
+  def test_is_encoded_to_raw
+    chunk = CPW::Speech::AudioChunk.new(@splitter, 1.0, 5.0)
+    assert_equal true, chunk.unprocessed?
+    chunk.build.to_raw
+    assert_equal true, chunk.built?
+    assert_equal true, chunk.encoded?
+    assert_equal "/tmp/i-like-pickles-chunk-00-00-01_00-00-00-06_00.raw",
+      chunk.raw_file_name
+    assert_equal true, File.exist?(chunk.raw_file_name)
+    chunk.clean
+    assert_equal false, File.exist?(chunk.raw_file_name)
+  end
+
+  def test_is_encoded_to_mp3
+    chunk = CPW::Speech::AudioChunk.new(@splitter, 1.0, 5.0)
+    assert_equal true, chunk.unprocessed?
+    chunk.build.to_mp3
+    assert_equal true, chunk.built?
+    assert_equal true, chunk.encoded?
+    assert_equal "/tmp/i-like-pickles-chunk-00-00-01_00-00-00-06_00.ab128k.mp3",
+      chunk.mp3_file_name
+    assert_equal true, File.exist?(chunk.mp3_file_name)
+    chunk.clean
+    assert_equal false, File.exist?(chunk.mp3_file_name)
+  end
+
+  def test_to_waveform
+    chunk = CPW::Speech::AudioChunk.new(@splitter, 1.0, 5.0)
+    chunk.build.to_waveform
+    assert_equal "/tmp/i-like-pickles-chunk-00-00-01_00-00-00-06_00.waveform.json",
+      chunk.waveform_file_name
+    assert_equal true, File.exist?(chunk.waveform_file_name)
+    chunk.clean
+    assert_equal false, File.exist?(chunk.waveform_file_name)
+  end
+
+  def test_to_speaker_gmm
+    speaker = Diarize::Speaker.new
+    segment = Diarize::Segment.new("audio", "start", "duration", "speaker_gender", "bandwidth", "speaker_id")
+    segment.expects(:speaker).returns(speaker).at_least(2)
+    chunk = CPW::Speech::AudioChunk.new(@splitter, 1.0, 5.0, {speaker_segment: segment})
+    assert_equal speaker, chunk.speaker
+    speaker.expects(:save_model).with(chunk.send(:chunk_speaker_gmm_file_name))
+    assert_equal chunk, chunk.to_speaker_gmm
+    assert_equal "/tmp/i-like-pickles-chunk-speaker-speaker_id.gmm", chunk.speaker_gmm_file_name
+  end
+
+  def test_is_encoded_and_converted
     chunk = CPW::Speech::AudioChunk.new(@splitter, 1.0, 5.0)
     assert_equal true, chunk.unprocessed?
     chunk.build.to_wav

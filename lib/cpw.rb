@@ -11,9 +11,9 @@ require "chronic"
 require "dotenv"
 Dotenv.load(*[".env.#{ENV.fetch("CPW_ENV", 'development')}", ".env"])
 require "byebug"
-
 require "shoryuken"
 require "drb/drb"
+require "lsh"
 
 require "cpw/version"
 require "cpw/store"
@@ -114,9 +114,12 @@ module CPW
 
   def with_warnings(flag)
     old_verbose, $VERBOSE = $VERBOSE, flag
-    yield
+    result = yield
+  rescue Exception => ex
   ensure
     $VERBOSE = old_verbose
+    raise ex if ex
+    result
   end
 
   def silence_warnings
