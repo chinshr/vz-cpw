@@ -22,4 +22,7 @@ class CPWTest < Test::Unit::TestCase # Minitest::Test
     assert_equal "http://www.example.com/api/", CPW.base_url
   end
 
+  def test_worker_lock_retries
+    assert_equal 3, CPW.worker_lock_retries
+  end
 end

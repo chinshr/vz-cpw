@@ -118,13 +118,23 @@ module CPW::Worker::Helper
       key = @ingest.track.s3_key
       folder = key.split("/").size > 1 ? key.split("/").slice(0...-1) : ""
       File.join(folder, file_name)
-    else
+    elsif @ingest.present?
       File.join(@ingest.uid, file_name)
+    else
+      file_name
     end
   end
 
+  def s3_origin_base_url
+    "#{URI.join(ENV['S3_URL'], s3_origin_bucket_name)}/"
+  end
+
+  def s3_origin_ingest_base_url
+    "#{URI.join(s3_origin_base_url, @ingest.uid)}/"
+  end
+
   def s3_origin_url_for(file_name)
-    File.join(ENV['S3_URL'], s3_origin_bucket_name, s3_key_for(file_name))
+    URI.join(s3_origin_base_url, s3_key_for(file_name)).to_s
   end
 
   def s3_copy_object(source_bucket_name, destination_bucket_name, source_key, destination_key = nil)

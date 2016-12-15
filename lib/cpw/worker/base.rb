@@ -92,23 +92,24 @@ module CPW
       end
 
       def do_perform
-        logger.info "+++ #{self.class.name}#do_perform 'before lock_worker!' #{body.inspect}"
+        logger.info "+++ #{self.class.name}#do_perform before `lock_worker!` #{body.inspect}"
         begin
           if lock_worker!
             self.can_perform = true
+            logger.info "+++ #{self.class.name}#do_perform before `perform` #{body.inspect}"
             yield
-            logger.info "+++ #{self.class.name}#do_perform 'finished perform' #{body.inspect}"
+            logger.info "+++ #{self.class.name}#do_perform after `perform` #{body.inspect}"
             self.finished_perform = true
           end
-        rescue ResourceLoadError => ex
-          logger.info "+++ #{self.class.name}#do_perform 'load error': #{ex.message}."
-          self.runtime_error = ex
-        rescue ResourceLockError => ex
-          logger.info "+++ #{self.class.name}#do_perform 'lock error': #{ex.message}."
-          # self.runtime_error = ex
-        rescue => ex
-          logger.info "+++ #{self.class.name}#do_perform worker exception caught ingest_id=#{ingest_id}, worker_id=#{worker_id}."
-          self.runtime_error, self.perform_error = ex, ex
+        rescue ResourceLoadError => load_error
+          logger.info "+++ #{self.class.name}#do_perform load error `#{load_error.class.name}`."
+          self.runtime_error = load_error
+        rescue ResourceLockError => lock_error
+          logger.info "+++ #{self.class.name}#do_perform lock error `#{lock_error.class.name}`."
+          self.runtime_error = lock_error
+        rescue => error
+          logger.info "+++ #{self.class.name}#do_perform ingest_id=#{ingest_id}, worker_id=#{worker_id} error `#{error.class.name}` caught: #{error.message}."
+          self.perform_error = error
         end
       end
 
@@ -157,14 +158,18 @@ module CPW
         attributes = attributes.reject {|k,v| v.nil?}
 
         if has_finished_perform?
+          # everything went fine!
           attributes.merge!({event: "finish"})
-        elsif has_runtime_error?
-          new_messages = {}
-          new_messages["error"]     = "#{runtime_error.class.name}"
-          new_messages["message"]   = "#{runtime_error.message}"
-          new_messages["backtrace"] = runtime_error.backtrace if runtime_error.backtrace
-          new_messages["logs"]      = logger_messages unless logger_messages.empty?
-          attributes.merge!({event: "stop", messages: new_messages})
+        elsif has_perform_error?
+          # errors, log the problem
+          new_messages              = {}
+          new_messages["error"]     = "#{perform_error.class.name}"
+          new_messages["message"]   = "#{perform_error.message}"
+          new_messages["backtrace"] = perform_error.backtrace if perform_error.backtrace
+          # new_messages["logs"]      = logger_messages unless logger_messages.empty?
+          attributes.merge!({messages: new_messages})
+          # stop this worker...
+          attributes.merge!({event: "stop"})
         end
 
         # update worker
@@ -213,10 +218,9 @@ module CPW
         @lsh_index ||= begin
           storage = if ENV['REDIS_URL']
             LSH::Storage::RedisBackend.new({
-              # :redis => { :host => '127.0.0.1', :port => 6379 },
               :redis => {:url => ENV['REDIS_URL']},
-              :data_dir => '/tmp',
-              :cache_vectors => false
+              :data_dir => "/tmp/lsh",
+              :cache_vectors => true
             })
           else
             LSH::Storage::Memory.new

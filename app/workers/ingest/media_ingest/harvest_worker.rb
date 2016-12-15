@@ -18,9 +18,10 @@ class Ingest::MediaIngest::HarvestWorker < CPW::Worker::Base
 
   def perform(sqs_message, body)
     logger.info("+++ #{self.class.name}#perform, body #{body.inspect}")
+
     if ingest.has_s3_source_url?
       copy_media_from_s3_inbound_to_outbound_bucket
-      # Delete inbound (uploaded) object
+      # delete inbound (uploaded) object
       s3_delete_object_if_exists(ENV['S3_INBOUND_BUCKET'], ingest.s3_upload_key)
     elsif ingest.has_ms_source_url?
       download_media_from_ms_source_url

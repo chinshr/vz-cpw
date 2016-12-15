@@ -185,7 +185,17 @@ class CPW::Speech::AudioSplitterTest < Test::Unit::TestCase
     assert chunks[0].speaker
     assert_equal "M", chunks[0].speaker.gender
     assert_equal "http://www.example.com/xyz-S0.gmm", chunks[0].speaker.model_uri
+    # as_json
     assert_not_nil chunks[0].as_json['speaker_segment']['speaker_supervector_hash']
+    assert_not_nil chunks[0].as_json['speaker_segment']['speaker_mean_log_likelihood']
+    assert_equal chunks[0].speaker.model_uri, chunks[0].as_json['speaker_segment']['speaker_model_uri']
+    assert_equal chunks[0].offset, chunks[0].as_json['speaker_segment']['start_time']
+    assert_equal chunks[0].duration, chunks[0].as_json['speaker_segment']['duration']
+    assert_equal chunks[0].end_time, chunks[0].as_json['speaker_segment']['end_time']
+    assert_equal chunks[0].speaker.gender, chunks[0].as_json['speaker_segment']['gender']
+    assert_equal chunks[0].speaker_segment.bandwidth, chunks[0].as_json['speaker_segment']['bandwidth']
+    assert_equal chunks[0].speaker_segment.speaker_id, chunks[0].as_json['speaker_segment']['speaker_id']
+
     assert_equal chunks[0], chunks[0].to_speaker_gmm
     assert_equal "/tmp/will-and-juergen-chunk-1-speaker-S0.gmm", chunks[0].speaker_gmm_file_name
     assert_equal true, File.exist?(chunks[0].speaker_gmm_file_name)

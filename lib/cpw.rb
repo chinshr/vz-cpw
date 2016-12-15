@@ -55,6 +55,7 @@ module CPW
     attr_accessor :connection_timeout
     attr_accessor :connection_open_timeout
     attr_accessor :request_delay_before_retry
+    attr_accessor :worker_lock_retries
 
     def test?
       env == 'test'
@@ -149,6 +150,7 @@ module CPW
   self.request_delay_before_retry = ENV.fetch('REQUEST_DELAY_BEFORE_RETRY', 3).to_i
   self.connection_timeout         = ENV.fetch('CONNECTION_TIMEOUT', 5).to_i
   self.connection_open_timeout    = ENV.fetch('CONNECTION_OPEN_TIMEOUT', 5).to_i
+  self.worker_lock_retries        = ENV.fetch('WORKER_LOCK_RETRIES', 3).to_i
 
   register_workers
 

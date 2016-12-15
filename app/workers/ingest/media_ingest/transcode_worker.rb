@@ -13,10 +13,13 @@ class Ingest::MediaIngest::TranscodeWorker < CPW::Worker::Base
   def perform(sqs_message, body)
     logger.info("+++ #{self.class.name}#perform, body #{body.inspect}")
 
-    STEPS.each do |step|
-      send(step)
-      increment_progress!
-    end
+    download and increment_progress!
+    normalize and increment_progress!
+    noise_reduce and increment_progress!
+    create_mp3 and increment_progress!
+    create_waveform and increment_progress!
+    upload and increment_progress!
+    cleanup and increment_progress!
   end
 
   def download
