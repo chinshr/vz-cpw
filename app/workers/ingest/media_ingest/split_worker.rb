@@ -276,7 +276,7 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
           logger.info "****** chunk.speaker: add supervector hash `#{supervector_hash}` to LSH store `#{lsh_index.storage.class}`."
           speaker      = speech_chunk.splitter.diarize_load_speaker(gmm_file_name)
           supervector  = speaker.supervector
-          vector       = GSL::Matrix.alloc(supervector.vector, 1, supervector.dim)
+          vector       = GSL::Matrix.alloc(supervector.to_a, 1, supervector.dim)
           lsh_index.add(vector, supervector_hash.to_i)
         end
       end
