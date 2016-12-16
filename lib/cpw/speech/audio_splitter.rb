@@ -40,6 +40,14 @@ module CPW
         end
       end
 
+      def diarize_load_speaker(gmm_file_name)
+        if split_options[:mode] == :druby
+          diarize_client.build_speaker(nil, nil, gmm_file_name)
+        else
+          Diarize::Speaker.new(nil, nil, gmm_file_name)
+        end
+      end
+
       protected
 
       def split_with_basic
@@ -69,20 +77,11 @@ module CPW
       end
 
       def split_with_diarize
-        chunks = []
+        chunks   = []
         file_uri = URI.join('file:///', original_file)
-
-        if split_options[:mode] == :druby
-          host = split_options[:host] || "localhost"
-          port = split_options[:port] || 9999
-          server_uri = "druby://#{host}:#{port}"
-          DRb.start_service
-          server = DRbObject.new_with_uri(server_uri)
-          self.diarize_audio = server.build_audio(file_uri)
-        else
-          self.diarize_audio = Diarize::Audio.new(file_uri)
-        end
-
+        # build audio
+        self.diarize_audio = diarize_build_audio(file_uri)
+        # analyze
         diarize_audio.analyze!
         diarize_audio.segments.sort_by(&:start).each_with_index do |speaker_segment, index|
           chunk = AudioChunk.new(self, speaker_segment.start, speaker_segment.duration,
@@ -141,6 +140,26 @@ module CPW
           URI.join("#{split_options[:model_base_url]}/", file_name).to_s
         end
       end
-    end
+
+      def diarize_client
+        @diarize_client ||= begin
+          if split_options[:mode] == :druby
+            host = split_options[:host] || "localhost"
+            port = split_options[:port] || 9999
+            server_uri = "druby://#{host}:#{port}"
+            DRb.start_service
+            server = DRbObject.new_with_uri(server_uri)
+          end
+        end
+      end
+
+      def diarize_build_audio(file_uri)
+        if split_options[:mode] == :druby
+          diarize_client.build_audio(file_uri)
+        else
+          Diarize::Audio.new(file_uri)
+        end
+      end
+    end # AudioSplitter
   end
 end

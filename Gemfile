@@ -8,5 +8,6 @@ gem 'voicebase-client-ruby', git: "https://github.com/chinshr/voicebase-client-r
 gem 'lsh', git: "https://github.com/chinshr/ruby-lsh"
 gem 'ttml-ruby', git: "https://github.com/chinshr/ttml-ruby"
 gem 'gsl', :git => "https://github.com/siefca/rb-gsl"
+gem 'diarize-ruby', :git => "https://github.com/chinshr/diarize-ruby"
 
 gem 'foreman'

@@ -270,13 +270,13 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
       supervector_hash = speech_chunk.as_json.try(:[], 'speaker_segment').try(:[], 'speaker_supervector_hash')
       gmm_file_name    = speech_chunk.speaker_gmm_file_name
       if supervector_hash.present? && !!gmm_file_name && File.exist?(gmm_file_name)
-        speaker     = Diarize::Speaker.new(nil, nil, gmm_file_name)
-        supervector = speaker.supervector
         if lsh_index.id_to_vector(supervector_hash.to_i)
           logger.info "****** chunk.speaker: found supervector hash `#{supervector_hash}` in LSH store `#{lsh_index.storage.class}`."
         else
           logger.info "****** chunk.speaker: add supervector hash `#{supervector_hash}` to LSH store `#{lsh_index.storage.class}`."
-          vector = GSL::Matrix.alloc(supervector.vector, 1, supervector.dim)
+          speaker      = speech_chunk.splitter.diarize_load_speaker(gmm_file_name)
+          supervector  = speaker.supervector
+          vector       = GSL::Matrix.alloc(supervector.vector, 1, supervector.dim)
           lsh_index.add(vector, supervector_hash.to_i)
         end
       end

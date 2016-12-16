@@ -255,26 +255,62 @@ class CPW::Speech::AudioSplitterTest < Test::Unit::TestCase
     assert_not_nil chunks[4].as_json['speaker_segment']['speaker_supervector_hash']
   end
 
-  def xtest_should_diarize_remote
-    splitter = CPW::Speech::AudioSplitter.new(@long_wav_file,
-      {:split_method => :diarize, :split_options => {:mode => :druby, :port => 9998, :host => "localhost"}})
-    assert_equal :diarize, splitter.split_method
-
-    omit "fork process in test not working."
-
-    # start server
-    pid = Process.fork do
-      Signal.trap("QUIT") { DRb.stop_service; exit }
-      uri = "druby://#{'localhost'}:#{9998}"
-      server = Diarize::Server.new
-      DRb.start_service(uri, server)
-      DRb.thread.join
-    end
-
-    chunks = splitter.split
-    assert_equal 5, chunks.size
-
-    Process.kill("QUIT", pid)
-    Process.wait
+  def test_should_diarize_client
+    splitter = CPW::Speech::AudioSplitter.new(@long_wav_file, {
+      :split_method => :diarize,
+      :split_options => {
+        mode: :druby,
+        host: "localhost",
+        port: 9999,
+      }
+    })
+    client = splitter.send(:diarize_client)
+    assert_equal "DRb::DRbObject", client.class.name
   end
+
+  def test_should_not_diarize_client
+    splitter = CPW::Speech::AudioSplitter.new(@long_wav_file)
+    client = splitter.send(:diarize_client)
+    assert_equal nil, client
+  end
+
+  def test_should_diarize_build_audio
+    splitter = CPW::Speech::AudioSplitter.new(@long_wav_file)
+    assert_not_nil splitter.send(:diarize_build_audio, @long_wav_file)
+  end
+
+  def test_should_diarize_build_audio_with_druby
+    splitter = CPW::Speech::AudioSplitter.new(@long_wav_file, {
+      :split_method => :diarize,
+      :split_options => {
+        mode: :druby,
+        host: "localhost",
+        port: 9999,
+      }
+    })
+    splitter.expects(:diarize_client).returns(Diarize::Server.new)
+    diarize_audio = splitter.send(:diarize_build_audio, @long_wav_file)
+    assert_equal "Diarize::Audio", diarize_audio.class.name
+  end
+
+  def test_diarize_load_speaker
+    splitter = CPW::Speech::AudioSplitter.new(@long_wav_file)
+    speaker  = splitter.diarize_load_speaker(File.join(fixtures_root, 'speaker1.gmm'))
+    assert_equal "Diarize::Speaker", speaker.class.name
+  end
+
+  def test_diarize_load_speaker_with_druby
+    splitter = CPW::Speech::AudioSplitter.new(@long_wav_file, {
+      :split_method => :diarize,
+      :split_options => {
+        mode: :druby,
+        host: "localhost",
+        port: 9999,
+      }
+    })
+    splitter.expects(:diarize_client).returns(Diarize::Server.new)
+    speaker = splitter.diarize_load_speaker(File.join(fixtures_root, 'speaker1.gmm'))
+    assert_equal "Diarize::Speaker", speaker.class.name
+  end
+
 end

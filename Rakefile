@@ -7,7 +7,8 @@ Rake::TestTask.new do |t|
   t.libs << "test"
   t.verbose = true
   t.warning = false
-  t.test_files = FileList['test/**/*_test.rb']
+  t.test_files = FileList['test/lib/speech/audio_splitter_test.rb']
+#  t.test_files = FileList['test/**/*_test.rb']
 end
 
 task default: :test
