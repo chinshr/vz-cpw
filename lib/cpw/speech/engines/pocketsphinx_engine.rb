@@ -22,6 +22,7 @@ module CPW
         protected
 
         def encode(chunk)
+          super(chunk)
           if audio_splitter.split_method == :diarize
             chunk.build.to_raw
           end
@@ -52,7 +53,6 @@ module CPW
           end
         ensure
           chunk.normalized_response.merge!(result)
-          chunk.clean
           return result
         end
 

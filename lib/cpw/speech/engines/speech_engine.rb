@@ -101,7 +101,7 @@ module CPW
         alias_method :to_s, :to_text
 
         def clean
-          chunks.each {|chunk| chunk.clean} if chunks
+          chunks.each {|chunk| chunk.clean}
         end
 
         protected
@@ -130,6 +130,7 @@ module CPW
           # cut and encoded before they are passed on to the decoder.
           #
           # E.g. chunk.build.to_flac
+          #
         end
 
         def convert(chunk, options = {})

@@ -31,6 +31,7 @@ module CPW
         end
 
         def encode(chunk)
+          super(chunk)
           chunk.build.to_flac
         end
 
@@ -97,7 +98,6 @@ module CPW
           add_chunk_error(chunk, ex, result)
         ensure
           chunk.normalized_response.merge!(result)
-          chunk.clean
           return result
         end
 

@@ -46,6 +46,7 @@ class Ingest::Worker < CPW::Client::Base
       @@semaphore.synchronize do
         CPW::Client::Base.try_request(options) do |tried, tries_left|
           if worker_id
+            # find worker
             CPW::Client::Base.try_request(options) do
               worker = Ingest::Worker.where(ingest_id: ingest_id).find(worker_id)
               if worker.present? && expected_states.include?(worker.state)
@@ -53,16 +54,17 @@ class Ingest::Worker < CPW::Client::Base
                 return worker, ingest
               end
             end
-
             # update
+            attributes = attributes.merge({lock_count: worker.lock_count + 1}) if worker.present?
             worker = Ingest::Worker.new(ingest_id: ingest_id, id: worker_id)
             worker.update_attributes(attributes)
             ingest = worker.ingest if worker.present? && worker.ingest_id
           else
             # create
-            worker    = Ingest::Worker.where(ingest_id: ingest_id).create(attributes)
+            attributes = attributes.merge({lock_count: 1})
+            worker = Ingest::Worker.where(ingest_id: ingest_id).create(attributes)
             worker_id = worker.id if worker.present?
-            ingest    = worker.ingest if worker.present? && worker.ingest_id
+            ingest = worker.ingest if worker.present? && worker.ingest_id
           end
         end
       end
@@ -76,6 +78,10 @@ class Ingest::Worker < CPW::Client::Base
 
   def state
     attributes[:state].try(:to_sym)
+  end
+
+  def lock_count
+    attributes[:lock_count] || 0
   end
 
   def status=(value)

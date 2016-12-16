@@ -37,7 +37,6 @@ module CPW
         ensure
           chunk.processed_stages << :convert
           chunk.normalized_response.merge!(result)
-          chunk.clean
           return result
         end
 

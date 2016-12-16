@@ -165,8 +165,7 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
         s3_upload_object(speech_chunk.waveform_file_name, s3_origin_bucket_name, s3_key_for(File.basename(speech_chunk.waveform_file_name)))
       end
 
-      if options[:build_speaker_gmm] && speech_chunk.speaker_segment
-        speech_chunk.to_speaker_gmm
+      if options[:build_speaker_gmm] && !!speech_chunk.speaker_gmm_file_name && File.exist?(speech_chunk.speaker_gmm_file_name)
         logger.info "****** speaker_gmm_chunk: #{speech_chunk.speaker_gmm_file_name}"
         logger.info "****** speaker_gmm_key: #{s3_key_for(File.basename(speech_chunk.speaker_gmm_file_name))}"
         s3_upload_object(speech_chunk.speaker_gmm_file_name, s3_origin_bucket_name, s3_key_for(File.basename(speech_chunk.speaker_gmm_file_name)))
@@ -183,9 +182,11 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
     logger.info "****** chunk.duration: #{speech_chunk.duration}"
     logger.info "****** chunk.as_json: #{speech_chunk.as_json.inspect}"
 
+    # save
     create_or_update_ingest_chunk_with(speech_chunk)
-    speech_chunk.clean if CPW::production?
 
+    # cleanup
+    speech_chunk.clean
     increment_progress!
   end
 
@@ -262,14 +263,22 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
   end
 
   def add_speech_chunk_speaker_to_lsh_index(speech_chunk)
-    # TODO: Having issues with Drb to garbage collect speech_chunk.speaker
-    # prematurely ('RangeError: "0x... is recycled object"').
-    # Attempt to find root cause or duplicate a client object from remote.
-    return
-    supervector_hash = speech_chunk.as_json.try(:[], 'speaker_segment').try(:[], 'speaker_supervector_hash')
-    if lsh_index && supervector_hash.present?
-      unless lsh_index.id_to_vector(supervector_hash.to_i)
-        lsh_index.add(speech_chunk.speaker.supervector, speech_chunk.speaker.supervector.hash.to_i)
+    # Note: The speech_chunk.speaker may be garbage collected due to
+    # using threads with DRb. That's why we load the store GMM file
+    # and add vector to the LSH.
+    if lsh_index
+      supervector_hash = speech_chunk.as_json.try(:[], 'speaker_segment').try(:[], 'speaker_supervector_hash')
+      gmm_file_name    = speech_chunk.speaker_gmm_file_name
+      if supervector_hash.present? && !!gmm_file_name && File.exist?(gmm_file_name)
+        speaker     = Diarize::Speaker.new(nil, nil, gmm_file_name)
+        supervector = speaker.supervector
+        if lsh_index.id_to_vector(supervector_hash.to_i)
+          logger.info "****** chunk.speaker: found supervector hash `#{supervector_hash}` in LSH store `#{lsh_index.storage.class}`."
+        else
+          logger.info "****** chunk.speaker: add supervector hash `#{supervector_hash}` to LSH store `#{lsh_index.storage.class}`."
+          vector = GSL::Matrix.alloc(supervector.vector, 1, supervector.dim)
+          lsh_index.add(vector, supervector_hash.to_i)
+        end
       end
     end
   end
@@ -335,7 +344,8 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
       split_options: {
         mode: :druby,
         host: "localhost",
-        port: 9999
+        port: 9999,
+        model_base_url: s3_origin_ingest_base_url
       },
       extraction_engine: :ibm_watson_alchemy_engine,
       extraction_mode: [:media, :chunks],

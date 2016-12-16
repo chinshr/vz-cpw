@@ -87,6 +87,7 @@ module CPW
         diarize_audio.segments.sort_by(&:start).each_with_index do |speaker_segment, index|
           chunk = AudioChunk.new(self, speaker_segment.start, speaker_segment.duration,
             {position: index + 1, speaker_segment: speaker_segment})
+          chunk.to_speaker_gmm
           normalize_speaker_segment_response(chunk)
           chunks.push(chunk)
         end
@@ -115,7 +116,7 @@ module CPW
         result['bandwidth']  = data['bandwidth']
         result['speaker_id'] = data['speaker_id']
         if data.has_key?('speaker')
-          result['speaker_model_url'] = if data['speaker']['model']
+          result['speaker_model_uri'] = if data['speaker']['model']
             data['speaker']['model']
           else speaker_model_url(chunk)
             chunk.speaker_segment.speaker.model_uri = speaker_model_url(chunk)
@@ -137,7 +138,7 @@ module CPW
           else
             "#{chunk.speaker_segment.speaker_id}.gmm"
           end
-          URI.join(split_options[:model_base_url], file_name).to_s
+          URI.join("#{split_options[:model_base_url]}/", file_name).to_s
         end
       end
     end

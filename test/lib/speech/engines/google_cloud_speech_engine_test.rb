@@ -93,7 +93,7 @@ class CPW::Speech::Engines::GoogleCloudSpeechEngineTest < Test::Unit::TestCase
       :api_version => "v1beta1",
       :split_method => :diarize,
       :split_options => {
-        :model_base_url => "http://www.example.com"
+        :model_base_url => "http://www.example.com/bucket"
       }
     })
     audio.perform do |chunk|
@@ -111,7 +111,10 @@ class CPW::Speech::Engines::GoogleCloudSpeechEngineTest < Test::Unit::TestCase
       assert_equal CPW::Speech::STATUS_PROCESSED, chunk.as_json['status']
       assert_equal true, chunk.as_json.has_key?('speaker_segment')
       assert_not_nil chunk.as_json['speaker_segment']['speaker_supervector_hash']
-      assert_equal "http://www.example.com/S0.gmm", chunk.speaker.model_uri
+      assert_not_nil chunk.as_json['speaker_segment']['speaker_mean_log_likelihood']
+      assert_equal chunk.speaker.model_uri, chunk.as_json['speaker_segment']['speaker_model_uri']
+      assert_equal "http://www.example.com/bucket/S0.gmm", chunk.speaker.model_uri
+      assert_equal true, File.exist?(chunk.speaker_gmm_file_name)
       assert_equal [:build, :encode, :convert], chunk.processed_stages.to_a
     end
     assert_equal true, audio.engine.send(:perform_success?)
@@ -144,7 +147,10 @@ class CPW::Speech::Engines::GoogleCloudSpeechEngineTest < Test::Unit::TestCase
       assert_equal CPW::Speech::STATUS_PROCESSED, chunk.as_json['status']
       assert_equal true, chunk.as_json.has_key?('speaker_segment')
       assert_not_nil chunk.as_json['speaker_segment']['speaker_supervector_hash']
-      assert_equal "http://www.example.com/S0.gmm", chunk.speaker.model_uri
+      assert_not_nil chunk.as_json['speaker_segment']['speaker_mean_log_likelihood']
+      assert_equal chunk.speaker.model_uri, chunk.as_json['speaker_segment']['speaker_model_uri']
+      assert_equal "http://www.example.com/bucket/S0.gmm", chunk.speaker.model_uri
+      assert_equal true, File.exist?(chunk.speaker_gmm_file_name)
       assert_equal [:build, :encode, :convert], chunk.processed_stages.to_a
     end
   end
