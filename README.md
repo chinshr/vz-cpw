@@ -259,7 +259,10 @@ If everything is OK, start CPW with:
     sudo /etc/init.d/monit stop
     sudo /etc/init.d/monit restart
 
-    sudo monit start shoryuken
+    # sudo monit start shoryuken
+    sudo monit start cpwd
+
+    sudo monit status
 
 You should see the CPW appear in the process list using `ps -ef`. If shoryuken shows up in the process, check if the PID file is created correctly in `~/shared/pids`. Tail the log at `tail -100 /var/log/monit.log`
 
