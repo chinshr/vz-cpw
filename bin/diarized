@@ -47,12 +47,13 @@ case $1 in
     exec 2>&1 diarize -v server --port 9999 --host localhost -P $CPW_SHARED/pids/diarize.pid 1>$CPW_SHARED/log/diarized.log
     ;;
   stop)
-    if [ ! -z `cat $CPW_SHARED/pids/diarize.pid` ]
-    then
-      kill -s USR1 `cat $CPW_SHARED/pids/diarize.pid`
-      pswait $CPW_SHARED/pids/diarize.pid
-      rm $CPW_SHARED/pids/diarize.pid
-    fi
+    # if [ ! -z `cat $CPW_SHARED/pids/diarize.pid` ]
+    # then
+    #   kill -s USR1 `cat $CPW_SHARED/pids/diarize.pid`
+    #   pswait $CPW_SHARED/pids/diarize.pid
+    #   rm $CPW_SHARED/pids/diarize.pid
+    # fi
+    kill -s USR1 `cat $CPW_SHARED/pids/diarized.pid`
     ;;
   *)
     echo "USAGE: cpwd {start|stop}" ;;

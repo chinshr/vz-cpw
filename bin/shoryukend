@@ -47,12 +47,13 @@ case $1 in
     exec 2>&1 bundle exec shoryuken -r $CPW_HOME/lib/cpw.rb -C $CPW_HOME/config/shoryuken.yml -L $CPW_SHARED/log/shoryuken.log -P $CPW_SHARED/pids/shoryuken.pid 1>$CPW_SHARED/log/shoryuken.log
     ;;
   stop)
-    if [ ! -z `cat $CPW_SHARED/pids/shoryuken.pid` ]
-    then
-      kill -s USR1 `cat $CPW_SHARED/pids/shoryuken.pid`
-      pswait $CPW_SHARED/pids/shoryuken.pid
-      rm $CPW_SHARED/pids/shoryuken.pid
-    fi
+    # if [ ! -z `cat $CPW_SHARED/pids/shoryuken.pid` ]
+    # then
+    #   kill -s USR1 `cat $CPW_SHARED/pids/shoryuken.pid`
+    #   pswait $CPW_SHARED/pids/shoryuken.pid
+    #   rm $CPW_SHARED/pids/shoryuken.pid
+    # fi
+    kill -s USR1 `cat $CPW_SHARED/pids/shoryukend.pid`
     ;;
   *)
     echo "USAGE: cpwd {start|stop}" ;;
