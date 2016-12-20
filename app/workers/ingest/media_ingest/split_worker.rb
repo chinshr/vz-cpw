@@ -339,7 +339,7 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
 
   def default_engine_options(options = {})
     {
-      perform_threaded: true,
+      perform_threaded: false,
       split_method: :diarize,
       split_options: {
         mode: :druby,
