@@ -1,0 +1,59 @@
+#!/bin/bash
+
+# rvm
+# http://stackoverflow.com/questions/5792707/cannot-change-rvm-gemset-from-shell-script-via-rvm-gemset-use
+[ -f "$HOME/.bashrc" ] && . "$HOME/.bashrc"
+[ -s "$HOME/.rvm/scripts/rvm" ] && . "$HOME/.rvm/scripts/rvm"
+
+# enable shell debugging
+set -x
+
+CPW_ENV=${CPW_ENV:=development}
+if [ "production" == "$CPW_ENV" ]; then
+  CPW_HOME=/home/ubuntu/vz-cpw
+  CPW_SHARED=/home/ubuntu/shared
+else
+  CPW_HOME=~/work/vzo/vz-cpw
+  CPW_SHARED=~/work/vzo/vz-cpw/tmp
+fi
+
+echo "HOME=$HOME"
+echo "CPW_ENV=$CPW_ENV"
+echo "JAVA_HOME=$JAVA_HOME"
+echo "CPW_HOME=$CPW_HOME"
+echo "CPW_SHARED=$CPW_SHARED"
+
+pswait() {
+  if [ -z "$1" ]
+  then
+    echo "-Parameter #1 must be pid file.-"
+  else
+    PID=`cat $1/pids/diarize.pid`
+  fi
+  while s=`ps -p $PID -o s=` && [[ "$s" && "$s" != 'Z' ]]; do
+    sleep 1
+  done
+}
+
+case $1 in
+  start)
+    sudo youtube-dl -U
+    rvm gemset use vz-cpw
+    echo `rvm gemset list`
+    PWD = `pwd`
+    cd $CPW_HOME && git pull && bundle install
+    cd $PWD
+    exec 2>&1 bundle exec shoryuken -r $CPW_HOME/lib/cpw.rb -C $CPW_HOME/config/shoryuken.yml -L $CPW_SHARED/log/shoryuken.log -P $CPW_SHARED/pids/shoryuken.pid 1>$CPW_SHARED/log/shoryuken.log
+    ;;
+  stop)
+    if [ ! -z `cat $CPW_SHARED/pids/shoryuken.pid` ]
+    then
+      kill -s USR1 `cat $CPW_SHARED/pids/shoryuken.pid`
+      pswait $CPW_SHARED/pids/shoryuken.pid
+      rm $CPW_SHARED/pids/shoryuken.pid
+    fi
+    ;;
+  *)
+    echo "USAGE: cpwd {start|stop}" ;;
+ esac
+ exit 0
