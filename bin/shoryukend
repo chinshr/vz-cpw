@@ -37,6 +37,7 @@ pswait() {
 
 case $1 in
   start)
+    echo $$ > $CPW_SHARED/pids/shoryukend.pid
     sudo youtube-dl -U
     rvm gemset use vz-cpw
     echo `rvm gemset list`
