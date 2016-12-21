@@ -1,5 +1,0 @@
-check process shoryuken
-  with pidfile /tmp/shoryuken.pid
-  start program = "/usr/bin/sudo /bin/su - ubuntu -c 'cd /home/ubuntu/vz-cpw/ && git pull && rvm gemset use vz-cpw && bundle && CPW_ENV=production bundle exec shoryuken -r cpw.rb -C /home/ubuntu/vz-cpw/config/shoryuken.yml -P /tmp/shoryuken.pid'  2>&1" as uid "ubuntu" and gid "ubuntu" with timeout 90 seconds
-  stop program = "/usr/bin/sudo /bin/su - ubuntu -c 'kill -s TERM `cat /tmp/shoryuken.pid`'" as uid "ubuntu" and gid "ubuntu" with timeout 90 seconds
-  group cpw
