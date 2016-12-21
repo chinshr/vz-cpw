@@ -1,14 +1,10 @@
 class Ingest::MediaIngest::TranscodeWorker < CPW::Worker::Base
   include CPW::Worker::Helper
+  include CPW::Worker::ShoryukenHelper
 
   self.finished_progress = 29
 
   MP3_BITRATE = 128
-  STEPS = [:download, :normalize, :noise_reduce,
-    :create_mp3, :create_waveform, :upload, :cleanup]
-
-  shoryuken_options queue: -> { queue_name },
-    auto_delete: true, body_parser: :json
 
   def perform(sqs_message, body)
     logger.info("+++ #{self.class.name}#perform, body #{body.inspect}")
@@ -104,5 +100,4 @@ class Ingest::MediaIngest::TranscodeWorker < CPW::Worker::Base
       delete_file_if_exists waveform_json_file_fullpath
     end
   end
-
 end

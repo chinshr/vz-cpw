@@ -30,11 +30,14 @@ require "cpw/logger"
 require "cpw/speech"
 require "cpw/worker/base"
 require "cpw/worker/helper"
+require "cpw/worker/shoryuken_helper"
 require "cpw/middleware/lock_ingest"
 
 require_relative "../config/initializers/shoryuken"
 
 module CPW
+  class ResourceLockError < Exception; end
+  class ResourceLoadError < Exception; end
 
   class << self
     attr_accessor :env

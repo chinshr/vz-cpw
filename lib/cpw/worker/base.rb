@@ -1,8 +1,5 @@
 module CPW
   module Worker
-    class ResourceLockError < Exception; end
-    class ResourceLoadError < Exception; end
-
     class Base
       include ::Shoryuken::Worker
 
@@ -140,16 +137,12 @@ module CPW
         logger.info "+++ #{self.class.name}#lock_worker! 'entry point' #{body.inspect}"
         raise ResourceLoadError, "Cannot find ingest_id in message body" unless ingest_id
 
-        @worker, @ingest = Ingest::Worker.secure_lock(ingest_id, worker_id, [:running, :stopped], {
+        @worker, @ingest = Ingest::Worker.secure_lock(ingest_id, worker_id, {
           event: "start",
           instance_id: ec2_instance.try(:instance_id)
         })
 
-        raise ResourceLoadError, "Cannot load worker (ingest_id=#{ingest_id}, worker_id=#{worker_id}): worker not found" unless @worker.present?
-        raise ResourceLoadError, "Cannot load ingest (ingest_id=#{ingest_id}, worker_id=#{worker_id}): ingest not found" unless @ingest.present?
-        raise ResourceLockError, "Cannot lock worker (ingest_id=#{ingest_id}, worker_id=#{worker_id}): errors #{@worker.errors.inspect}" unless @worker.errors.empty?
-        raise ResourceLockError, "Cannot lock worker (ingest_id=#{ingest_id}, worker_id=#{worker_id}): errors #{@worker.state}" unless @worker.state == :running
-
+        logger.info "+++ #{self.class.name}#lock_worker! 'after Ingest::Worker.secure_lock' #{body.inspect}"
         true
       end
 
