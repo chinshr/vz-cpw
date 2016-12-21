@@ -24,15 +24,15 @@ module CPW
         request_retries = options[:request_retries] || CPW::request_retries
         request_delay_before_retry = options[:request_delay_before_retry] || CPW::request_delay_before_retry
         logger = options[:logger] || CPW::logger
-        tried = 0
+        retries = 0
         begin
           tries_left ||= request_retries
-          yield(tried, tries_left)
+          yield(retries, tries_left)
         rescue *REQUEST_EXCEPTIONS => ex
-          tried += 1
+          retries += 1
           if (tries_left -= 1) > 0
-            logger.debug "#{caller[1][/`.*'/][1..-2]} #{ex.message}, #{tried.ordinalize} try, #{tries_left} tries left"
-            sleep (CPW::request_delay_before_retry || 3.0) + (rand(tried * 100) / 100.0)
+            logger.debug "#{caller[1][/`.*'/][1..-2]} #{ex.message}, #{retries.ordinalize} try, #{tries_left} tries left"
+            sleep (CPW::request_delay_before_retry || 3.0) + (rand(retries * 100) / 100.0)
             retry
           else
             raise ex

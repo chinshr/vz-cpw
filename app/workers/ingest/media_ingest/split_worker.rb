@@ -1,5 +1,6 @@
 class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
   include CPW::Worker::Helper
+  include CPW::Worker::ShoryukenHelper
 
   attr_accessor :engine
 
@@ -13,9 +14,6 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
       "hmm" => "/voxforge_en_sphinx.cd_cont_5000/",
     }
   }
-
-  shoryuken_options queue: -> { queue_name },
-    auto_delete: true, body_parser: :json
 
   def perform(sqs_message, body)
     logger.info("+++ #{self.class.name}#perform, body #{body.inspect}")

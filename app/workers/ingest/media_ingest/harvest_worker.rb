@@ -3,6 +3,7 @@ require 'youtube-dl.rb'
 
 class Ingest::MediaIngest::HarvestWorker < CPW::Worker::Base
   include CPW::Worker::Helper
+  include CPW::Worker::ShoryukenHelper
 
   YOUTUBE_DL_RETRIES = 10
 
@@ -10,9 +11,6 @@ class Ingest::MediaIngest::HarvestWorker < CPW::Worker::Base
   attr_accessor :subtitle_file_fullpath_name
 
   self.finished_progress = 19
-
-  shoryuken_options queue: -> { queue_name },
-    auto_delete: true, body_parser: :json
 
   class TooManyRetries < StandardError; end
 
