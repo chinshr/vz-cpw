@@ -352,7 +352,7 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
       },
       logger: logger,
       locale: ingest.locale,
-      verbose: true
+      verbose: false
     }.merge(options)
   end
 end

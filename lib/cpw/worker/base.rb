@@ -139,7 +139,8 @@ module CPW
 
         @worker, @ingest = Ingest::Worker.secure_lock(ingest_id, worker_id, {
           event: "start",
-          instance_id: ec2_instance.try(:instance_id)
+          instance_id: ec2_instance.try(:instance_id),
+          worker_object_id: self.object_id.to_s(16)
         })
 
         logger.info "+++ #{self.class.name}#lock_worker! 'after Ingest::Worker.secure_lock' #{body.inspect}"

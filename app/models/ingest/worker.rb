@@ -43,6 +43,8 @@ class Ingest::Worker < CPW::Client::Base
 
     def secure_lock(ingest_id, worker_id = nil, attributes = {}, options = {})
       worker, ingest = nil, nil
+      worker_object_id = attributes[:worker_object_id]
+
       raise ResourceLoadError, "Ingest::Worker#secure_lock, requires an ingest_id (ingest_id=#{ingest_id}, worker_id=#{worker_id}, attributes=#{attributes.inspect})." unless ingest_id.present?
 
       @@semaphore.synchronize do
@@ -51,7 +53,6 @@ class Ingest::Worker < CPW::Client::Base
             # find worker, only if update previously failed
             CPW::Client::Base.try_request(options) do
               worker = Ingest::Worker.where(ingest_id: ingest_id).find(worker_id)
-              # hopefully transitioned to `running`?
               ingest = worker.ingest if worker.present? && worker.ingest_id
             end
           else
@@ -68,10 +69,11 @@ class Ingest::Worker < CPW::Client::Base
           end
         end
       end
-      # propagate error, if...
+      # raise error, if...
       raise ResourceLoadError, "Ingest::Worker#secure_lock, cannot load worker (ingest_id=#{ingest_id}, worker_id=#{worker_id}, attributes=#{attributes.inspect}), worker not found." unless worker.present?
       raise ResourceLoadError, "Ingest::Worker#secure_lock, cannot load ingest (ingest_id=#{ingest_id}, worker_id=#{worker_id}, attributes=#{attributes.inspect}), ingest not found." unless ingest.present?
       raise ResourceLockError, "Ingest::Worker#secure_lock, cannot lock worker (ingest_id=#{ingest_id}, worker_id=#{worker_id}, attributes=#{attributes.inspect}), worker errors #{worker.errors.inspect}." unless worker.errors.empty?
+      raise ResourceLockError, "Ingest::Worker#secure_lock, cannot lock worker (ingest_id=#{ingest_id}, worker_id=#{worker_id}, attributes=#{attributes.inspect}), locked by other worker `#{worker.worker_object_id}` != `#{worker_object_id}`." unless worker.worker_object_id == worker_object_id
       raise ResourceLockError, "Ingest::Worker#secure_lock, cannot lock worker (ingest_id=#{ingest_id}, worker_id=#{worker_id}, attributes=#{attributes.inspect}), expected worker state `running`, instead was `#{worker.state}`." unless worker.state == :running
       # ...otherwise
       return worker, ingest
