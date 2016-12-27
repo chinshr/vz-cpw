@@ -2,7 +2,8 @@ module CPW
   module Speech
     module Engines
       class SpeechEngine
-        include CPW::Speech::ProcessHelper
+        include CPW::Speech::CommonHelper
+        include ::Speech::Stages::ProcessHelper
 
         attr_accessor :media_file, :media_url, :rate,
           :verbose, :chunks, :chunk_duration, :max_results,
@@ -22,7 +23,7 @@ module CPW
           else
             self.media_file        = media_file_or_url
           end
-          self.status              = CPW::Speech::STATUS_UNPROCESSED
+          self.status              = ::Speech::State::STATUS_UNPROCESSED
           self.chunks              = []
           self.chunk_duration      = options[:chunk_duration].to_i if options.key?(:chunk_duration)
           self.verbose             = !!options[:verbose]
@@ -51,7 +52,7 @@ module CPW
           reset! options
 
           # set state & stage
-          self.status      = CPW::Speech::STATUS_PROCESSING
+          self.status      = ::Speech::State::STATUS_PROCESSING
           processed_stages << :perform
 
           if perform_threaded?
@@ -59,9 +60,9 @@ module CPW
             chunks.in_groups_of(max_threads).map(&:compact).each do |grouped_chunks|
               grouped_chunks.map do |chunk|
                 Thread.new do
-                  encode(chunk) unless chunk.encoded?
-                  convert(chunk, audio_chunk_options(options)) unless chunk.converted?
-                  extract(chunk, extraction_engine_options(options)) if extract_chunks? && !chunk.extracted?
+                  encode(chunk) unless chunk.stage_encoded?
+                  convert(chunk, audio_chunk_options(options)) unless chunk.stage_converted?
+                  extract(chunk, extraction_engine_options(options)) if extract_chunks? && !chunk.stage_extracted?
                 end
               end.map(&:join)
             end
@@ -71,22 +72,22 @@ module CPW
           else
             # sequential
             chunks.each do |chunk|
-              encode(chunk) unless chunk.encoded?
-              convert(chunk, audio_chunk_options(options)) unless chunk.converted?
-              extract(chunk, extraction_engine_options(options)) if extract_chunks? && !chunk.extracted?
+              encode(chunk) unless chunk.stage_encoded?
+              convert(chunk, audio_chunk_options(options)) unless chunk.stage_converted?
+              extract(chunk, extraction_engine_options(options)) if extract_chunks? && !chunk.stage_extracted?
               yield chunk if block_given?
             end
           end
           # cleanup
           normalized_response['chunks'] = chunks.map {|chunk| chunk.as_json}
-          extract(self, extraction_engine_options(options)) if extract_media? && !extracted? && perform_success?
-          self.status = normalized_response['status'] = CPW::Speech::STATUS_PROCESSED
+          extract(self, extraction_engine_options(options)) if extract_media? && !stage_extracted? && perform_success?
+          self.status = normalized_response['status'] = ::Speech::State::STATUS_PROCESSED
           # done
           chunks
         end
 
         def as_json(options = {})
-          perform(options) unless performed?
+          perform(options) unless stage_performed?
           normalized_response
         end
 
@@ -95,7 +96,7 @@ module CPW
         end
 
         def to_text(options = {})
-          perform(options) unless performed?
+          perform(options) unless stage_performed?
           chunks.map {|chunk| chunk.to_s}.compact.join(" ")
         end
         alias_method :to_s, :to_text
@@ -104,22 +105,29 @@ module CPW
           chunks.each {|chunk| chunk.clean}
         end
 
+        def import(ingest_chunks, options = {})
+          reset!({processed_stages: :split}.merge(options))
+          self.chunks = audio_splitter.import(ingest_chunks)
+        end
+
         protected
 
         def reset!(options = {})
-          self.processed_stages   = []
+          self.processed_stages   = options[:processed_stages] || []
           self.max_results        = options[:max_results] || 2
           self.max_retries        = options[:max_retries] || 3
           self.locale             = options[:locale] || "en-US"
           if media_file
             begin
-              self.status         = CPW::Speech::STATUS_PROCESSING
-              self.processed_stages << :split
+              self.status         = ::Speech::State::STATUS_PROCESSING
               self.audio_splitter = Speech::AudioSplitter.new(media_file, audio_splitter_options(options))
-              self.chunks         = audio_splitter.split
-              self.status         = CPW::Speech::STATUS_PROCESSED
+              unless stage_split?
+                self.processed_stages << :split
+                self.chunks         = audio_splitter.split
+                self.status         = ::Speech::State::STATUS_PROCESSED
+              end
             rescue CPW::Speech::BaseError => error
-              self.status         = CPW::Speech::STATUS_PROCESSING_ERROR
+              self.status         = ::Speech::State::STATUS_PROCESSING_ERROR
               raise error
             end
           end
@@ -206,7 +214,7 @@ module CPW
         end
 
         def perform_success?
-          performed? && chunks.size > 0 && chunks.all? {|ch| ch.status == CPW::Speech::STATUS_PROCESSED}
+          stage_performed? && chunks.size > 0 && chunks.all? {|ch| ch.status == ::Speech::State::STATUS_PROCESSED}
         end
 
       end # SpeechEngine

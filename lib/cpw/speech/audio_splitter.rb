@@ -23,14 +23,15 @@ module CPW
       def split(options = {})
         assign_options(options)
         case split_method
-        when :diarize then split_with_diarize
+        when :lium then split_with_diarize_lium
+        when :diarize then split_with_diarize_lium
         when :basic then split_with_basic
         when :auto
           if engine && engine.respond_to?(:split)
             engine.split(self)
           else
             if engine
-              raise InvalidSplitMethod, "unsupported #split_method `#{split_method}` in `#{engine.class.inspect}` engine."
+              raise InvalidSplitMethod, "unsupported #split_method `#{split_method}` for `#{engine.class.name}` engine."
             else
               raise InvalidSplitMethod, "unsupported #split_method `#{split_method}`."
             end
@@ -46,6 +47,14 @@ module CPW
         else
           Diarize::Speaker.new(nil, nil, gmm_file_name)
         end
+      end
+
+      def import(ingest_chunks)
+        chunks = []
+        ingest_chunks.each do |ingest_chunk|
+          chunks << AudioChunk.build_from_ingest_chunk(self, ingest_chunk)
+        end
+        chunks
       end
 
       protected
@@ -76,7 +85,7 @@ module CPW
         result
       end
 
-      def split_with_diarize
+      def split_with_diarize_lium
         chunks   = []
         file_uri = URI.join('file:///', original_file)
         # build audio

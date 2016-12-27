@@ -74,11 +74,11 @@ class CPW::Speech::AudioSplitterTest < Test::Unit::TestCase
     chunks = splitter.split
     assert_equal 1, chunks.size
     chunks.each do|chunk|
-      assert_equal true, chunk.built?  # built because there is only one chunk
+      assert_equal true, chunk.stage_built?  # built because there is only one chunk
       chunk.build
-      assert_equal true, chunk.built?
+      assert_equal true, chunk.stage_built?
       chunk.to_flac
-      assert_equal true, chunk.encoded?
+      assert_equal true, chunk.stage_encoded?
       assert chunk.to_flac_bytes
       assert_equal 46385, chunk.flac_size
 
@@ -100,11 +100,11 @@ class CPW::Speech::AudioSplitterTest < Test::Unit::TestCase
     chunks = splitter.split
     assert_equal 1, chunks.size
     chunks.each do|chunk|
-      assert_equal true, chunk.built?
+      assert_equal true, chunk.stage_built?
       chunk.build
-      assert_equal true, chunk.built?
+      assert_equal true, chunk.stage_built?
       chunk.to_wav
-      assert_equal true, chunk.encoded?
+      assert_equal true, chunk.stage_encoded?
       assert chunk.to_wav_bytes
       assert_equal 112698, chunk.wav_size
 
@@ -126,11 +126,11 @@ class CPW::Speech::AudioSplitterTest < Test::Unit::TestCase
     chunks = splitter.split
     assert_equal 1, chunks.size
     chunks.each do|chunk|
-      assert_equal true, chunk.built?  # built because there is only one chunk
+      assert_equal true, chunk.stage_built?  # built because there is only one chunk
       chunk.build
-      assert_equal true, chunk.built?
+      assert_equal true, chunk.stage_built?
       chunk.to_raw
-      assert_equal true, chunk.encoded?
+      assert_equal true, chunk.stage_encoded?
       assert chunk.to_raw_bytes
       assert_equal 112620, chunk.raw_size
 
@@ -151,7 +151,7 @@ class CPW::Speech::AudioSplitterTest < Test::Unit::TestCase
 
     chunks = splitter.split
     assert_equal 10, chunks.size
-    assert_equal true, chunks.all? {|ch| ch.status == CPW::Speech::STATUS_UNPROCESSED}
+    assert_equal true, chunks.all? {|ch| ch.status == ::Speech::State::STATUS_UNPROCESSED}
     assert_equal 5, chunks.first.duration
     assert_equal 9.1, chunks.last.duration
   end
@@ -172,7 +172,7 @@ class CPW::Speech::AudioSplitterTest < Test::Unit::TestCase
 
     chunks = splitter.split
     assert_equal 5, chunks.size
-    assert_equal true, chunks.all? {|ch| ch.status == CPW::Speech::STATUS_UNPROCESSED}
+    assert_equal true, chunks.all? {|ch| ch.status == ::Speech::State::STATUS_UNPROCESSED}
 
     # chunk 1
     assert_equal 1, chunks[0].position
@@ -311,6 +311,13 @@ class CPW::Speech::AudioSplitterTest < Test::Unit::TestCase
     splitter.expects(:diarize_client).returns(Diarize::Server.new)
     speaker = splitter.diarize_load_speaker(File.join(fixtures_root, 'speaker1.gmm'))
     assert_equal "Diarize::Speaker", speaker.class.name
+  end
+
+  def test_import
+    splitter = CPW::Speech::AudioSplitter.new(@short_wav_file)
+    ingest_chunks = [build_ingest_chunk]
+    audio_chunks = splitter.import(ingest_chunks)
+    assert_equal 1, audio_chunks.size
   end
 
 end

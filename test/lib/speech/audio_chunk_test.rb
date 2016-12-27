@@ -17,7 +17,7 @@ class CPW::Speech::AudioChunkTest < Test::Unit::TestCase
     })
 
     assert_equal [], chunk.errors
-    assert_equal CPW::Speech::STATUS_UNPROCESSED, chunk.status
+    assert_equal ::Speech::State::STATUS_UNPROCESSED, chunk.status
     assert_equal @splitter, chunk.splitter
     assert_equal false, chunk.copied
     assert_equal({}, chunk.raw_response)
@@ -33,7 +33,7 @@ class CPW::Speech::AudioChunkTest < Test::Unit::TestCase
     assert_equal segment, chunk.speaker_segment
     assert_equal "xyz", chunk.external_id
     assert_equal nil, chunk.poll_at
-    assert_equal false, chunk.extracted?
+    assert_equal false, chunk.stage_extracted?
 
     assert_equal "/tmp/i-like-pickles-chunk-1-00-00-01_00-00-00-06_00.wav",
       chunk.file_name
@@ -152,7 +152,7 @@ class CPW::Speech::AudioChunkTest < Test::Unit::TestCase
     assert_equal true, chunk.unprocessed?
     chunk.build
     assert_equal false, chunk.unprocessed?
-    assert_equal true, chunk.built?
+    assert_equal true, chunk.stage_built?
     chunk.clean
   end
 
@@ -160,8 +160,8 @@ class CPW::Speech::AudioChunkTest < Test::Unit::TestCase
     chunk = CPW::Speech::AudioChunk.new(@splitter, 1.0, 5.0)
     assert_equal true, chunk.unprocessed?
     chunk.build.to_flac
-    assert_equal true, chunk.built?
-    assert_equal true, chunk.encoded?
+    assert_equal true, chunk.stage_built?
+    assert_equal true, chunk.stage_encoded?
     assert_equal "/tmp/i-like-pickles-chunk-00-00-01_00-00-00-06_00.flac",
       chunk.flac_file_name
     assert_equal true, File.exist?(chunk.flac_file_name)
@@ -173,8 +173,8 @@ class CPW::Speech::AudioChunkTest < Test::Unit::TestCase
     chunk = CPW::Speech::AudioChunk.new(@splitter, 1.0, 5.0)
     assert_equal true, chunk.unprocessed?
     chunk.build.to_wav
-    assert_equal true, chunk.built?
-    assert_equal true, chunk.encoded?
+    assert_equal true, chunk.stage_built?
+    assert_equal true, chunk.stage_encoded?
     assert_equal "/tmp/i-like-pickles-chunk-00-00-01_00-00-00-06_00.wav",
       chunk.wav_file_name
     assert_equal true, File.exist?(chunk.wav_file_name)
@@ -186,8 +186,8 @@ class CPW::Speech::AudioChunkTest < Test::Unit::TestCase
     chunk = CPW::Speech::AudioChunk.new(@splitter, 1.0, 5.0)
     assert_equal true, chunk.unprocessed?
     chunk.build.to_raw
-    assert_equal true, chunk.built?
-    assert_equal true, chunk.encoded?
+    assert_equal true, chunk.stage_built?
+    assert_equal true, chunk.stage_encoded?
     assert_equal "/tmp/i-like-pickles-chunk-00-00-01_00-00-00-06_00.raw",
       chunk.raw_file_name
     assert_equal true, File.exist?(chunk.raw_file_name)
@@ -199,8 +199,8 @@ class CPW::Speech::AudioChunkTest < Test::Unit::TestCase
     chunk = CPW::Speech::AudioChunk.new(@splitter, 1.0, 5.0)
     assert_equal true, chunk.unprocessed?
     chunk.build.to_mp3
-    assert_equal true, chunk.built?
-    assert_equal true, chunk.encoded?
+    assert_equal true, chunk.stage_built?
+    assert_equal true, chunk.stage_encoded?
     assert_equal "/tmp/i-like-pickles-chunk-00-00-01_00-00-00-06_00.ab128k.mp3",
       chunk.mp3_file_name
     assert_equal true, File.exist?(chunk.mp3_file_name)
@@ -233,17 +233,38 @@ class CPW::Speech::AudioChunkTest < Test::Unit::TestCase
     chunk = CPW::Speech::AudioChunk.new(@splitter, 1.0, 5.0)
     assert_equal true, chunk.unprocessed?
     chunk.build.to_wav
-    assert_equal true, chunk.built?
-    assert_equal true, chunk.encoded?
-    assert_equal false, chunk.converted?
+    assert_equal true, chunk.stage_built?
+    assert_equal true, chunk.stage_encoded?
+    assert_equal false, chunk.stage_converted?
     chunk.processed_stages << :convert
-    assert_equal true, chunk.converted?
+    assert_equal true, chunk.stage_converted?
   end
 
   def test_is_extracted
     chunk = CPW::Speech::AudioChunk.new(@splitter, 1.0, 5.0)
-    assert_equal false, chunk.extracted?
+    assert_equal false, chunk.stage_extracted?
     chunk.processed_stages.push(:extract)
-    assert_equal true, chunk.extracted?
+    assert_equal true, chunk.stage_extracted?
+  end
+
+  def test_build_from_ingest_chunk
+    ingest_chunk = build_ingest_chunk
+    audio_chunk = CPW::Speech::AudioChunk.build_from_ingest_chunk(@splitter, ingest_chunk)
+    assert_equal true, audio_chunk.is_a?(CPW::Speech::AudioChunk)
+    assert_equal @splitter, audio_chunk.splitter
+
+    assert_equal ingest_chunk.offset, audio_chunk.offset
+    assert_equal ingest_chunk.duration, audio_chunk.duration
+    assert_equal ingest_chunk.position, audio_chunk.position
+    assert_equal ingest_chunk.id, audio_chunk.id
+    assert_equal simple_ingest_chunk_response, audio_chunk.as_json
+    assert_equal ingest_chunk.processing_status, audio_chunk.status
+    assert_equal "God created the heavens", audio_chunk.best_text
+    assert_equal 0.97, audio_chunk.best_score
+    assert_equal [:build, :encode, :convert, :extract], audio_chunk.processed_stages.to_a
+    assert_equal true, audio_chunk.stage_built?
+    assert_equal true, audio_chunk.stage_encoded?
+    assert_equal true, audio_chunk.stage_converted?
+    assert_equal true, audio_chunk.stage_extracted?
   end
 end

@@ -14,6 +14,7 @@ require "byebug"
 require "shoryuken"
 require "drb/drb"
 require "lsh"
+require "speech_stages"
 
 require "cpw/version"
 require "cpw/store"

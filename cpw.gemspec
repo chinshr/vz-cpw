@@ -54,6 +54,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "alchemy-api-rb", "~> 0"
   spec.add_dependency "iso-639", "~> 0"
   spec.add_dependency "lsh"
+  spec.add_dependency "speech-stages"
 
   spec.add_runtime_dependency('gli', '~> 2.13.0')
 end

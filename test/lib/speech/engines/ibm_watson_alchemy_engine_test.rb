@@ -38,9 +38,9 @@ class CPW::Speech::Engines::IbmWatsonAlchemyEngineTest < Test::Unit::TestCase
       include: :keyword_extraction,
     })
     @chunk.stubs(:to_text).returns("I like pickles")
-    assert_equal false, @chunk.extracted?
+    assert_equal false, @chunk.stage_extracted?
     extraction_engine.extract(@chunk)
-    assert_equal true, @chunk.extracted?
+    assert_equal true, @chunk.stage_extracted?
     assert_equal @simple_keywords, @chunk.as_json['keywords']
     assert_equal ["pickle", "sauerkraut"], @chunk.keywords
     assert_equal ["pickle"], @chunk.keywords(0.49)
@@ -54,9 +54,9 @@ class CPW::Speech::Engines::IbmWatsonAlchemyEngineTest < Test::Unit::TestCase
     @speech_engine.expects(:convert).returns([])
     @speech_engine.expects(:to_text).returns("I like pickles")
 
-    assert_equal false, @speech_engine.extracted?
+    assert_equal false, @speech_engine.stage_extracted?
     extraction_engine.extract(@speech_engine)
-    assert_equal true, @speech_engine.extracted?
+    assert_equal true, @speech_engine.stage_extracted?
     assert_equal @simple_keywords, @speech_engine.normalized_response['keywords']
     assert_equal ["pickle", "sauerkraut"], @speech_engine.keywords
     assert_equal ["pickle"], @speech_engine.keywords(0.49)

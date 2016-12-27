@@ -1,7 +1,6 @@
 require 'test_helper.rb'
 
 class CPW::Speech::Engines::SpeechEngineTest < Test::Unit::TestCase
-
   def test_default_settings
     engine = CPW::Speech::Engines::SpeechEngine.new("foo.wav")
     assert_equal [], engine.chunks
@@ -26,8 +25,8 @@ class CPW::Speech::Engines::SpeechEngineTest < Test::Unit::TestCase
     assert_equal({}, engine.extraction_options)
     assert_equal [], engine.errors
     assert_equal({}, engine.normalized_response)
-    assert_equal false, engine.performed?
-    assert_equal CPW::Speech::STATUS_UNPROCESSED, engine.status
+    assert_equal false, engine.stage_performed?
+    assert_equal ::Speech::State::STATUS_UNPROCESSED, engine.status
   end
 
   def test_initialize
@@ -208,36 +207,43 @@ class CPW::Speech::Engines::SpeechEngineTest < Test::Unit::TestCase
 
   def test_extracted
     engine = CPW::Speech::Engines::SpeechEngine.new("foo.wav")
-    assert_equal false, engine.extracted?
+    assert_equal false, engine.stage_extracted?
     engine.processed_stages << :extract
-    assert_equal true, engine.extracted?
+    assert_equal true, engine.stage_extracted?
   end
 
   def test_should_set_engine_state_and_processing_stage
     engine = CPW::Speech::Engines::SpeechEngine.new(File.join(fixtures_root, 'i-like-pickles.wav'),
       {split_method: :basic})
     assert_equal :basic, engine.split_method
-    assert_equal CPW::Speech::STATUS_UNPROCESSED, engine.status
+    assert_equal ::Speech::State::STATUS_UNPROCESSED, engine.status
     assert_equal [], engine.processed_stages.to_a
 
     engine.send(:reset!)
 
-    assert_equal CPW::Speech::STATUS_PROCESSED, engine.status
+    assert_equal ::Speech::State::STATUS_PROCESSED, engine.status
     assert_equal [:split], engine.processed_stages.to_a
   end
 
   def test_should_raise_error_with_split_method_auto
     engine = CPW::Speech::Engines::SpeechEngine.new(File.join(fixtures_root, 'i-like-pickles.wav'))
     assert_equal :auto, engine.split_method
-    assert_equal CPW::Speech::STATUS_UNPROCESSED, engine.status
+    assert_equal ::Speech::State::STATUS_UNPROCESSED, engine.status
     assert_equal [], engine.processed_stages.to_a
 
     assert_raise CPW::Speech::InvalidSplitMethod do
       engine.send(:reset!)
     end
 
-    assert_equal CPW::Speech::STATUS_PROCESSING_ERROR, engine.status
+    assert_equal ::Speech::State::STATUS_PROCESSING_ERROR, engine.status
     assert_equal [:split], engine.processed_stages.to_a
   end
 
+  def test_import
+    engine = CPW::Speech::Engines::SpeechEngine.new(File.join(fixtures_root, 'i-like-pickles.wav'))
+    ingest_chunks = [build_ingest_chunk]
+    engine.import(ingest_chunks)
+    assert_equal 1, engine.chunks.size
+    assert_equal [:split], engine.processed_stages.to_a
+  end
 end

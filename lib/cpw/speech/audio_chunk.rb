@@ -1,7 +1,8 @@
 module CPW
   module Speech
     class AudioChunk
-      include CPW::Speech::ProcessHelper
+      include CPW::Speech::CommonHelper
+      include ::Speech::Stages::ProcessHelper
 
       attr_accessor :position, :id, :splitter, :file_name, :flac_file_name, :wav_file_name, :raw_file_name,
         :mp3_file_name, :waveform_file_name, :offset, :duration, :flac_rate, :copied,
@@ -29,7 +30,7 @@ module CPW
         self.copied              = false
         self.best_text           = nil
         self.best_score          = nil
-        self.status              = CPW::Speech::STATUS_UNPROCESSED
+        self.status              = ::Speech::State::STATUS_UNPROCESSED
         self.errors              = []
         self.file_name           = chunk_file_name(splitter)
         self.speaker_segment     = options[:speaker_segment]
@@ -40,13 +41,27 @@ module CPW
 
         def copy(splitter, position = nil)
           chunk        = AudioChunk.new(splitter, 0, splitter.duration.to_f, {position: position})
-          chunk.status = CPW::Speech::STATUS_PROCESSED
+          chunk.status = ::Speech::State::STATUS_PROCESSED
           chunk.processed_stages << :build
           chunk.copied = true
           system("cp #{splitter.original_file} #{chunk.file_name}")
           chunk
         end
 
+        def build_from_ingest_chunk(splitter, ingest_chunk)
+          audio_chunk = new(splitter, ingest_chunk.offset, ingest_chunk.duration, {
+            position: ingest_chunk.position,
+            id: ingest_chunk.id,
+            normalized_response: ingest_chunk.response
+          })
+          # set
+          audio_chunk.status           = ingest_chunk.processing_status
+          audio_chunk.best_text        = ingest_chunk.text
+          audio_chunk.best_score       = ingest_chunk.score
+          audio_chunk.processed_stages = ingest_chunk.processed_stages
+          # ...
+          audio_chunk
+        end
       end # class
 
       def id
@@ -87,7 +102,7 @@ module CPW
           base_file_type: base_file_type, source_file: splitter.original_file})
         return self if self.copied
 
-        self.status = CPW::Speech::STATUS_PROCESSING
+        self.status = ::Speech::State::STATUS_PROCESSING
         self.processed_stages << :build
 
         offset_ts   = AudioInspector::Duration.from_seconds(self.offset).to_s
@@ -97,10 +112,10 @@ module CPW
         # only build base audio file if needed
         if cmd
           if system(cmd)
-            self.status = CPW::Speech::STATUS_PROCESSED
+            self.status = ::Speech::State::STATUS_PROCESSED
             self
           else
-            self.status = CPW::Speech::STATUS_PROCESSING_ERROR
+            self.status = ::Speech::State::STATUS_PROCESSING_ERROR
             raise BuildError, "Failed to chunk#build offset `#{offset_ts}`, duration `#{duration_ts}`\n#{cmd}"
           end
         end
@@ -109,7 +124,7 @@ module CPW
       # convert the audio file to flac format
       def to_flac
         chunk_outputfile = file_name.gsub(/#{File.extname(file_name)}$/, ".flac")
-        self.status = CPW::Speech::STATUS_PROCESSING
+        self.status = ::Speech::State::STATUS_PROCESSING
         self.processed_stages << :encode
         if system("ffmpeg -y -i #{file_name} -acodec flac #{chunk_outputfile} >/dev/null 2>&1")
           self.flac_file_name = file_name.gsub(/#{File.extname(file_name)}$/, ".flac")
@@ -119,14 +134,14 @@ module CPW
           if system("ffmpeg -i #{self.flac_file_name} -ar 16000 -ac 1 -y #{down_sampled} >/dev/null 2>&1")
             system("mv #{down_sampled} #{self.flac_file_name} 2>&1 >/dev/null")
             self.flac_rate = 16000
-            self.status    = CPW::Speech::STATUS_PROCESSED
+            self.status    = ::Speech::State::STATUS_PROCESSED
             self
           else
-            self.status = CPW::Speech::STATUS_PROCESSING_ERROR
+            self.status = ::Speech::State::STATUS_PROCESSING_ERROR
             raise "failed to audio encode to lower audio rate"
           end
         else
-          self.status = CPW::Speech::STATUS_PROCESSING_ERROR
+          self.status = ::Speech::State::STATUS_PROCESSING_ERROR
           raise EncodeError, "failed chunk#to_flac `#{file_name}`"
         end
         self
@@ -143,7 +158,7 @@ module CPW
       # convert the audio file to wav format
       def to_wav(options = {})
         chunk_outputfile = file_name.gsub(/#{File.extname(file_name)}$/, ".wav")
-        self.status = CPW::Speech::STATUS_PROCESSING
+        self.status = ::Speech::State::STATUS_PROCESSING
         self.processed_stages << :encode
         if system("ffmpeg -i #{file_name} -y -f wav -ac 1 #{chunk_outputfile}   >/dev/null 2>&1")
           self.wav_file_name = file_name.gsub(/#{File.extname(file_name)}$/, ".wav")
@@ -153,13 +168,13 @@ module CPW
           if system("ffmpeg -i #{self.wav_file_name} -ar 16000 -y #{down_sampled} >/dev/null 2>&1")
             system("mv #{down_sampled} #{self.wav_file_name} 2>&1 >/dev/null")
             self.flac_rate = 16000
-            self.status    = CPW::Speech::STATUS_PROCESSED
+            self.status    = ::Speech::State::STATUS_PROCESSED
           else
-            self.status    = CPW::Speech::STATUS_PROCESSING_ERROR
+            self.status    = ::Speech::State::STATUS_PROCESSING_ERROR
             raise EncodeError, "failed chunk#to_wav lower audio rate `#{file_name}`"
           end
         else
-          self.status      = CPW::Speech::STATUS_PROCESSING_ERROR
+          self.status      = ::Speech::State::STATUS_PROCESSING_ERROR
           raise EncodeError, "failed chunk#to_wav `#{file_name}`"
         end
         self
@@ -176,14 +191,14 @@ module CPW
       # convert the audio file to RAW format
       def to_raw(options = {})
         chunk_outputfile = file_name.gsub(/#{File.extname(file_name)}$/, ".raw")
-        self.status = CPW::Speech::STATUS_PROCESSING
+        self.status = ::Speech::State::STATUS_PROCESSING
         self.processed_stages << :encode
         if system("ffmpeg -y -i #{file_name} -y -f s16le -acodec pcm_s16le -ar 16000 -ac 1 #{chunk_outputfile}   >/dev/null 2>&1")
           self.raw_file_name = chunk_outputfile
           self.flac_rate = 16000
-          self.status    = CPW::Speech::STATUS_PROCESSED
+          self.status    = ::Speech::State::STATUS_PROCESSED
         else
-          self.status = CPW::Speech::STATUS_PROCESSING_ERROR
+          self.status = ::Speech::State::STATUS_PROCESSING_ERROR
           raise EncodeError, "failed chunk#to_raw `#{file_name}`"
         end
         self
@@ -200,16 +215,16 @@ module CPW
       # convert the audio file to mp3 format
       def to_mp3(options = {})
         options = options.reverse_merge({bitrate: 128, sample_rate: 16000})
-        self.status = CPW::Speech::STATUS_PROCESSING
+        self.status = ::Speech::State::STATUS_PROCESSING
         self.processed_stages << :encode
         chunk_outputfile = file_name.gsub(/#{File.extname(file_name)}$/, ".ab#{options[:bitrate]}k.mp3")
         cmd = "ffmpeg -y -i #{file_name} -ar #{options[:sample_rate]} -vn -ab #{options[:bitrate]}K -f mp3 #{chunk_outputfile}   >/dev/null 2>&1"
         if system(cmd)
           self.mp3_file_name = chunk_outputfile
           self.flac_rate     = 16000
-          self.status        = CPW::Speech::STATUS_PROCESSED
+          self.status        = ::Speech::State::STATUS_PROCESSED
         else
-          self.status = CPW::Speech::STATUS_PROCESSING_ERROR
+          self.status = ::Speech::State::STATUS_PROCESSING_ERROR
           raise EncodeError, "failed chunk#to_mp3 `#{file_name}` with #{cmd}"
         end
         self
@@ -227,17 +242,17 @@ module CPW
       def to_waveform(options = {})
         options = options.reverse_merge({channels: ['left', 'right'],
           sampling_rate: 30, precision: 2})
-        self.status      = CPW::Speech::STATUS_PROCESSING
+        self.status      = ::Speech::State::STATUS_PROCESSING
         chunk_outputfile = file_name.gsub(/#{File.extname(file_name)}$/, ".waveform.json")
         channels         = [options[:channels]].flatten.map(&:split).flatten.join(' ')
         total_samples    = (duration.to_f * options[:sampling_rate]).to_i
 
         cmd = "wav2json #{file_name} --channels #{channels} --no-header --precision #{options[:precision]} --samples #{total_samples} -o #{chunk_outputfile}   >/dev/null 2>&1"
         if system(cmd)
-          self.status             = CPW::Speech::STATUS_PROCESSED
+          self.status             = ::Speech::State::STATUS_PROCESSED
           self.waveform_file_name = chunk_outputfile
         else
-          self.status         = CPW::Speech::STATUS_PROCESSING_ERROR
+          self.status         = ::Speech::State::STATUS_PROCESSING_ERROR
           raise EncodeError, "failed chunk#to_waveform `#{file_name}` with `#{chunk_outputfile}` in #{cmd}"
         end
         self
