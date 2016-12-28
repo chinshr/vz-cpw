@@ -27,12 +27,12 @@ module CPW
         protected
 
         def convert(chunk, options = {})
-          result = {'status' => (chunk.status = CPW::Speech::STATUS_PROCESSING)}
+          result = {'status' => (chunk.status = ::Speech::State::STATUS_PROCESSING)}
           if chunk.raw_response.present?  # from splitter
             parse(chunk, chunk.raw_response, result)
             logger.info "chunk #{chunk.position} processed: #{result.inspect}" if self.verbose
           else
-            result['status'] = chunk.status = CPW::Speech::STATUS_PROCESSING_ERROR
+            result['status'] = chunk.status = ::Speech::State::STATUS_PROCESSING_ERROR
           end
         ensure
           chunk.processed_stages << :convert
@@ -47,13 +47,13 @@ module CPW
 
           if data.key?('text')
             result['hypotheses']    = [{'utterance' => data['text'], 'confidence' => default_chunk_score}]
-            result['status']        = chunk.status = CPW::Speech::STATUS_PROCESSED
+            result['status']        = chunk.status = ::Speech::State::STATUS_PROCESSED
             chunk.best_text         = data['text']
             chunk.best_score        = default_chunk_score
 
             logger.info "result: #{result.inspect}" if self.verbose
           else
-            chunk.status = CPW::Speech::STATUS_PROCESSING_ERROR
+            chunk.status = ::Speech::State::STATUS_PROCESSING_ERROR
           end
           result
         end

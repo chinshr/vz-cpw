@@ -36,18 +36,36 @@ module CPW
 
         SQSTestMessage = Struct.new(:name) do; def delete; end; end
 
-        # Note: For running workers manually.
-        # E.g. Ingest::MediaIngest::HarvestWorker.perform_test({"ingest_id" => 81})
-        def perform_test(body)
+        # Note: For running workers manually in test mode with near real world setup.
+        # E.g. Ingest::MediaIngest::HarvestWorker.test_run({"ingest_id" => 81})
+        def test_run(body)
           sqs_message          = SQSTestMessage.new(CPW.env)
-          worker_instance      = self.new
+          worker_instance      = new
           worker_instance.test = true
-
+          # wrap it...
           worker_instance.before_perform(sqs_message, body)
           worker_instance.do_perform do
             worker_instance.perform(sqs_message, body)
           end
           worker_instance.after_perform(sqs_message, body)
+        end
+
+        # Note: load a worker instance
+        def test_load(body)
+          sqs_message          = SQSTestMessage.new(CPW.env)
+          worker_instance      = new
+          worker_instance.test = true
+          worker_instance.body = body
+          worker_instance.send(:load_worker)
+          worker_instance
+        end
+
+        # Note: execute the perform method of the loaded worker
+        def test_perform(body)
+          sqs_message     = SQSTestMessage.new(CPW.env)
+          worker_instance = test_load(body)
+          worker_instance.perform(sqs_message, worker_instance.body)
+          worker_instance
         end
       end  # class methods
 
@@ -249,6 +267,11 @@ module CPW
       def update_worker(attributes = {})
         logger.info "+++ #{self.class.name}#update_worker ingest_id=#{ingest_id}, worker_id=#{worker_id}, #{attributes.inspect}"
         @worker, @ingest = Ingest::Worker.secure_update(ingest_id, worker_id, attributes, {logger: logger})
+      end
+
+      def load_worker
+        logger.info "+++ #{self.class.name}#load_worker ingest_id=#{ingest_id}, worker_id=#{worker_id}"
+        @worker, @ingest = Ingest::Worker.secure_find(ingest_id, worker_id, {logger: logger})
       end
 
       def can_perform?

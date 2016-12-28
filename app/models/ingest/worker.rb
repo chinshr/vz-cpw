@@ -7,11 +7,11 @@ class Ingest::Worker < CPW::Client::Base
   class << self
     @@semaphore = Mutex.new
 
-    def secure_find(ingest_id, id, options = {})
+    def secure_find(ingest_id, worker_id, options = {})
       worker, ingest = nil, nil
       @@semaphore.synchronize do
         CPW::Client::Base.try_request(options) do
-          worker = Ingest::Worker.where(ingest_id: ingest_id).find(id)
+          worker = Ingest::Worker.where(ingest_id: ingest_id).find(worker_id)
           ingest = worker.ingest if worker.present? && worker.ingest_id
         end
       end

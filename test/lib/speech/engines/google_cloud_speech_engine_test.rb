@@ -97,18 +97,18 @@ class CPW::Speech::Engines::GoogleCloudSpeechEngineTest < Test::Unit::TestCase
       }
     })
     audio.perform do |chunk|
-      assert_equal CPW::Speech::STATUS_PROCESSED, chunk.status
+      assert_equal ::Speech::State::STATUS_PROCESSED, chunk.status
       assert_equal "I like pickles", chunk.best_text
       assert_equal 0.92408695, chunk.best_score
       assert_equal 1, chunk.id
       assert_equal 0, chunk.offset
       assert_equal 3.5, chunk.duration
-      assert_equal CPW::Speech::STATUS_PROCESSED, chunk.as_json['status']
+      assert_equal ::Speech::State::STATUS_PROCESSED, chunk.as_json['status']
       assert_equal [], chunk.errors
       # diarize
       assert_equal "S0", chunk.speaker_segment.speaker_id
       assert_equal "F", chunk.speaker_segment.speaker_gender
-      assert_equal CPW::Speech::STATUS_PROCESSED, chunk.as_json['status']
+      assert_equal ::Speech::State::STATUS_PROCESSED, chunk.as_json['status']
       assert_equal true, chunk.as_json.has_key?('speaker_segment')
       assert_not_nil chunk.as_json['speaker_segment']['speaker_supervector_hash']
       assert_not_nil chunk.as_json['speaker_segment']['speaker_mean_log_likelihood']
@@ -133,18 +133,18 @@ class CPW::Speech::Engines::GoogleCloudSpeechEngineTest < Test::Unit::TestCase
       }
     })
     audio.perform do |chunk|
-      assert_equal CPW::Speech::STATUS_PROCESSED, chunk.status
+      assert_equal ::Speech::State::STATUS_PROCESSED, chunk.status
       assert_equal "I like pickles", chunk.best_text
       assert_equal 0.92408695, chunk.best_score
       assert_equal 1, chunk.id
       assert_equal 0, chunk.offset
       assert_equal 3.5, chunk.duration
-      assert_equal CPW::Speech::STATUS_PROCESSED, chunk.as_json['status']
+      assert_equal ::Speech::State::STATUS_PROCESSED, chunk.as_json['status']
       assert_equal [], chunk.errors
       # diarize
       assert_equal "S0", chunk.speaker_segment.speaker_id
       assert_equal "F", chunk.speaker_segment.speaker_gender
-      assert_equal CPW::Speech::STATUS_PROCESSED, chunk.as_json['status']
+      assert_equal ::Speech::State::STATUS_PROCESSED, chunk.as_json['status']
       assert_equal true, chunk.as_json.has_key?('speaker_segment')
       assert_not_nil chunk.as_json['speaker_segment']['speaker_supervector_hash']
       assert_not_nil chunk.as_json['speaker_segment']['speaker_mean_log_likelihood']

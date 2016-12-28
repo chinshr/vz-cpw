@@ -121,24 +121,63 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
       locale: ingest.locale,
       basefolder: basefolder
     }.merge(perform_options)
+
     # speech_chunk_options
     speech_chunk_options = {
       build_mp3: false,
       build_waveform: false,
       build_speaker_gmm: true
     }.merge(speech_chunk_options)
+
     # logs
     logger.info "****** processing with `#{engine.class.name}`"
     logger.info "****** basefolder: #{basefolder}"
     logger.info "****** ingest locale: #{ingest.locale}"
+
+    # load previously converted chunks
+    # preload_converted_ingest_chunks(engine, perform_options)
+
     # perform
-    engine.perform(perform_options).each do |chunk|
-      process_speech_chunk(chunk, speech_chunk_options)
+    engine.perform(perform_options).each do |speech_chunk|
+      process_speech_chunk(speech_chunk, speech_chunk_options)
     end
   end
 
+  def preload_converted_ingest_chunks(engine = self.engine, options = {})
+    ingest_chunks, repeat = [], true
+    offset, limit = 0, 25
+
+    while repeat do
+      ingest_chunks_page = CPW::Client::Base.try_request({logger: logger}) do
+        Ingest::Chunk.where({
+          ingest_id: @ingest.id,
+          any_of_types: ingest_chunk_type_for(engine),
+          any_of_locales: @ingest.locale,
+          any_of_ingest_iterations: @ingest.iteration,
+          any_of_processing_status: ::Speech::State::STATUS_PROCESSED,
+          any_of_processed_stages: [:convert],
+          sort_order: {position: :asc},
+          offset: offset
+        }).to_a
+      end
+      if ingest_chunks_page.size == 0
+        repeat = false
+      else
+        ingest_chunks += ingest_chunks_page
+        if limit == ingest_chunks_page.size
+          offset += limit
+        else
+          repeat = false
+        end
+      end
+    end
+    # now, import chunks to engine
+    engine.import(ingest_chunks, {processed_stages: :split}.merge(options))
+    engine
+  end
+
   def process_speech_chunk(speech_chunk, options = {})
-    if speech_chunk.status == CPW::Speech::STATUS_PROCESSED
+    if speech_chunk.status == ::Speech::State::STATUS_PROCESSED
       # build chunk's mp3 file
       if options[:build_mp3]
         speech_chunk.build({
@@ -239,6 +278,7 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
       offset: speech_chunk.offset,
       text: speech_chunk.best_text,
       processing_status: speech_chunk.status,
+      processed_stages_mask: speech_chunk.processed_stages.bits,
       response: speech_chunk.as_json,
       track_attributes: track_attributes
     }.tap do |h|
@@ -266,7 +306,15 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
     # and add vector to the LSH.
     if lsh_index
       supervector_hash = speech_chunk.as_json.try(:[], 'speaker_segment').try(:[], 'speaker_supervector_hash')
-      gmm_file_name    = speech_chunk.speaker_gmm_file_name
+      # get gmm file
+      gmm_file_name = if speech_chunk.speaker_gmm_file_name
+        speech_chunk.speaker_gmm_file_name
+      elsif speaker_model_uri = speech_chunk.as_json.try(:[], 'speaker_segment').try(:[], 'speaker_model_uri')
+        s3_download_object(bucket_name_from_s3_url(speaker_model_uri),
+          key_from_s3_url(speaker_model_uri), speech_chunk.send(:chunk_speaker_gmm_file_name))
+        speech_chunk.send(:chunk_speaker_gmm_file_name)
+      end
+      # add to lsh
       if supervector_hash.present? && !!gmm_file_name && File.exist?(gmm_file_name)
         if lsh_index.id_to_vector(supervector_hash.to_i)
           logger.info "****** chunk.speaker: found supervector hash `#{supervector_hash}` in LSH store `#{lsh_index.storage.class}`."
@@ -283,8 +331,14 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
 
   private
 
-  def ingest_chunk_type_for(speech_chunk)
-    case speech_chunk.engine.class.name
+  def ingest_chunk_type_for(engine_or_speech_chunk)
+    engine = if engine_or_speech_chunk.is_a?(CPW::Speech::Engines::SpeechEngine)
+      engine_or_speech_chunk
+    else
+      engine_or_speech_chunk.engine
+    end
+
+    case engine.class.name
     when /GoogleCloudSpeechEngine/ then "Chunk::GoogleCloudSpeechChunk"
     when /NuanceDragonEngine/ then "Chunk::NuanceDragonChunk"
     when /PocketsphinxEngine/ then "Chunk::PocketsphinxChunk"

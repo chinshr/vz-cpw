@@ -36,6 +36,21 @@ class WorkerHelperTest < Test::Unit::TestCase
   end
 
   def test_s3_origin_url_for
-    assert_equal "http://s3.amazonaws.com/vz-test-origin/ingest-test-uid/foo.wav", @worker.s3_origin_url_for("foo.wav")
+    assert_equal "http://s3.amazonaws.com/vz-test-origin/ingest-test-uid/foo.wav",
+      @worker.s3_origin_url_for("foo.wav")
+  end
+
+  def test_bucket_name_from_s3_url
+    assert_equal "vz-dev-origin", @worker.bucket_name_from_s3_url("http://s3.amazonaws.com/vz-dev-origin/a0c93c2c-4ba9-4fbd-bdb5-3c7b228d52ee/S0.gmm")
+    assert_nil @worker.bucket_name_from_s3_url("http://www.yanoo.com/vz-dev-origin/a0c93c2c-4ba9-4fbd-bdb5-3c7b228d52ee/S0.gmm")
+    assert_nil @worker.bucket_name_from_s3_url("")
+    assert_nil @worker.bucket_name_from_s3_url(nil)
+  end
+
+  def test_key_from_s3_url
+    assert_equal "a0c93c2c-4ba9-4fbd-bdb5-3c7b228d52ee/S0.gmm", @worker.key_from_s3_url("http://s3.amazonaws.com/vz-dev-origin/a0c93c2c-4ba9-4fbd-bdb5-3c7b228d52ee/S0.gmm")
+    assert_nil @worker.key_from_s3_url("http://www.yanoo.com/vz-dev-origin/a0c93c2c-4ba9-4fbd-bdb5-3c7b228d52ee/S0.gmm")
+    assert_nil @worker.key_from_s3_url("")
+    assert_nil @worker.key_from_s3_url(nil)
   end
 end

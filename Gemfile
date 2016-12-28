@@ -9,5 +9,6 @@ gem 'lsh', git: "https://github.com/chinshr/ruby-lsh"
 gem 'ttml-ruby', git: "https://github.com/chinshr/ttml-ruby"
 gem 'gsl', :git => "https://github.com/siefca/rb-gsl"
 gem 'diarize-ruby', :git => "https://github.com/chinshr/diarize-ruby"
+gem 'speech-stages', :git => "https://github.com/vzo/speech-stages"
 
 gem 'foreman'

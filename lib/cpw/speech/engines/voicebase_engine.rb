@@ -66,7 +66,7 @@ module CPW
         end
 
         def convert(chunk, options = {})
-          result      = {'status' => (chunk.status = CPW::Speech::STATUS_PROCESSING)}
+          result = {'status' => (chunk.status = ::Speech::State::STATUS_PROCESSING)}
           chunk.processed_stages << :convert
 
           if chunk.external_id
@@ -103,10 +103,10 @@ module CPW
             parse_chunk_raw_response(chunk, chunk.raw_response, result)
             logger.info "chunk #{chunk.position} processed: #{result.inspect}" if self.verbose
           else
-            result['status'] = chunk.status = CPW::Speech::STATUS_PROCESSING_ERROR
+            result['status'] = chunk.status = ::Speech::State::STATUS_PROCESSING_ERROR
           end
         rescue Exception => ex
-          result['status'] = chunk.status = CPW::Speech::STATUS_PROCESSING_ERROR
+          result['status'] = chunk.status = ::Speech::State::STATUS_PROCESSING_ERROR
           add_chunk_error(chunk, ex, result)
         ensure
           chunk.normalized_response.merge!(result)
@@ -125,11 +125,11 @@ module CPW
             result['hypotheses'] = [{'utterance' => chunk.best_text, 'confidence' => chunk.best_score}]
             chunk.words          = words
             result['words']      = words.as_json
-            result['status']     = chunk.status = CPW::Speech::STATUS_PROCESSED
+            result['status']     = chunk.status = ::Speech::State::STATUS_PROCESSED
 
             logger.info "result #{result.inspect}" if self.verbose
           else
-            chunk.status         = CPW::Speech::STATUS_PROCESSING_ERROR
+            chunk.status         = ::Speech::State::STATUS_PROCESSING_ERROR
           end
           result
         end
@@ -143,12 +143,12 @@ module CPW
             parse_words(chunk, data['words'], result)
 
             result['hypotheses'] = [{'utterance' => data['text'], 'confidence' => chunk.best_score}]
-            result['status']     = chunk.status = CPW::Speech::STATUS_PROCESSED
+            result['status']     = chunk.status = ::Speech::State::STATUS_PROCESSED
             chunk.best_text      = data['text']
 
             logger.info "result #{result.inspect}" if self.verbose
           else
-            chunk.status         = CPW::Speech::STATUS_PROCESSING_ERROR
+            chunk.status         = ::Speech::State::STATUS_PROCESSING_ERROR
           end
           result
         end

@@ -16,14 +16,14 @@ class CPW::Speech::Engines::SubtitleEngineTest < Test::Unit::TestCase
     assert_equal 1, chunks[0].id
     assert_not_nil chunks[0].best_text
     assert_in_delta 0.5, chunks[0].best_score, 0.1
-    assert_equal CPW::Speech::STATUS_PROCESSED, chunks[0].status
+    assert_equal ::Speech::State::STATUS_PROCESSED, chunks[0].status
 
     assert_equal 1, chunks[0].as_json['hypotheses'].size
     assert_equal chunks[0].best_text, chunks[0].as_json['hypotheses'][0]['utterance']
     assert_in_delta 0.5, chunks[0].best_score, chunks[0].as_json['hypotheses'][0]['confidence'], 0.01
     assert_equal 1, chunks[0].as_json['position']
     assert_equal 1, chunks[0].as_json['id']
-    assert_equal CPW::Speech::STATUS_PROCESSED, chunks[0].as_json['status']
+    assert_equal ::Speech::State::STATUS_PROCESSED, chunks[0].as_json['status']
 
     assert_equal "Host: Estela de Carlotto! (Applause)", chunks[0].best_text
     assert_in_delta 15.8, chunks[0].offset, 0.1

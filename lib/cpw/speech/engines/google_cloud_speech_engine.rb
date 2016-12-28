@@ -37,7 +37,7 @@ module CPW
 
         def convert(chunk, options = {})
           logger.info "sending chunk of size #{chunk.duration}, locale: #{locale}..." if self.verbose
-          result       = {'status' => (chunk.status = CPW::Speech::STATUS_PROCESSING)}
+          result       = {'status' => (chunk.status = ::Speech::State::STATUS_PROCESSING)}
           chunk.processed_stages << :convert
           retrying     = true
           retry_count  = 0
@@ -94,7 +94,7 @@ module CPW
 
           logger.info "chunk #{chunk.position} processed: #{result.inspect} from: #{service.body_str.inspect}" if self.verbose
         rescue Exception => ex
-          result['status'] = chunk.status = CPW::Speech::STATUS_PROCESSING_ERROR
+          result['status'] = chunk.status = ::Speech::State::STATUS_PROCESSING_ERROR
           add_chunk_error(chunk, ex, result)
         ensure
           chunk.normalized_response.merge!(result)
@@ -138,15 +138,15 @@ module CPW
             result['hypotheses']    = data['results'].map {|r| r['alternatives'].map {|a| {'utterance' => a['transcript'], 'confidence' => a['confidence']}}}.flatten
             result['hypotheses'].sort! {|x, y| y['confidence'] || 0 <=> x['confidence'] || 0}
 
-            chunk.status            = result['status'] = CPW::Speech::STATUS_PROCESSED
+            chunk.status            = result['status'] = ::Speech::State::STATUS_PROCESSED
             chunk.best_text         = result['hypotheses'].first['utterance']
             chunk.best_score        = result['hypotheses'].first['confidence']
             logger.info data['results'].inspect if self.verbose
           elsif data['error']
-            chunk.status = CPW::Speech::STATUS_PROCESSING_ERROR
+            chunk.status = ::Speech::State::STATUS_PROCESSING_ERROR
             result['external_error'] = data['error']
           else
-            chunk.status = CPW::Speech::STATUS_PROCESSING_ERROR
+            chunk.status = ::Speech::State::STATUS_PROCESSING_ERROR
           end
           result
         end

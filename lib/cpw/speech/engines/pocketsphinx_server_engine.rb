@@ -27,7 +27,7 @@ module CPW
 
         def convert(chunk, options = {})
           logger.info "sending chunk of size #{chunk.duration}, locale: #{locale}..." if self.verbose
-          result      = {'status' => (chunk.status = CPW::Speech::STATUS_PROCESSING)}
+          result      = {'status' => (chunk.status = ::Speech::State::STATUS_PROCESSING)}
           chunk.processed_stages << :convert
           retrying    = true
           retry_count = 0
@@ -58,7 +58,7 @@ module CPW
 
           logger.info "chunk #{chunk.position} processed: #{result.inspect} from: #{service.body_str.inspect}" if self.verbose
         rescue Exception => ex
-          result['status'] = chunk.status = CPW::Speech::STATUS_PROCESSING_ERROR
+          result['status'] = chunk.status = ::Speech::State::STATUS_PROCESSING_ERROR
           add_chunk_error(chunk, ex, result)
         ensure
           chunk.normalized_response.merge!(result)
@@ -88,7 +88,7 @@ module CPW
 
           if data.key?('hypotheses') && data['hypotheses'].is_a?(Array)
             result['hypotheses']    = data['hypotheses'].map {|ut| {'utterance' => ut['utterance'], 'confidence' => ut['confidence'] || 0}}
-            chunk.status            = result['status'] = CPW::Speech::STATUS_PROCESSED
+            chunk.status            = result['status'] = ::Speech::State::STATUS_PROCESSED
             chunk.best_text         = result['hypotheses'].first['utterance']
             chunk.best_score        = result['hypotheses'].first['confidence']
             logger.info result['hypotheses'].first['utterance'] if self.verbose

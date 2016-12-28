@@ -31,4 +31,22 @@ class Test::Unit::TestCase
     stub_request(:get, "http://www.example.com/api/ingests/#{attributes['id']}").to_return_json({ingest: attributes})
   end
 
+  def build_ingest_chunk
+    Ingest::Chunk.new(attributes: {
+      processing_status: ::Speech::State::STATUS_PROCESSED,
+      processed_stages_mask: ::Speech::Stages::ProcessedStages.bits([:build, :encode, :convert, :extract]),
+      response: simple_ingest_chunk_response,
+      position: 1,
+      id: 1234,
+      offset: 0.12,
+      duration: 12.1,
+      text: "God created the heavens",
+      score: 0.97
+    })
+  end
+
+  def simple_ingest_chunk_response
+    {"version"=>"1.0.0","id"=>"1","status"=>3}
+  end
+
 end

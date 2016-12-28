@@ -200,6 +200,20 @@ module CPW::Worker::Helper
     s3_delete_object_if_exists(APP_CONFIG['S3_OUTBOUND_BUCKET'], @ingest.track.s3_mp3_key) if @ingest.track
   end
 
+  def bucket_name_from_s3_url(url)
+    uri = URI.parse("#{url}")
+    if uri.host == "s3.amazonaws.com" && uri.path.present?
+      uri.path.split("/").reject(&:blank?).first
+    end
+  end
+
+  def key_from_s3_url(url)
+    uri = URI.parse("#{url}")
+    if uri.host == "s3.amazonaws.com" && uri.path.present?
+      uri.path.split("/").reject(&:blank?)[1..-1].join("/")
+    end
+  end
+
   # -------------------------------------------------------------
   # ffmpeg
   # -------------------------------------------------------------
@@ -384,7 +398,8 @@ module CPW::Worker::Helper
 
   def copy_file(source_file, destination_file)
     CPW::logger.info "--> copy file #{source_file} to #{destination_file}"
-    if source_file && File.exist?(source_file)
+
+    if source_file && File.exist?(source_file) && !File.exist?(destination_file)
       FileUtils::mkdir_p "/#{File.join(destination_file.split("/").slice(1...-1))}"
       FileUtils.cp(source_file, destination_file)
     end

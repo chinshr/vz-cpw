@@ -29,14 +29,14 @@ module CPW
         end
 
         def convert(chunk, options = {})
-          result = {'status' => (chunk.status = CPW::Speech::STATUS_PROCESSING)}
+          result = {'status' => (chunk.status = ::Speech::State::STATUS_PROCESSING)}
           chunk.processed_stages << :convert
 
           if chunk.raw_response.present?
             # already transcribed, e.g. using auto pocketsphinx recognizer
             parse(chunk, chunk.raw_response, result)
             logger.info "chunk #{chunk.position} processed: #{result.inspect}" if self.verbose
-          elsif chunk.encoded?
+          elsif chunk.stage_encoded?
             # still needs to be transcribed using decoder
             begin
               decoder = ::Pocketsphinx::Decoder.new(self.configuration)
@@ -45,11 +45,11 @@ module CPW
               parse(chunk, response, result)
               logger.info "chunk #{chunk.position} processed: #{result.inspect}" if self.verbose
             rescue ::Pocketsphinx::API::Error => ex
-              result['status'] = chunk.status = CPW::Speech::STATUS_PROCESSING_ERROR
+              result['status'] = chunk.status = ::Speech::State::STATUS_PROCESSING_ERROR
               add_chunk_error(chunk, ex, result)
             end
           else
-            result['status'] = chunk.status = CPW::Speech::STATUS_PROCESSING_ERROR
+            result['status'] = chunk.status = ::Speech::State::STATUS_PROCESSING_ERROR
           end
         ensure
           chunk.normalized_response.merge!(result)
@@ -65,7 +65,7 @@ module CPW
 
           if data.key?('hypothesis')
             result['hypothesis']    = data['hypothesis']
-            result['status']        = chunk.status = CPW::Speech::STATUS_PROCESSED
+            result['status']        = chunk.status = ::Speech::State::STATUS_PROCESSED
             chunk.best_text         = result['hypothesis']
             chunk.best_score        = data['posterior_prob']
 
@@ -73,7 +73,7 @@ module CPW
 
             logger.info "hypothesis: #{result['hypotheses']}" if self.verbose
           else
-            chunk.status = CPW::Speech::STATUS_PROCESSING_ERROR
+            chunk.status = ::Speech::State::STATUS_PROCESSING_ERROR
           end
           result
         end
