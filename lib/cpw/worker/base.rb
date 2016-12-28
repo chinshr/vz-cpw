@@ -116,10 +116,10 @@ module CPW
             logger.info "+++ #{self.class.name}#do_perform after `perform` #{body.inspect}"
             self.finished_perform = true
           end
-        rescue ResourceLoadError => load_error
+        rescue CPW::ResourceLoadError => load_error
           logger.info "+++ #{self.class.name}#do_perform load error `#{load_error.class.name}`."
           self.runtime_error = load_error
-        rescue ResourceLockError => lock_error
+        rescue CPW::ResourceLockError => lock_error
           logger.info "+++ #{self.class.name}#do_perform lock error `#{lock_error.class.name}`."
           self.runtime_error = lock_error
         rescue => error

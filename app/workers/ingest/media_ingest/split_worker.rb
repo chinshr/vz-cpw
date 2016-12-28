@@ -22,11 +22,11 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
       process_with_subtitle_engine
     else
       case ingest.metadata['te_name'].to_s
-      when /voicebase/ then process_with_voicebase_engine
-      when /pocketsphinx/ then process_with_pocketsphinx_engine
-      when /google_cloud_speech/ then process_with_google_cloud_speech_engine
-      when /ibm_watson_speech/ then process_with_ibm_watson_speech_engine
-      when /speechmatics/ then process_with_speechmatics_engine
+      when /voicebase/, /rambutan/ then process_with_voicebase_engine
+      when /pocketsphinx/, /lychee/ then process_with_pocketsphinx_engine
+      when /google_cloud_speech/, /physalis/ then process_with_google_cloud_speech_engine
+      when /ibm_watson_speech/, /pomgranate/ then process_with_ibm_watson_speech_engine
+      when /speechmatics/, /raspberry/ then process_with_speechmatics_engine
       else
         # default
         process_with_google_cloud_speech_engine
@@ -52,9 +52,10 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
       default_engine_options({
         api_version: "2.0",
         external_id: ingest.uid,
-        transcription_type: "machine-best"
+        transcription_type: "machine-best",
+        split_method: :auto
       }))
-    perform_engine
+    engine_perform
   end
 
   def process_with_pocketsphinx_engine
@@ -80,7 +81,7 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
         configuration: configuration,
         source_file_type: :wav
       }))
-    perform_engine
+    engine_perform
   end
 
   def process_with_google_cloud_speech_engine

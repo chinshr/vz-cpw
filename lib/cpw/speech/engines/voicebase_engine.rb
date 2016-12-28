@@ -36,20 +36,23 @@ module CPW
         end
 
         def split(splitter)
-          result = []
+          audio_chunks = []
           upload_entire_media_when_ready
           if fetch_transcripts_or_retry
             srt_file = SRT::File.parse(srt_transcript)
             srt_file.lines.each do |srt_line|
-              result << AudioChunk.new(splitter,
+              audio_chunk = AudioChunk.new(splitter,
                 decode_start_time(srt_line),
                 decode_duration(srt_line), {
                   position: srt_line.sequence,
                   raw_response: build_raw_response_from_srt_line(srt_line)
-                })
+                }
+              )
+              audio_chunk.processed_stages = [:build, :encode]
+              audio_chunks << audio_chunk
             end
           end
-          result
+          audio_chunks
         end
 
         protected
@@ -69,7 +72,12 @@ module CPW
           result = {'status' => (chunk.status = ::Speech::State::STATUS_PROCESSING)}
           chunk.processed_stages << :convert
 
-          if chunk.external_id
+          if chunk.raw_response.present?
+            # process split :auto from entire media file upload
+            parse_chunk_raw_response(chunk, chunk.raw_response, result)
+            logger.info "chunk #{chunk.position} processed: #{result.inspect}" if self.verbose
+          elsif chunk.external_id
+            # process chunked upload
             retrying    = true
             retry_count = 0
 
@@ -99,9 +107,6 @@ module CPW
             end
             raise TimeoutError, "too many get_transcript retries" if retry_count == max_poll_retries
             logger.info "chunk #{chunk.position} processed: #{result.inspect} from: #{service.body_str.inspect}" if self.verbose
-          elsif chunk.raw_response.present?
-            parse_chunk_raw_response(chunk, chunk.raw_response, result)
-            logger.info "chunk #{chunk.position} processed: #{result.inspect}" if self.verbose
           else
             result['status'] = chunk.status = ::Speech::State::STATUS_PROCESSING_ERROR
           end
@@ -185,13 +190,19 @@ module CPW
             if media_url
               o[:media_url] = media_url
             elsif media_file
-              o[:file] = File.new(media_file)
+              if api_version.to_i < 2
+                # v1.x
+                o[:file] = File.new(media_file)
+              else
+                # v2.x
+                o[:media_file] = File.new(media_file)
+              end
             end
             o[:external_id] = external_id if external_id
           })
 
           if voicebase_response.success?
-            self.media_id = voicebase_response.media_id
+            # noop
           else
             if retries > 0
               sleep retry_delay
@@ -215,19 +226,17 @@ module CPW
           retry_count     = 0
 
           while retrying && retry_count < retries
-            upload_response = if api_version.to_f < 2.0
-              client.upload_media({
-                transcription_type: transcription_type
-              }.tap {|o|
+            upload_response = client.upload_media({
+              transcription_type: transcription_type
+            }.tap {|o|
+              if api_version.to_i < 2
+                # v1.x
                 o[:file] = File.new(chunk.wav_file_name)
-              })
-            else
-              client.upload_media({
-                transcription_type: transcription_type,
-              }.tap {|o|
+              else
+                # v2.x
                 o[:media_file] = File.new(chunk.wav_file_name)
-              })
-            end
+              end
+            })
 
             if upload_response.success?
               chunk.external_id = upload_response.media_id
@@ -280,7 +289,11 @@ module CPW
             # now, get the JSON transcript
             self.voicebase_response = get_transcript(format: "json")
             if voicebase_response.success?
-              self.json_transcript = JSON.parse(voicebase_response.transcript)
+              self.json_transcript = if voicebase_response.transcript.is_a?(String)
+                JSON.parse(voicebase_response.transcript)
+              else
+                voicebase_response.transcript
+              end
             else
               raise InvalidResponseError, "get_transcript({format: 'json'}) response #{voicebase_response.inspect}"
             end
@@ -300,7 +313,15 @@ module CPW
         def get_transcript(options = {})
           client.get_transcript({
             format: "json"
-          }.tap {|o| external_id ? o[:external_id] = external_id : o[:media_id] = media_id}.merge(options))
+          }.tap {|o|
+            if api_version.to_i < 2
+              # v1.x
+              external_id ? o[:external_id] = external_id : o[:media_id] = media_id
+            else
+              # v2.x
+              o[:media_id] = media_id
+            end
+          }.merge(options))
         end
 
         def delete_file
@@ -316,8 +337,26 @@ module CPW
         end
 
         def transcript_ready?(retries = max_poll_retries)
-          self.voicebase_response = client.get_file_status({}.tap {|o| external_id ? o[:external_id] = external_id : o[:media_id] = media_id})
-          if response_success_and_machine_ready?
+          # fetched transcript already?
+          return true if self.media_id
+          # otherwise...
+          if api_version.to_i < 2
+            # v1.x
+            self.voicebase_response = client.get_file_status({}.tap {|o| external_id ? o[:external_id] = external_id : o[:media_id] = media_id})
+          else
+            # v2.x
+            self.voicebase_response = client.get_media({}.tap {|o| external_id ? o[:external_id] = external_id : o[:media_id] = media_id})
+          end
+
+          success = (api_version.to_i < 2 && !!voicebase_response && voicebase_response.success? && voicebase_response.file_status == "MACHINECOMPLETE") ||
+            (api_version.to_i >= 2 && !!voicebase_response && voicebase_response.success? && voicebase_response.parsed_response.try(:[], 'media').try(:[], 0).try(:[], 'status') == "finished")
+
+          # success?
+          if success
+            self.media_id ||= if api_version.to_i > 2
+              # v2.x
+              voicebase_response.parsed_response.try(:[], 'media').try(:[], 0).try(:[], 'mediaId')
+            end
             true
           else
             if retries > 0
@@ -327,10 +366,6 @@ module CPW
               false
             end
           end
-        end
-
-        def response_success_and_machine_ready?
-          !!voicebase_response && voicebase_response.success? && voicebase_response.file_status == "MACHINECOMPLETE"
         end
 
         def decode_start_time(srt_line)

@@ -70,11 +70,11 @@ class Ingest::Worker < CPW::Client::Base
         end
       end
       # raise error, if...
-      raise ResourceLoadError, "Ingest::Worker#secure_lock, cannot load worker (ingest_id=#{ingest_id}, worker_id=#{worker_id}, attributes=#{attributes.inspect}), worker not found." unless worker.present?
-      raise ResourceLoadError, "Ingest::Worker#secure_lock, cannot load ingest (ingest_id=#{ingest_id}, worker_id=#{worker_id}, attributes=#{attributes.inspect}), ingest not found." unless ingest.present?
-      raise ResourceLockError, "Ingest::Worker#secure_lock, cannot lock worker (ingest_id=#{ingest_id}, worker_id=#{worker_id}, attributes=#{attributes.inspect}), worker errors #{worker.errors.inspect}." unless worker.errors.empty?
-      raise ResourceLockError, "Ingest::Worker#secure_lock, cannot lock worker (ingest_id=#{ingest_id}, worker_id=#{worker_id}, attributes=#{attributes.inspect}), locked by other worker `#{worker.worker_object_id}` != `#{worker_object_id}`." unless worker.worker_object_id == worker_object_id
-      raise ResourceLockError, "Ingest::Worker#secure_lock, cannot lock worker (ingest_id=#{ingest_id}, worker_id=#{worker_id}, attributes=#{attributes.inspect}), expected worker state `running`, instead was `#{worker.state}`." unless worker.state == :running
+      raise CPW::ResourceLoadError, "Ingest::Worker#secure_lock, cannot load worker (ingest_id=#{ingest_id}, worker_id=#{worker_id}, attributes=#{attributes.inspect}), worker not found." unless worker.present?
+      raise CPW::ResourceLoadError, "Ingest::Worker#secure_lock, cannot load ingest (ingest_id=#{ingest_id}, worker_id=#{worker_id}, attributes=#{attributes.inspect}), ingest not found." unless ingest.present?
+      raise CPW::ResourceLockError, "Ingest::Worker#secure_lock, cannot lock worker (ingest_id=#{ingest_id}, worker_id=#{worker_id}, attributes=#{attributes.inspect}), worker errors #{worker.errors.inspect}." unless worker.errors.empty?
+      raise CPW::ResourceLockError, "Ingest::Worker#secure_lock, cannot lock worker (ingest_id=#{ingest_id}, worker_id=#{worker_id}, attributes=#{attributes.inspect}), locked by other worker `#{worker.worker_object_id}` != `#{worker_object_id}`." unless worker.worker_object_id == worker_object_id
+      raise CPW::ResourceLockError, "Ingest::Worker#secure_lock, cannot lock worker (ingest_id=#{ingest_id}, worker_id=#{worker_id}, attributes=#{attributes.inspect}), expected worker state `running`, instead was `#{worker.state}`." unless worker.state == :running
       # ...otherwise
       return worker, ingest
     end
