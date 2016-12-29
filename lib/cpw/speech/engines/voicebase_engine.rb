@@ -325,14 +325,24 @@ module CPW
         end
 
         def delete_file
-          if client && external_id
-            self.voicebase_response = client.delete_file({
-              external_id: external_id
-            })
-          elsif client && media_id
-            self.voicebase_response = client.delete_file({
-              media_id: media_id
-            })
+          if api_version.to_i < 2
+            # v1.x
+            if external_id
+              self.voicebase_response = client.delete_file({
+                external_id: external_id
+              })
+            elsif media_id
+              self.voicebase_response = client.delete_file({
+                media_id: media_id
+              })
+            end
+          else
+            # v2.x
+            if media_id
+              self.voicebase_response = client.delete_file({
+                media_id: media_id
+              })
+            end
           end
         end
 

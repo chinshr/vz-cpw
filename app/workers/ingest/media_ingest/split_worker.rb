@@ -237,12 +237,10 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
   end
 
   def cleanup_files
-    if CPW::production?
-      engine.clean if engine
-      delete_file_if_exists pcm_audio_file_fullpath
-      delete_file_if_exists single_channel_wav_audio_file_fullpath
-      delete_file_if_exists subtitle_file_fullpath
-    end
+    engine.clean if engine
+    delete_file_if_exists pcm_audio_file_fullpath
+    delete_file_if_exists single_channel_wav_audio_file_fullpath
+    delete_file_if_exists subtitle_file_fullpath
   end
 
   def create_or_update_ingest_chunk_with(speech_chunk)
