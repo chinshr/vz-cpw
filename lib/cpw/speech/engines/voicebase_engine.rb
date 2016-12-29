@@ -353,7 +353,7 @@ module CPW
 
           # success?
           if success
-            self.media_id ||= if api_version.to_i > 2
+            self.media_id ||= if api_version.to_i >= 2
               # v2.x
               voicebase_response.parsed_response.try(:[], 'media').try(:[], 0).try(:[], 'mediaId')
             end

@@ -3,7 +3,7 @@ require 'test_helper.rb'
 class VersionTest < Test::Unit::TestCase
 
   def test_version
-    assert_equal "2.1.9", CPW::VERSION
+    assert_equal "2.1.10", CPW::VERSION
   end
 
 end
