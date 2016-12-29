@@ -55,6 +55,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "iso-639", "~> 0"
   spec.add_dependency "lsh"
   spec.add_dependency "speech-stages"
+  spec.add_dependency "pkg-config", "~> 1.1.7"
 
-  spec.add_runtime_dependency('gli', '~> 2.13.0')
+  spec.add_runtime_dependency "gli", "~> 2.13.0"
 end
