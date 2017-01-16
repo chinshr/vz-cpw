@@ -247,6 +247,12 @@ module CPW
         end
       end
 
+      # E.g. ingest_metadata "config.transcription.engine" -> "xyz"
+      def ingest_metadata(path)
+        hash = ingest.metadata.dup
+        path.split(".").inject(hash) {|hash, key| hash.stringify_keys[key.to_s]}
+      end
+
       private
 
       def finished_progress

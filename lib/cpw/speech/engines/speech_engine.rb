@@ -12,7 +12,7 @@ module CPW
           :audio_splitter, :max_threads, :retry_delay,
           :max_poll_retries, :poll_retry_delay, :user_agent,
           :extraction_engine, :extraction_mode, :extraction_options,
-          :errors, :normalized_response, :status
+          :errors, :normalized_response, :status, :default_chunk_score
 
         attr_writer :perform_threaded
 
@@ -46,6 +46,7 @@ module CPW
           self.extraction_options  = options[:extraction_options] || {}
           self.errors              = []
           self.normalized_response = {}
+          self.default_chunk_score = options[:default_chunk_score] || 0.5
         end
 
         def perform(options = {})
