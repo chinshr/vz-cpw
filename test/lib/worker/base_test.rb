@@ -55,6 +55,14 @@ class WorkerBaseTest < Test::Unit::TestCase
     assert_equal "INGEST_MEDIA_INGEST_HARVEST_TEST_QUEUE", worker.send(:queue_name)
   end
 
+
+  def test_ingest_metadata
+    worker = CPW::Worker::Base.new
+    worker.ingest = Ingest.new("metadata": {"config": {"transcription": {"engine": "test-engine"}}})
+    assert_equal "test-engine", worker.send(:ingest_metadata, "config.transcription.engine")
+    assert_nil worker.send(:ingest_metadata, "config.foo")
+  end
+
   #--- private methods
 
   def test_should_be_busy?

@@ -21,7 +21,7 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
     if ingest.use_source_annotations? && download_subtitle_file_if_exists
       process_with_subtitle_engine
     else
-      case ingest.metadata['te_name'].to_s
+      case ingest_metadata("config.transcription.engine")
       when /voicebase/, /rambutan/ then process_with_voicebase_engine
       when /pocketsphinx/, /lychee/ then process_with_pocketsphinx_engine
       when /google_cloud_speech/, /physalis/ then process_with_google_cloud_speech_engine

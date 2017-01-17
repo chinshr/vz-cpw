@@ -27,6 +27,7 @@ class CPW::Speech::Engines::SpeechEngineTest < Test::Unit::TestCase
     assert_equal({}, engine.normalized_response)
     assert_equal false, engine.stage_performed?
     assert_equal ::Speech::State::STATUS_UNPROCESSED, engine.status
+    assert_equal 0.5, engine.default_chunk_score
   end
 
   def test_initialize
@@ -43,7 +44,8 @@ class CPW::Speech::Engines::SpeechEngineTest < Test::Unit::TestCase
       :max_poll_retries => 999,
       :poll_retry_delay => 67,
       :user_agent => "Mozilla/5.0",
-      :extraction_engine => :ibm_watson_alchemy_engine
+      :extraction_engine => :ibm_watson_alchemy_engine,
+      :default_chunk_score => 0.7
     })
     assert_equal "foo.wav", engine.media_file
     assert_equal true, engine.send(:perform_threaded?)
@@ -61,6 +63,7 @@ class CPW::Speech::Engines::SpeechEngineTest < Test::Unit::TestCase
     assert_equal 67, engine.poll_retry_delay
     assert_equal "Mozilla/5.0", engine.user_agent
     assert_equal :ibm_watson_alchemy_engine, engine.extraction_engine
+    assert_equal 0.7, engine.default_chunk_score
   end
 
   def test_locale

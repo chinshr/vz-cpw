@@ -4,12 +4,11 @@ module CPW
   module Speech
     module Engines
       class SubtitleEngine < SpeechEngine
-        attr_accessor :format, :default_chunk_score, :response
+        attr_accessor :format, :response
 
         def initialize(media_file_or_url, options = {})
           super media_file_or_url, options
-          self.format              = options[:format]
-          self.default_chunk_score = options[:default_chunk_score]
+          self.format = options[:format]
         end
 
         def split(splitter)

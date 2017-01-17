@@ -140,7 +140,7 @@ module CPW
 
             chunk.status            = result['status'] = ::Speech::State::STATUS_PROCESSED
             chunk.best_text         = result['hypotheses'].first['utterance']
-            chunk.best_score        = result['hypotheses'].first['confidence']
+            chunk.best_score        = result['hypotheses'].first['confidence'] || default_chunk_score
             logger.info data['results'].inspect if self.verbose
           elsif data['error']
             chunk.status = ::Speech::State::STATUS_PROCESSING_ERROR
