@@ -60,7 +60,11 @@ class WorkerBaseTest < Test::Unit::TestCase
     worker = CPW::Worker::Base.new
     worker.ingest = Ingest.new("metadata": {"config": {"transcription": {"engine": "test-engine"}}})
     assert_equal "test-engine", worker.send(:ingest_metadata, "config.transcription.engine")
+    assert_equal({"engine"=>"test-engine"}, worker.send(:ingest_metadata, "config.transcription"))
     assert_nil worker.send(:ingest_metadata, "config.foo")
+    assert_nil worker.send(:ingest_metadata, "foo.bar")
+    assert_nil worker.send(:ingest_metadata, "foo")
+    assert_nil worker.send(:ingest_metadata, "")
   end
 
   #--- private methods
