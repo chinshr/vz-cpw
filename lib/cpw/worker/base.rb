@@ -249,8 +249,9 @@ module CPW
 
       # E.g. ingest_metadata "config.transcription.engine" -> "xyz"
       def ingest_metadata(path)
+        return if path.empty?
         hash = ingest.metadata.dup
-        path.split(".").inject(hash) {|hash, key| hash.stringify_keys[key.to_s]}
+        path.split(".").inject(hash) {|hash, key| hash.is_a?(Hash) ? hash.stringify_keys[key.to_s] : hash}
       end
 
       private
