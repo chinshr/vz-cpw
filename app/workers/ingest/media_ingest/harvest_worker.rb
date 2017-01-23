@@ -67,6 +67,7 @@ class Ingest::MediaIngest::HarvestWorker < CPW::Worker::Base
   def download_media_from_ms_source_url(options = {})
     options = youtube_dl_options({
       output: File.join(basefolder, ingest.handle),
+      playlist: false,
       # merge_output_format: "mp4"
       # recode_video: "mp4",
       # rate_limit: "1M",
