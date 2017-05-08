@@ -80,6 +80,27 @@ class CPW::Speech::Engines::VoicebaseEngineTest < Test::Unit::TestCase
     end
   end
 
+  def test_engine_v2_prepare_locale
+    engine = CPW::Speech::Engines::VoicebaseEngine.new("media_file", {api_version: "2.0"})
+
+    assert_equal "en-US", engine.send(:prepare_locale, "en-US")
+    assert_equal "en-UK", engine.send(:prepare_locale, "en-UK")
+    assert_equal "en-UK", engine.send(:prepare_locale, "en-GB")
+    assert_equal "en-AU", engine.send(:prepare_locale, "en-AU")
+    assert_equal "en-US", engine.send(:prepare_locale, "en")
+
+    assert_equal "es-LA", engine.send(:prepare_locale, "es-MX")
+    assert_equal "es-LA", engine.send(:prepare_locale, "es-ES")
+    assert_equal "es-LA", engine.send(:prepare_locale, "es")
+
+    assert_equal "pt-BR", engine.send(:prepare_locale, "pt-BR")
+    assert_equal "pt-BR", engine.send(:prepare_locale, "pt")
+
+    assert_raise CPW::Speech::UnsupportedLocaleError do
+      engine.send(:prepare_locale, "ru")
+    end
+  end
+
   def test_engine_v1_auto_should_split
     engine = new_engine_v1_with_auto_split
     chunks = engine.perform(basefolder: "/tmp")

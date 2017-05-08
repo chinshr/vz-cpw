@@ -185,7 +185,8 @@ module CPW
 
         def upload_entire_media(retries = max_retries)
           self.voicebase_response = client.upload_media({
-            transcription_type: transcription_type
+            transcription_type: transcription_type,
+            language: locale
           }.tap {|o|
             if media_url
               o[:media_url] = media_url
@@ -410,27 +411,47 @@ module CPW
         end
 
         def prepare_locale(input_locale = self.locale)
-          case input_locale
-          # English
-          when /en-UK/ then "en-UK"
-          when /en-GB/ then "en-UK"
-          when /en/ then "en"
-          when /es-MX/ then "es-MEX"
-          when /es-ES/ then "es"
-          when /es/ then "es"
-          when /de/ then "de"
-          when /fr/ then "fr"
-          when /it/ then "it"
-          when /nl/ then "nl"
+          if api_version.to_f < 2.0
+            # v1.x
+            case input_locale
+            when /en-UK/ then "en-UK"
+            when /en-GB/ then "en-UK"
+            when /en/ then "en"
+            when /es-MX/ then "es-MEX"
+            when /es-ES/ then "es"
+            when /es/ then "es"
+            when /de/ then "de"
+            when /fr/ then "fr"
+            when /it/ then "it"
+            when /nl/ then "nl"
+            else
+              raise UnsupportedLocaleError, "Unsupported language."
+            end
           else
-            raise UnsupportedLocaleError, "Unsupported language."
+            # v2.x
+            case input_locale
+            when /en-UK/ then "en-UK"
+            when /en-GB/ then "en-UK"
+            when /en-AU/ then "en-AU"
+            when /en/ then "en-US"
+            when /es-MX/ then "es-LA"
+            when /es-ES/ then "es-LA"
+            when /es/ then "es-LA"
+            when /pt-BR/ then "pt-BR"
+            when /pt/ then "pt-BR"
+            else
+              raise UnsupportedLocaleError, "Unsupported language."
+            end
           end
         end
 
         def supported_locales
-          ["en-US", "en-GB", "es-ES", "es-ES", "es-MX", "de-DE", "fr-FR", "it-IT", "nl-NL"]
+          if api_version.to_f < 2.0
+            ["en-US", "en-GB", "es-ES", "es-ES", "es-MX", "de-DE", "fr-FR", "it-IT", "nl-NL"]
+          else
+            ["en-US", "en-UK", "en-AU", "es-LA", "pt-BR"]
+          end
         end
-
       end # VoicebaseEngine
     end
   end
