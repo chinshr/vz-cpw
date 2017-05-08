@@ -186,7 +186,7 @@ module CPW
         def upload_entire_media(retries = max_retries)
           self.voicebase_response = client.upload_media({
             transcription_type: transcription_type,
-            language: locale
+            language: prepare_locale(locale)
           }.tap {|o|
             if media_url
               o[:media_url] = media_url
