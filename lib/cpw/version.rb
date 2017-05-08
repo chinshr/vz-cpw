@@ -1,3 +1,3 @@
 module CPW
-  VERSION = "2.1.15"
+  VERSION = "2.1.2"
 end
