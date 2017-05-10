@@ -4,7 +4,8 @@ class CPW::Speech::Engines::SpeechmaticsEngine::WordsTest < Test::Unit::TestCase
 
   def setup
     @words_json = '[{"duration": "1.000", "confidence": "0.943", "name": "Hello", "time": "1.000"}, {"duration": "1.000", "confidence": "0.995", "name": "world", "time": "2.000"}, {"duration": "0.000", "confidence": null, "name": ".", "time": "2.010"}]'
-    @words = CPW::Speech::Engines::SpeechmaticsEngine::Words.parse(@words_json)
+    @test_class = CPW::Speech::Engines::SpeechmaticsEngine::Words
+    @words      = @test_class.parse(@words_json)
   end
 
   def test_attributes
@@ -50,4 +51,19 @@ class CPW::Speech::Engines::SpeechmaticsEngine::WordsTest < Test::Unit::TestCase
     assert_equal 1, scoped_words.size
     assert_equal "Hello", scoped_words[0].word
   end
+
+  def test_convert_punctuation_metadata
+    assert_equal "punc", new_with_name(".")[0].metadata
+    assert_equal "punc", new_with_name(",")[0].metadata
+    assert_equal "punc", new_with_name("?")[0].metadata
+    assert_equal "punc", new_with_name("!")[0].metadata
+    assert_nil new_with_name("#")[0].metadata
+  end
+
+  protected
+
+  def new_with_name(name)
+    @test_class.parse(%([{"duration": "1.000", "confidence": "0.943", "name": "#{name}", "time": "1.000"}]))
+  end
+
 end

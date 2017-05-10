@@ -15,18 +15,23 @@ module CPW
               word.position   = index + 1
               result.words << word unless word.empty?
               validate_word(word, index)
-
-              # convert
-              word.confidence = word.confidence.to_f if word.confidence
-              word.start_time = word.start_time.to_f if word.start_time
-              word.duration   = word.duration.to_f if word.duration
-              word.end_time   = word.start_time + word.duration if word.start_time && word.duration
+              convert_word(word)
             end
             result
           end
 
           def required_keys
             %w(p c s d w)
+          end
+
+          private
+
+          def convert_word(word)
+            word.confidence = word.confidence.to_f if word.confidence
+            word.start_time = word.start_time.to_f if word.start_time
+            word.duration   = word.duration.to_f if word.duration
+            word.end_time   = word.start_time + word.duration if word.start_time && word.duration
+            word.metadata   = "punc" if word.word.to_s.match(/^[\.\!\?\,]$/)
           end
 
         end # Class
