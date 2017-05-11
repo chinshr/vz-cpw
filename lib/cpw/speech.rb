@@ -26,6 +26,7 @@ require "cpw/speech/audio_chunk/words"
 require "cpw/speech/audio_to_text"
 require "cpw/speech/engines/speech_engine"
 require "cpw/speech/engines/extraction_engine"
+require "cpw/speech/engines/speechmatics_engine"
 
 Dir[File.dirname(__FILE__) + "/speech/engines/**/*.rb"].each {|file| require file}
 

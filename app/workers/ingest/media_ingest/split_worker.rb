@@ -21,7 +21,7 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
     if ingest.use_source_annotations? && download_subtitle_file_if_exists
       process_with_subtitle_engine
     else
-      case ingest_metadata("config.transcription.engine")
+      case determine_transcription_engine_name
       when /voicebase/, /rambutan/ then process_with_voicebase_engine
       when /pocketsphinx/, /lychee/ then process_with_pocketsphinx_engine
       when /google_cloud_speech/, /physalis/ then process_with_google_cloud_speech_engine
@@ -111,7 +111,8 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
     self.engine = CPW::Speech::Engines::SpeechmaticsEngine.new(
       single_channel_wav_audio_file_fullpath,
       default_engine_options({
-        source_file_type: :wav
+        source_file_type: :wav,
+        split_method: :auto
       }))
     engine_perform
   end
@@ -407,5 +408,39 @@ class Ingest::MediaIngest::SplitWorker < CPW::Worker::Base
       locale: ingest.locale,
       verbose: false
     }.merge(options)
+  end
+
+  def determine_transcription_engine_name
+    engine_name = begin
+      if tq = ingest_metadata("config.transcription.quality")
+        case tq
+        when /highest/ then "speechmatics"
+        when /high/ then "voicebase"
+        when /advanced/ then "ibm_watson_speech"
+        when /standard/ then "google_cloud_speech"
+        else
+          "google_cloud_speech"
+        end
+      elsif te = ingest_metadata("config.transcription.engine")
+        case te
+        when /speechmatics/, /raspberry/ then "speechmatics"
+        when /voicebase/, /rambutan/ then "voicebase"
+        when /ibm_watson_speech/, /pomgranate/ then "ibm_watson_speech"
+        when /google_cloud_speech/, /physalis/ then "google_cloud_speech"
+        when /pocketsphinx/, /lychee/ then "pocketsphinx"
+        else
+          "google_cloud_speech"
+        end
+      else
+        "google_cloud_speech"
+      end
+    end
+    # normalize
+    if engine_name == "voicebase" && ingest.locale.to_s.match(/es/)
+      # Note: Spanish models for voicebase are so bad that we are bumping
+      # customers to speechmatics for Spanish media.
+      engine_name = "speechmatics"
+    end
+    engine_name
   end
 end

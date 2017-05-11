@@ -7,13 +7,19 @@ class CPW::Speech::Engines::SpeechmaticsEngineTest < Test::Unit::TestCase
   end
 
   def test_should_initialize
-    engine = CPW::Speech::Engines::SpeechmaticsEngine.new("foo.wav",
-      {api_version: "v9.9", user_id: "123456", auth_token: "xyz", external_id: "ext1234"})
+    engine = CPW::Speech::Engines::SpeechmaticsEngine.new("foo.wav", {
+      api_version: "v9.9",
+      user_id: "123456",
+      auth_token: "xyz",
+      external_id: "ext1234"
+    })
     assert_equal nil, engine.media_url
     assert_equal "foo.wav", engine.media_file
     assert_equal "v9.9", engine.api_version
     assert_equal "123456", engine.user_id
     assert_equal "xyz", engine.auth_token
+    assert_equal "ext1234", engine.external_id
+    assert_nil engine.job_id
   end
 
   def test_should_v1_0_audio_as_json

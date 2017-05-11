@@ -31,13 +31,13 @@ module CPW
             engine.split(self)
           else
             if engine
-              raise InvalidSplitMethod, "unsupported #split_method `#{split_method}` for `#{engine.class.name}` engine."
+              raise InvalidSplitMethod, "unsupported #split_method option: `#{split_method}` for `#{engine.class.name}` engine."
             else
-              raise InvalidSplitMethod, "unsupported #split_method `#{split_method}`."
+              raise InvalidSplitMethod, "unsupported #split-method options: `#{split_method}`."
             end
           end
         else
-          raise InvalidSplitMethod, "split_method `#{split_method}` not supported."
+          raise InvalidSplitMethod, "unsupported split_method option: `#{split_method}`."
         end
       end
 

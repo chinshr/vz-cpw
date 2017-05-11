@@ -73,6 +73,33 @@ class SplitWorkerTest < Test::Unit::TestCase # Minitest::Test
     assert_equal "Chunk::GoogleCloudSpeechChunk", worker.send(:ingest_chunk_type_for, CPW::Speech::Engines::GoogleCloudSpeechEngine.new("a", {}))
   end
 
+  def test_determine_transcription_engine_name_via_quality
+    Ingest::MediaIngest::SplitWorker.any_instance.stubs(:ingest_metadata).with("config.transcription.quality").returns("high")
+    engine_name = build_worker.send(:determine_transcription_engine_name)
+    assert_equal "voicebase", engine_name
+  end
+
+  def test_determine_transcription_engine_name_via_engine
+    Ingest::MediaIngest::SplitWorker.any_instance.stubs(:ingest_metadata).with("config.transcription.quality").returns(nil)
+    Ingest::MediaIngest::SplitWorker.any_instance.stubs(:ingest_metadata).with("config.transcription.engine").returns("raspberry")
+    engine_name = build_worker.send(:determine_transcription_engine_name)
+    assert_equal "speechmatics", engine_name
+  end
+
+  def test_determine_transcription_engine_name_normalize_high_quality_and_spanish_locale
+    Ingest::MediaIngest::SplitWorker.any_instance.stubs(:ingest_metadata).with("config.transcription.quality").returns(nil)
+    Ingest::MediaIngest::SplitWorker.any_instance.stubs(:ingest_metadata).with("config.transcription.engine").returns("voicebase")
+    engine_name = build_worker("es-ES").send(:determine_transcription_engine_name)
+    assert_equal "speechmatics", engine_name
+  end
+
+  def test_determine_transcription_engine_default
+    Ingest::MediaIngest::SplitWorker.any_instance.stubs(:ingest_metadata).with("config.transcription.quality").returns(nil)
+    Ingest::MediaIngest::SplitWorker.any_instance.stubs(:ingest_metadata).with("config.transcription.engine").returns(nil)
+    engine_name = build_worker.send(:determine_transcription_engine_name)
+    assert_equal "google_cloud_speech", engine_name
+  end
+
   protected
 
   def build_worker(locale = "en-US")
