@@ -1,6 +1,6 @@
 # Content Processing Workflow (CPW)
 
-Processes audio/video content, transacribes, indexes.
+Processes audio/video content, transcribes, dyarises, indexing.
 
 ## Installation
 
